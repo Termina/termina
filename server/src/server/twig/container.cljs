@@ -13,5 +13,7 @@
    (merge
     base-data
     (if logged-in?
-      {:user (twig-user (get-in db [:users (:user-id session)])), :router router}
+      {:user (twig-user (get-in db [:users (:user-id session)])),
+       :router router,
+       :processes (:processes db)}
       nil))))

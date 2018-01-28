@@ -7,7 +7,7 @@
 
 (def notification {:id nil, :kind nil, :text nil})
 
-(def process {:pid 0, :text "", :start-at 0, :alive? false})
+(def process {:pid 0, :content [], :started-at 0, :alive? false, :dir ""})
 
 (def router {:name nil, :title nil, :data {}, :router nil})
 

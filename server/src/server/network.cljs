@@ -35,7 +35,8 @@
           (fn []
             (.warn js/console "Client closed!")
             (swap! *registry dissoc sid)
-            (on-action! :session/disconnect nil sid))))))))
+            (on-action! :session/disconnect nil sid)))
+         (.on socket "error" (fn [event] (.error js/console event))))))))
 
 (defn sync-clients! [reel]
   (let [db (:db reel), records (:records reel)]

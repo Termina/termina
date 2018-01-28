@@ -278,7 +278,7 @@
                         :type :expr, :by "root", :at 1517130877476, :id "rkWrKNGsSG"
                         :data {
                          "T" {:type :leaf, :by "root", :at 1517130881510, :text "d!", :id "H1lBKEMoHM"}
-                         "j" {:type :leaf, :by "root", :at 1517130891578, :text ":command/run", :id "Sy9YNfoSG"}
+                         "j" {:type :leaf, :by "root", :at 1517151820086, :text ":effect/run", :id "Sy9YNfoSG"}
                          "r" {
                           :type :expr, :by "root", :at 1517130901127, :id "HkbT9NziHf"
                           :data {

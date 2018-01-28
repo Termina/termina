@@ -19,4 +19,4 @@
       :on-input (fn [e d! m!] (m! (assoc state :text (:value e)))),
       :on-keydown (fn [e d! m!]
         (if (= keycode/return (:keycode e))
-          (do (d! :command/run (:text state)) (m! (assoc state :text "")))))}))))
+          (do (d! :effect/run (:text state)) (m! (assoc state :text "")))))}))))

@@ -6,6 +6,7 @@
             [cljs.reader :refer [read-string]]
             [server.util :refer [try-verbosely! log-js!]]
             [server.reel :refer [reel-updater refresh-reel reel-schema]]
+            [server.manager :refer [create-process! kill-process!]]
             ["fs" :as fs]
             ["shortid" :as shortid]))
 
@@ -23,8 +24,13 @@
   (let [op-id (.generate shortid), op-time (.valueOf (js/Date.))]
     (log-js! "Dispatch!" (str op) op-data sid)
     (try-verbosely!
-     (let [new-reel (reel-updater @*reel updater op op-data sid op-id op-time)]
-       (reset! *reel new-reel)))))
+     (cond
+       (= op :effect/run) (create-process! op-data dispatch!)
+       (= op :effect/chdir) (println "chdir" op-data)
+       (= op :effect/stop) (kill-process! op-data dispatch!)
+       :else
+         (let [new-reel (reel-updater @*reel updater op op-data sid op-id op-time)]
+           (reset! *reel new-reel))))))
 
 (defn on-exit! [code]
   (fs/writeFileSync (:storage-key schema/configs) (pr-str (assoc (:db @*reel) :sessions {})))
