@@ -3,9 +3,11 @@
 
 (def configs {:storage-key "/data/cumulo/termina-storage.edn", :port 5021})
 
-(def database {:sessions {}, :users {}, :topics {}, :count 0})
+(def database {:sessions {}, :users {}, :topics {}, :processes {}})
 
 (def notification {:id nil, :kind nil, :text nil})
+
+(def process {:pid 0, :text "", :start-at 0, :alive? false})
 
 (def router {:name nil, :title nil, :data {}, :router nil})
 

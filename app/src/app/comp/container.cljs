@@ -10,7 +10,9 @@
             [app.comp.profile :refer [comp-profile]]
             [app.comp.login :refer [comp-login]]
             [respo-message.comp.msg-list :refer [comp-msg-list]]
-            [app.comp.reel :refer [comp-reel]]))
+            [app.comp.reel :refer [comp-reel]]
+            [app.comp.missing :refer [comp-missing]]
+            [app.comp.home :refer [comp-home]]))
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
@@ -39,14 +41,9 @@
           (let [router (:router store)]
             (case (:name router)
               :profile (comp-profile (:user store))
-              (div
-               {}
-               (button {:inner-text "Inc", :on {:click (fn [e d! m!] (d! :inc nil))}})
-               (=< 8 nil)
-               (<> span (:count store) nil)
-               (=< 8 nil)
-               (<> span (str "404 page: " (pr-str router)) nil))))
+              :home (comp-home store states)
+              (comp-missing)))
           (comp-login states))))
       (comp-inspect "Store" store style-debugger)
-      (comp-msg-list (get-in store [:session :notifications]) :session/remove-notification)
+      (comp-msg-list (get-in store [:notifications]) :session/remove-notification)
       (comp-reel (:reel-length store) {})))))

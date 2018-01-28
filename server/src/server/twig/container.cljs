@@ -8,9 +8,8 @@
  (let [logged-in? (some? (:user-id session))
        router (:router session)
        base-data {:logged-in? logged-in?,
-                  :session session,
-                  :count (:count db),
-                  :reel-length (count records)}]
+                  :reel-length (count records),
+                  :notifications (:notifications session)}]
    (merge
     base-data
     (if logged-in?
