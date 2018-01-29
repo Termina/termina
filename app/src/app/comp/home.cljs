@@ -13,7 +13,11 @@
  (div
   {}
   (div {} (cursor-> :commander comp-commander states))
-  (div {} (button {:style ui/button, :on-click (action-> :process/clear nil)} (<> "clear")))
   (list->
    {}
-   (->> (:processes store) (map (fn [[pid process]] [pid (comp-process process)]))))))
+   (->> (:processes store)
+        (sort (fn [x y] (- (:started-at (val y)) (:started-at (val x)))))
+        (map (fn [[pid process]] [pid (comp-process process)]))))
+  (div
+   {}
+   (button {:style ui/button, :on-click (action-> :process/clear nil)} (<> "Clear All")))))
