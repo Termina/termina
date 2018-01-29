@@ -12,10 +12,11 @@
  comp-home
  (store states)
  (div
-  {}
+  {:style {:padding 8}}
   (div
    {:style ui/row-parted}
    (cursor-> :commander comp-commander states)
+   (=< 16 nil)
    (div
     {}
     (button {:style ui/button, :on-click (action-> :process/clear nil)} (<> "Clear All"))))

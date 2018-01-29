@@ -16,8 +16,6 @@
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
-(def style-body {:padding "8px 16px"})
-
 (def style-debugger {:bottom 0, :left 0, :max-width "100%"})
 
 (defcomp
@@ -33,17 +31,16 @@
      (div
       {:style (merge ui/global ui/fullscreen ui/column)}
       (comp-header (:logged-in? store))
+      (=< nil 8)
       (div
        {:style style-body}
-       (div
-        {:style (merge ui/row style-body)}
-        (if (:logged-in? store)
-          (let [router (:router store)]
-            (case (:name router)
-              :profile (comp-profile (:user store))
-              :home (comp-home store states)
-              (comp-missing)))
-          (comp-login states))))
+       (if (:logged-in? store)
+         (let [router (:router store)]
+           (case (:name router)
+             :profile (comp-profile (:user store))
+             :home (comp-home store states)
+             (comp-missing)))
+         (comp-login states)))
       (comp-inspect "Store" store style-debugger)
       (comp-msg-list (get-in store [:notifications]) :session/remove-notification)
       (comp-reel (:reel-length store) {})))))

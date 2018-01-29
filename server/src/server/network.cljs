@@ -7,7 +7,7 @@
             [recollect.twig :refer [render-twig]]
             [server.util :refer [log-js!]]
             ["shortid" :as shortid]
-            ["ws" :as ws]))
+            ["uws" :as ws]))
 
 (defonce *registry (atom {}))
 

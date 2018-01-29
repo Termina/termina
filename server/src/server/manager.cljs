@@ -17,4 +17,5 @@
 (defn kill-process! [pid dispatch!]
   (let [proc (get @*registry pid)]
     (if (some? proc)
-      (do (.kill proc) (swap! *registry dissoc pid) (dispatch! :process/kill pid)))))
+      (do (.kill proc) (swap! *registry dissoc pid) (dispatch! :process/kill pid))
+      (dispatch! :process/kill pid))))
