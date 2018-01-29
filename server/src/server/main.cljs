@@ -26,7 +26,6 @@
     (try-verbosely!
      (cond
        (= op :effect/run) (create-process! op-data dispatch!)
-       (= op :effect/chdir) (println "chdir" op-data)
        (= op :effect/stop) (kill-process! op-data dispatch!)
        :else
          (let [new-reel (reel-updater @*reel updater op op-data sid op-id op-time)]

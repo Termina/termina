@@ -18,4 +18,6 @@
     :process/kill (process/kill db op-data sid op-id op-time)
     :process/stdout (process/stdout db op-data sid op-id op-time)
     :process/stderr (process/stderr db op-data sid op-id op-time)
+    :process/clear (process/clear db op-data sid op-id op-time)
+    :process/finish (process/finish db op-data sid op-id op-time)
     db))

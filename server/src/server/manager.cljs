@@ -1,21 +1,18 @@
 
-(ns server.manager (:require ["child_process" :as cp]))
+(ns server.manager (:require [verbosely.core :refer [log!]] ["child_process" :as cp]))
 
 (defonce *registry (atom {}))
 
-(defn create-process! [command dispatch!]
-  (let [proc (.exec cp command)]
-    (swap! *registry assoc proc.id proc)
-    (dispatch! :process/create {:pid proc.id, :command command, :dir (.-pwd proc)})
-    (.on proc "exit" (fn [event] (dispatch! :process/finish proc.id)))
-    (.on
-     proc.stdout
-     "data"
-     (fn [data] (dispatch! :process/stdout {:pid proc.id, :data data})))
-    (.on
-     proc.stderr
-     "data"
-     (fn [data] (dispatch! :process/stderr {:pid proc.id, :data data})))))
+(defn create-process! [op-data dispatch!]
+  (let [command (:command op-data)
+        cwd (:cwd op-data)
+        proc (.exec cp command (clj->js {:cwd cwd}))
+        pid proc.pid]
+    (swap! *registry assoc pid proc)
+    (dispatch! :process/create {:pid pid, :command command, :cwd cwd})
+    (.on proc "exit" (fn [event] (dispatch! :process/finish pid)))
+    (.on proc.stdout "data" (fn [data] (dispatch! :process/stdout {:pid pid, :data data})))
+    (.on proc.stderr "data" (fn [data] (dispatch! :process/stderr {:pid pid, :data data})))))
 
 (defn kill-process! [pid dispatch!]
   (let [proc (get @*registry pid)]
