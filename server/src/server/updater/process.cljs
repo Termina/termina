@@ -1,7 +1,12 @@
 
 (ns server.updater.process (:require [server.schema :as schema]))
 
-(defn clear [db op-data sid op-id op-time] (assoc db :processes {}))
+(defn clear [db op-data sid op-id op-time]
+  (update
+   db
+   :processes
+   (fn [processes]
+     (->> processes (filter (fn [[pid process]] (:alive? process))) (into {})))))
 
 (defn create [db op-data sid op-id op-time]
   (assoc-in
@@ -13,6 +18,9 @@
   (assoc-in db [:processes op-data :alive?] false))
 
 (defn kill [db op-data sid op-id op-time] (assoc-in db [:processes op-data :alive?] false))
+
+(defn shorten-content [db op-data sid op-id op-time]
+  (update-in db [:processes op-data] (fn [process] (assoc process :content []))))
 
 (defn stderr [db op-data sid op-id op-time]
   (update-in

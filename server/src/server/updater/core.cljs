@@ -20,4 +20,5 @@
     :process/stderr (process/stderr db op-data sid op-id op-time)
     :process/clear (process/clear db op-data sid op-id op-time)
     :process/finish (process/finish db op-data sid op-id op-time)
+    :process/shorten-content (process/shorten-content db op-data sid op-id op-time)
     db))
