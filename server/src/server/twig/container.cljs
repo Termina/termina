@@ -15,5 +15,6 @@
     (if logged-in?
       {:user (twig-user (get-in db [:users (:user-id session)])),
        :router router,
-       :processes (:processes db)}
+       :processes (:processes db),
+       :workflows (:workflows db)}
       nil))))

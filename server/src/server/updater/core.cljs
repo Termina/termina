@@ -3,7 +3,8 @@
   (:require [server.updater.session :as session]
             [server.updater.user :as user]
             [server.updater.router :as router]
-            [server.updater.process :as process]))
+            [server.updater.process :as process]
+            [server.updater.workflow :as workflow]))
 
 (defn updater [db op op-data sid op-id op-time]
   (case op
@@ -21,4 +22,5 @@
     :process/clear (process/clear db op-data sid op-id op-time)
     :process/finish (process/finish db op-data sid op-id op-time)
     :process/shorten-content (process/shorten-content db op-data sid op-id op-time)
+    :workflow/create (workflow/create db op-data sid op-id op-time)
     db))

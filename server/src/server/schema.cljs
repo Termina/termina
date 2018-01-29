@@ -1,9 +1,11 @@
 
 (ns server.schema )
 
-(def configs {:storage-key "/data/cumulo/termina-storage.edn", :port 5021})
+(def command {:id nil, :path ".", :code ""})
 
-(def database {:sessions {}, :users {}, :topics {}, :processes {}})
+(def configs {:storage-key "/data/mvc-works/termina-storage.edn", :port 5021})
+
+(def database {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}})
 
 (def notification {:id nil, :kind nil, :text nil})
 
@@ -19,3 +21,5 @@
    :notifications []})
 
 (def user {:name nil, :id nil, :nickname nil, :avatar nil, :password nil})
+
+(def workflow {:id nil, :name nil, :base-dir "~/", :commands {}})

@@ -3,7 +3,7 @@
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp <> div span button]]
+            [respo.macros :refer [defcomp <> div cursor-> span button]]
             [respo.comp.inspect :refer [comp-inspect]]
             [respo.comp.space :refer [=<]]
             [app.comp.header :refer [comp-header]]
@@ -12,7 +12,8 @@
             [respo-message.comp.msg-list :refer [comp-msg-list]]
             [app.comp.reel :refer [comp-reel]]
             [app.comp.missing :refer [comp-missing]]
-            [app.comp.home :refer [comp-home]]))
+            [app.comp.home :refer [comp-home]]
+            [app.comp.workflows :refer [comp-workflows]]))
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
@@ -32,15 +33,14 @@
       {:style (merge ui/global ui/fullscreen ui/column)}
       (comp-header (:logged-in? store))
       (=< nil 8)
-      (div
-       {:style style-body}
-       (if (:logged-in? store)
-         (let [router (:router store)]
-           (case (:name router)
-             :profile (comp-profile (:user store))
-             :home (comp-home store states)
-             (comp-missing)))
-         (comp-login states)))
+      (if (:logged-in? store)
+        (let [router (:router store)]
+          (case (:name router)
+            :profile (comp-profile (:user store))
+            :home (comp-home store states)
+            :workflows (cursor-> :workflows comp-workflows states (:workflows store))
+            (comp-missing)))
+        (comp-login states))
       (comp-inspect "Store" store style-debugger)
       (comp-msg-list (get-in store [:notifications]) :session/remove-notification)
       (comp-reel (:reel-length store) {})))))
