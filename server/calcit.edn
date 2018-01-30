@@ -3359,11 +3359,62 @@
          "yuy" {
           :type :expr, :by "root", :at 1517237258039, :id "HyMMVnhHz"
           :data {
-           "T" {:type :leaf, :by "root", :at 1517237262276, :text ":workflow/create", :id "HyMMVnhHzleaf"}
+           "T" {:type :leaf, :by "root", :at 1517328556600, :text ":workflow/create", :id "HyMMVnhHzleaf"}
            "j" {
             :type :expr, :by "root", :at 1517154738952, :id "BJWoM4n3HG"
             :data {
-             "T" {:type :leaf, :by "root", :at 1517237271142, :text "workflow/create", :id "r1Ecn-diSz"}
+             "T" {:type :leaf, :by "root", :at 1517328559867, :text "workflow/create-workflow", :id "r1Ecn-diSz"}
+             "j" {:type :leaf, :by "root", :at 1517154744241, :text "db", :id "S1v63ZuoBf"}
+             "r" {:type :leaf, :by "root", :at 1517154746940, :text "op-data", :id "SyQlpW_jrG"}
+             "v" {:type :leaf, :by "root", :at 1517154768546, :text "sid", :id "SkGmpWOjrM"}
+             "x" {:type :leaf, :by "root", :at 1517154752545, :text "op-id", :id "rk_aZusBf"}
+             "y" {:type :leaf, :by "root", :at 1517154754041, :text "op-time", :id "S1xt6buiHG"}
+            }
+           }
+          }
+         }
+         "yuyD" {
+          :type :expr, :by "root", :at 1517237258039, :id "Hk2kKzAHz"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517328615147, :text ":workflow/remove", :id "HyMMVnhHzleaf"}
+           "j" {
+            :type :expr, :by "root", :at 1517154738952, :id "BJWoM4n3HG"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328616735, :text "workflow/remove-workflow", :id "r1Ecn-diSz"}
+             "j" {:type :leaf, :by "root", :at 1517154744241, :text "db", :id "S1v63ZuoBf"}
+             "r" {:type :leaf, :by "root", :at 1517154746940, :text "op-data", :id "SyQlpW_jrG"}
+             "v" {:type :leaf, :by "root", :at 1517154768546, :text "sid", :id "SkGmpWOjrM"}
+             "x" {:type :leaf, :by "root", :at 1517154752545, :text "op-id", :id "rk_aZusBf"}
+             "y" {:type :leaf, :by "root", :at 1517154754041, :text "op-time", :id "S1xt6buiHG"}
+            }
+           }
+          }
+         }
+         "yuyT" {
+          :type :expr, :by "root", :at 1517237258039, :id "rygK5LM0rf"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517328021798, :text ":workflow/add-command", :id "HyMMVnhHzleaf"}
+           "j" {
+            :type :expr, :by "root", :at 1517154738952, :id "BJWoM4n3HG"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328023980, :text "workflow/add-command", :id "r1Ecn-diSz"}
+             "j" {:type :leaf, :by "root", :at 1517154744241, :text "db", :id "S1v63ZuoBf"}
+             "r" {:type :leaf, :by "root", :at 1517154746940, :text "op-data", :id "SyQlpW_jrG"}
+             "v" {:type :leaf, :by "root", :at 1517154768546, :text "sid", :id "SkGmpWOjrM"}
+             "x" {:type :leaf, :by "root", :at 1517154752545, :text "op-id", :id "rk_aZusBf"}
+             "y" {:type :leaf, :by "root", :at 1517154754041, :text "op-time", :id "S1xt6buiHG"}
+            }
+           }
+          }
+         }
+         "yuyj" {
+          :type :expr, :by "root", :at 1517237258039, :id "rJFbuMCrf"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517328386389, :text ":workflow/remove-command", :id "HyMMVnhHzleaf"}
+           "j" {
+            :type :expr, :by "root", :at 1517154738952, :id "BJWoM4n3HG"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328388027, :text "workflow/remove-command", :id "r1Ecn-diSz"}
              "j" {:type :leaf, :by "root", :at 1517154744241, :text "db", :id "S1v63ZuoBf"}
              "r" {:type :leaf, :by "root", :at 1517154746940, :text "op-data", :id "SyQlpW_jrG"}
              "v" {:type :leaf, :by "root", :at 1517154768546, :text "sid", :id "SkGmpWOjrM"}
@@ -4756,11 +4807,116 @@
      }
     }
     :defs {
-     "create" {
+     "add-command" {
+      :type :expr, :by "root", :at 1517327887544, :id "H1xdMIM0rz"
+      :data {
+       "T" {:type :leaf, :by "root", :at 1517327890344, :text "defn", :id "Byb_fUz0Sz"}
+       "j" {:type :leaf, :by "root", :at 1517327887544, :text "add-command", :id "ryMuGUMABG"}
+       "r" {
+        :type :expr, :by "root", :at 1517327887544, :id "BJ7_fIzABz"
+        :data {
+         "T" {:type :leaf, :by "root", :at 1517327895444, :text "db", :id "SkZjM8f0rG"}
+         "j" {:type :leaf, :by "root", :at 1517327893434, :text "op-data", :id "ByW2fIz0Hz"}
+         "r" {:type :leaf, :by "root", :at 1517327897432, :text "sid", :id "S1RMUMCHM"}
+         "v" {:type :leaf, :by "root", :at 1517327899656, :text "op-id", :id "S1fXUzAHf"}
+         "x" {:type :leaf, :by "root", :at 1517327900531, :text "op-time", :id "rkb4mUGRSG"}
+        }
+       }
+       "v" {
+        :type :expr, :by "root", :at 1517327903186, :id "r1gv7LMCHz"
+        :data {
+         "T" {:type :leaf, :by "root", :at 1517327904643, :text "let", :id "r1gv7LMCHzleaf"}
+         "j" {
+          :type :expr, :by "root", :at 1517327904889, :id "rkGFXUG0SG"
+          :data {
+           "T" {
+            :type :expr, :by "root", :at 1517327926271, :id "Sy0VLz0SM"
+            :data {
+             "T" {
+              :type :expr, :by "root", :at 1517327905096, :id "BJXFX8M0SM"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517327905471, :text "{}", :id "Bk-tQ8fRHf"}
+               "j" {
+                :type :expr, :by "root", :at 1517327906086, :id "rygc7IfRHz"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517327912260, :text "workflow-id", :id "H15XLMArz"}
+                 "j" {:type :leaf, :by "root", :at 1517327915878, :text ":workflow-id", :id "rkzeEUMCSz"}
+                }
+               }
+               "r" {
+                :type :expr, :by "root", :at 1517327916464, :id "BJfVNIzCHM"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517327919146, :text "code", :id "BJfVNIzCHMleaf"}
+                 "j" {:type :leaf, :by "root", :at 1517327919798, :text ":code", :id "Hymw4UfArG"}
+                }
+               }
+               "v" {
+                :type :expr, :by "root", :at 1517327920410, :id "SJmO4Uf0Bf"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517327923296, :text "path", :id "SJmO4Uf0Bfleaf"}
+                 "j" {:type :leaf, :by "root", :at 1517327924772, :text ":path", :id "rJmoNLMRrz"}
+                }
+               }
+              }
+             }
+             "j" {:type :leaf, :by "root", :at 1517327929115, :text "op-data", :id "HJkrLzCrM"}
+            }
+           }
+          }
+         }
+         "r" {
+          :type :expr, :by "root", :at 1517327930085, :id "B1lMHUMAHz"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517327931411, :text "assoc-in", :id "B1lMHUMAHzleaf"}
+           "j" {:type :leaf, :by "root", :at 1517327934084, :text "db", :id "BJ8rUM0HM"}
+           "r" {
+            :type :expr, :by "root", :at 1517327934378, :id "rkmLHIM0HM"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517327934625, :text "[]", :id "SkfLS8z0SG"}
+             "j" {:type :leaf, :by "root", :at 1517327937391, :text ":workflows", :id "SybDH8zCHM"}
+             "r" {:type :leaf, :by "root", :at 1517327939692, :text "workflow-id", :id "Sk9r8f0HM"}
+             "v" {:type :leaf, :by "root", :at 1517327942204, :text ":commands", :id "Bk6H8z0HG"}
+             "x" {:type :leaf, :by "root", :at 1517327971194, :text "op-id", :id "S1GPPLzCrf"}
+            }
+           }
+           "v" {
+            :type :expr, :by "root", :at 1517327957903, :id "BkAIUfRrz"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517327958277, :text "{}", :id "S1epLUf0Bz"}
+             "j" {
+              :type :expr, :by "root", :at 1517327958520, :id "H1kPUfASM"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517327960929, :text ":id", :id "rJMCL8zCrz"}
+               "j" {:type :leaf, :by "root", :at 1517328146329, :text "op-id", :id "r1ZZvUfCHG"}
+              }
+             }
+             "r" {
+              :type :expr, :by "root", :at 1517327973416, :id "r1WpvIMRBG"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517327974262, :text ":code", :id "r1WpvIMRBGleaf"}
+               "j" {:type :leaf, :by "root", :at 1517327975096, :text "code", :id "BJ1dUG0Hz"}
+              }
+             }
+             "v" {
+              :type :expr, :by "root", :at 1517327975415, :id "S1SJ_IMRSM"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517327976683, :text ":path", :id "S1SJ_IMRSMleaf"}
+               "j" {:type :leaf, :by "root", :at 1517327977400, :text "path", :id "HJW-uIfCHz"}
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+     "create-workflow" {
       :type :expr, :by "root", :at 1517237235754, :id "HJehgN22Hz"
       :data {
        "T" {:type :leaf, :by "root", :at 1517237235754, :text "defn", :id "r1b3lEhhHz"}
-       "j" {:type :leaf, :by "root", :at 1517237235754, :text "create", :id "BJznlV23SG"}
+       "j" {:type :leaf, :by "root", :at 1517237235754, :text "create-workflow", :id "BJznlV23SG"}
        "r" {
         :type :expr, :by "root", :at 1517237235754, :id "HyX2eV32SG"
         :data {
@@ -4781,7 +4937,26 @@
            "T" {
             :type :expr, :by "root", :at 1517237599393, :id "BJXDvr3hBf"
             :data {
-             "L" {:type :leaf, :by "root", :at 1517237712826, :text "workflow-name", :id "BJeDABhhSf"}
+             "L" {
+              :type :expr, :by "root", :at 1517326433142, :id "HytPgf0HG"
+              :data {
+               "D" {:type :leaf, :by "root", :at 1517326435097, :text "{}", :id "Bk5PefRSM"}
+               "T" {
+                :type :expr, :by "root", :at 1517326435893, :id "rJxnvxfArM"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517237712826, :text "workflow-name", :id "BJeDABhhSf"}
+                 "j" {:type :leaf, :by "root", :at 1517326437596, :text ":name", :id "SkpDlzAHG"}
+                }
+               }
+               "j" {
+                :type :expr, :by "root", :at 1517326438389, :id "ryZAvlf0Bz"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517326441873, :text "base-dir", :id "ryZAvlf0Bzleaf"}
+                 "j" {:type :leaf, :by "root", :at 1517326446555, :text ":base-dir", :id "BkMzOgzRSM"}
+                }
+               }
+              }
+             }
              "j" {:type :leaf, :by "root", :at 1517237603804, :text "op-data", :id "r1cPrn3SM"}
             }
            }
@@ -4827,9 +5002,162 @@
                 :type :expr, :by "root", :at 1517237680820, :id "B1Yhrn2Bf"
                 :data {
                  "T" {:type :leaf, :by "root", :at 1517237684899, :text ":base-dir", :id "B1Yhrn2Bfleaf"}
-                 "j" {:type :leaf, :by "root", :at 1517237723501, :text "|./", :id "HkG63H3hrf"}
+                 "j" {:type :leaf, :by "root", :at 1517326453004, :text "base-dir", :id "HkG63H3hrf"}
                 }
                }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+     "remove-command" {
+      :type :expr, :by "root", :at 1517328389069, :id "SkepZ_M0HM"
+      :data {
+       "T" {:type :leaf, :by "root", :at 1517328389069, :text "defn", :id "BkbpZ_M0Sz"}
+       "j" {:type :leaf, :by "root", :at 1517328389069, :text "remove-command", :id "H1GpZuG0BM"}
+       "r" {
+        :type :expr, :by "root", :at 1517328389069, :id "BJXa-uMRrM"
+        :data {
+         "T" {:type :leaf, :by "root", :at 1517328391233, :text "db", :id "HJgkfOGCHf"}
+         "j" {:type :leaf, :by "root", :at 1517328392433, :text "op-data", :id "BJmyfuGABG"}
+         "r" {:type :leaf, :by "root", :at 1517328393559, :text "sid", :id "r1Wf_MABz"}
+         "v" {:type :leaf, :by "root", :at 1517328395197, :text "op-id", :id "S1gzG_MCHz"}
+         "x" {:type :leaf, :by "root", :at 1517328396059, :text "op-time", :id "rkMmGdfCrM"}
+        }
+       }
+       "v" {
+        :type :expr, :by "root", :at 1517328396878, :id "ByHzdfAHz"
+        :data {
+         "T" {:type :leaf, :by "root", :at 1517328397741, :text "let", :id "ByHzdfAHzleaf"}
+         "j" {
+          :type :expr, :by "root", :at 1517328397915, :id "HJ7Uf_f0rM"
+          :data {
+           "T" {
+            :type :expr, :by "root", :at 1517328398082, :id "SkELfdMRrz"
+            :data {
+             "T" {
+              :type :expr, :by "root", :at 1517328399249, :id "H1vfuGASM"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517328399555, :text "{}", :id "SyMIGOfArG"}
+               "j" {
+                :type :expr, :by "root", :at 1517328400331, :id "HkfdzOGAHf"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517328408174, :text "command-id", :id "BkZdMOfArf"}
+                 "j" {:type :leaf, :by "root", :at 1517328409031, :text ":id", :id "BJGlmOMRrG"}
+                }
+               }
+               "r" {
+                :type :expr, :by "root", :at 1517328409925, :id "HkeM7_GCBz"
+                :data {
+                 "T" {:type :leaf, :by "root", :at 1517328412466, :text "workflow-id", :id "HkeM7_GCBzleaf"}
+                 "j" {:type :leaf, :by "root", :at 1517328414204, :text ":workflow-id", :id "rkBXdGCBM"}
+                }
+               }
+              }
+             }
+             "j" {:type :leaf, :by "root", :at 1517328417003, :text "op-data", :id "rJbwmuzCBM"}
+            }
+           }
+          }
+         }
+         "r" {
+          :type :expr, :by "root", :at 1517328417890, :id "rkg5QufAHf"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517328419082, :text "update-in", :id "rkg5QufAHfleaf"}
+           "j" {:type :leaf, :by "root", :at 1517328419926, :text "db", :id "Hy2mOzCSG"}
+           "r" {
+            :type :expr, :by "root", :at 1517328420415, :id "Hy73Q_G0BG"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328420623, :text "[]", :id "ByG27_f0SM"}
+             "j" {:type :leaf, :by "root", :at 1517328424550, :text ":workflows", :id "HkRXuGArz"}
+             "r" {:type :leaf, :by "root", :at 1517328426527, :text "workflow-id", :id "HylZ4dMRSM"}
+             "v" {:type :leaf, :by "root", :at 1517328431077, :text ":commands", :id "SJl7V_z0Sz"}
+            }
+           }
+           "v" {
+            :type :expr, :by "root", :at 1517328432104, :id "Bku4OfASM"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328432427, :text "fn", :id "Bku4OfASMleaf"}
+             "j" {
+              :type :expr, :by "root", :at 1517328432699, :id "HJgtV_GRHz"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517328434810, :text "commands", :id "BJFEOzASz"}
+              }
+             }
+             "r" {
+              :type :expr, :by "root", :at 1517328435411, :id "rJzsV_f0SM"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517328436961, :text "dissoc", :id "rJzsV_f0SMleaf"}
+               "j" {:type :leaf, :by "root", :at 1517328529044, :text "commands", :id "SyCEdfRrf"}
+               "r" {:type :leaf, :by "root", :at 1517328441131, :text "command-id", :id "H1WkS_zCHM"}
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+     "remove-workflow" {
+      :type :expr, :by "root", :at 1517328617125, :id "BJQWgtzCSf"
+      :data {
+       "T" {:type :leaf, :by "root", :at 1517328617125, :text "defn", :id "HJEZlKMCHG"}
+       "j" {:type :leaf, :by "root", :at 1517328617125, :text "remove-workflow", :id "BJrWeFf0SG"}
+       "r" {
+        :type :expr, :by "root", :at 1517328617125, :id "rJU-lKfCSz"
+        :data {
+         "T" {:type :leaf, :by "root", :at 1517328621242, :text "db", :id "SJ7xYzCSG"}
+         "j" {:type :leaf, :by "root", :at 1517328622712, :text "op-data", :id "SkXBlKzASf"}
+         "r" {:type :leaf, :by "root", :at 1517328623506, :text "sid", :id "HyGwxtMCSM"}
+         "v" {:type :leaf, :by "root", :at 1517328626042, :text "op-id", :id "rJdxKzRHM"}
+         "x" {:type :leaf, :by "root", :at 1517328627548, :text "op-time", :id "rkf5lKMASG"}
+        }
+       }
+       "v" {
+        :type :expr, :by "root", :at 1517328652624, :id "rkrfKz0BM"
+        :data {
+         "D" {:type :leaf, :by "root", :at 1517328653214, :text "let", :id "BkxSGFGCSz"}
+         "L" {
+          :type :expr, :by "root", :at 1517328653429, :id "B1rSztGRrG"
+          :data {
+           "T" {
+            :type :expr, :by "root", :at 1517328653578, :id "HJLztfRSM"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328654005, :text "workflow-id", :id "rkNHzFGRSf"}
+             "j" {:type :leaf, :by "root", :at 1517328655971, :text "op-data", :id "H1DftfRSG"}
+            }
+           }
+          }
+         }
+         "T" {
+          :type :expr, :by "root", :at 1517328628152, :id "SJW3gFMASf"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517328633886, :text "update", :id "SJW3gFMASfleaf"}
+           "j" {:type :leaf, :by "root", :at 1517328635920, :text "db", :id "BJQ-tfRSz"}
+           "r" {:type :leaf, :by "root", :at 1517328637480, :text ":workflows", :id "S1M4WYM0BM"}
+           "v" {
+            :type :expr, :by "root", :at 1517328637720, :id "rJeLWtMRSG"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517328638745, :text "fn", :id "SkLbtzABz"}
+             "j" {
+              :type :expr, :by "root", :at 1517328639027, :id "ryGv-YM0Sz"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517328640618, :text "workflows", :id "SJbwbKz0rM"}
+              }
+             }
+             "r" {
+              :type :expr, :by "root", :at 1517328641674, :id "HJqbFG0Bf"
+              :data {
+               "T" {:type :leaf, :by "root", :at 1517328645740, :text "dissoc", :id "HJqbFG0Bfleaf"}
+               "j" {:type :leaf, :by "root", :at 1517328648721, :text "workflows", :id "HkWCWtGCBG"}
+               "r" {:type :leaf, :by "root", :at 1517328651198, :text "workflow-id", :id "ryWbzKz0SM"}
               }
              }
             }

@@ -10,5 +10,15 @@
  comp-dialog
  (on-close! child-node)
  (div
-  {:style (merge ui/fullscreen), :on-click (fn [e d! m!] (on-close! m!))}
-  (div {:on-click (fn [e d! m!] )} child-node)))
+  {:style (merge
+           ui/fullscreen
+           ui/center
+           {:position :absolute,
+            :width "100%",
+            :height "100%",
+            :background-color (hsl 0 0 0 0.4),
+            :z-index 100}),
+   :on-click (fn [e d! m!] (on-close! m!))}
+  (div
+   {:style {:padding 16, :background-color :white}, :on-click (fn [e d! m!] )}
+   child-node)))

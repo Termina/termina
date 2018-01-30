@@ -13,7 +13,7 @@
             [app.comp.reel :refer [comp-reel]]
             [app.comp.missing :refer [comp-missing]]
             [app.comp.home :refer [comp-home]]
-            [app.comp.workflows :refer [comp-workflows]]))
+            [app.comp.workflow :refer [comp-workflow-container]]))
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
@@ -38,7 +38,8 @@
           (case (:name router)
             :profile (comp-profile (:user store))
             :home (comp-home store states)
-            :workflows (cursor-> :workflows comp-workflows states (:workflows store))
+            :workflows
+              (cursor-> :workflows comp-workflow-container states (:workflows store))
             (comp-missing)))
         (comp-login states))
       (comp-inspect "Store" store style-debugger)
