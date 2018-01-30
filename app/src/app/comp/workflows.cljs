@@ -3,29 +3,24 @@
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp <> action-> mutation-> list-> span div input]]
+            [respo.macros
+             :refer
+             [defcomp <> action-> mutation-> list-> span div input button]]
             [respo.comp.space :refer [=<]]
             [clojure.string :as string]
-            [keycode.core :as keycode]))
+            [keycode.core :as keycode]
+            [app.style :as style]
+            [app.comp.dialog :refer [comp-dialog]]))
 
 (defcomp
  comp-workflows
  (states workflows)
- (let [state (or (:data states) {:name "", :focused-id nil})]
+ (let [state (or (:data states) {:name "", :focused-id nil, :edit-workflow? false})]
    (div
     {:style (merge ui/row {:padding 16})}
     (div
      {:style {:width 240}}
-     (div
-      {}
-      (input
-       {:style (merge ui/input {:width 240}),
-        :placeholder "Workflow name",
-        :value (:name state),
-        :on-input (mutation-> (assoc state :name (:value %e))),
-        :on-keydown (fn [e d! m!]
-          (if (and (not (string/blank? (:name state))) (= keycode/return (:keycode e)))
-            (do (d! :workflow/create (:name state)) (m! (assoc state :name "")))))}))
+     (div {:style ui/row-parted} (<> "Workflows") (button {:style style/button} (<> "add")))
      (list->
       {}
       (->> workflows

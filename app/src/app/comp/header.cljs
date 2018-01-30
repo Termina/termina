@@ -33,7 +33,11 @@
    (=< 16 nil)
    (div
     {:style style-logo, :on-click (action-> :router/change {:name :workflows})}
-    (<> "Workflows")))
+    (<> "Workflows"))
+   (=< 16 nil)
+   (div
+    {:style style-logo, :on-click (action-> :router/change {:name :history})}
+    (<> "History")))
   (div
    {:style style-pointer, :on-click on-profile}
    (<> span (if logged-in? "Me" "Guest") nil))))

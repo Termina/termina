@@ -5,13 +5,14 @@
 
 (def configs {:storage-key "/data/mvc-works/termina-storage.edn", :port 5021})
 
-(def database {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}})
+(def database
+  {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}, :history []})
 
 (def notification {:id nil, :kind nil, :text nil})
 
 (def process {:pid 0, :content [], :started-at 0, :alive? false, :cwd ""})
 
-(def router {:name nil, :title nil, :data {}, :router nil})
+(def router {:name nil, :params nil, :data nil})
 
 (def session
   {:user-id nil,
