@@ -2522,6 +2522,13 @@
            "j" {:type :leaf, :by "root", :at 1517154937832, :text "|", :id "SJMFfOorf"}
           }
          }
+         "x" {
+          :type :expr, :by "root", :at 1517366605642, :id "Bk8UToAHz"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517366607441, :text ":command", :id "Bk8UToAHzleaf"}
+           "j" {:type :leaf, :by "root", :at 1517366608619, :text "|", :id "BJdLToAHf"}
+          }
+         }
         }
        }
       }

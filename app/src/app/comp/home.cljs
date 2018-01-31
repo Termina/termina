@@ -21,6 +21,28 @@
     {}
     (button {:style ui/button, :on-click (action-> :process/clear nil)} (<> "Clear"))))
   (=< nil 8)
+  (div
+   {}
+   (list->
+    {}
+    (->> (:workflows store)
+         (map
+          (fn [[k workflow]]
+            [k
+             (div
+              {:style {:background-color (hsl 60 90 47),
+                       :padding "0 8px",
+                       :display :inline-block,
+                       :cursor :pointer,
+                       :margin 8},
+               :on-click (fn [e d! m!]
+                 (doseq [command (vals (:commands workflow))]
+                   (d!
+                    :effect/run
+                    {:command (:code command),
+                     :cwd (str (:base-dir workflow) (:path command))})))}
+              (<> (:name workflow)))])))))
+  (=< nil 8)
   (list->
    {:style (merge ui/row {:align-items :flex-start, :flex-wrap :wrap})}
    (->> (:processes store)
