@@ -6,7 +6,8 @@
             [respo-ui.colors :as colors]
             [respo.macros :refer [defcomp cursor-> action-> list-> button <> span div]]
             [app.comp.commander :refer [comp-commander]]
-            [app.comp.process :refer [comp-process]]))
+            [app.comp.process :refer [comp-process]]
+            [app.util :refer [join-path]]))
 
 (defcomp
  comp-home
@@ -40,7 +41,7 @@
                    (d!
                     :effect/run
                     {:command (:code command),
-                     :cwd (str (:base-dir workflow) (:path command))})))}
+                     :cwd (join-path (:base-dir workflow) (:path command))})))}
               (<> (:name workflow)))])))))
   (=< nil 8)
   (list->

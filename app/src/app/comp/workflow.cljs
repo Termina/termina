@@ -24,7 +24,7 @@
     (div
      {}
      (input
-      {:style (merge ui/input {:width 240}),
+      {:style (merge ui/input {:width 240, :font-family ui/font-code}),
        :value (:code state),
        :placeholder "Command code",
        :on-input (mutation-> (assoc state :code (:value %e)))}))
@@ -32,7 +32,7 @@
     (div
      {}
      (input
-      {:style (merge ui/input {:width 240}),
+      {:style (merge ui/input {:width 240, :font-family ui/font-code}),
        :value (:path state),
        :placeholder "Command path",
        :on-input (mutation-> (assoc state :path (:value %e)))}))

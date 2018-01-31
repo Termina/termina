@@ -5,7 +5,8 @@
             [app.comp.container :refer [comp-container]]
             [cljs.reader :refer [read-string]]
             [app.network :refer [send! setup-socket!]]
-            [app.schema :as schema]))
+            [app.schema :as schema]
+            [app.util :refer [test-join-path!]]))
 
 (declare dispatch!)
 
