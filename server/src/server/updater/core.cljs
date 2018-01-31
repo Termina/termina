@@ -26,4 +26,6 @@
     :workflow/remove (workflow/remove-workflow db op-data sid op-id op-time)
     :workflow/add-command (workflow/add-command db op-data sid op-id op-time)
     :workflow/remove-command (workflow/remove-command db op-data sid op-id op-time)
+    :workflow/edit-command (workflow/edit-command db op-data sid op-id op-time)
+    :workflow/edit (workflow/edit-workflow db op-data sid op-id op-time)
     db))

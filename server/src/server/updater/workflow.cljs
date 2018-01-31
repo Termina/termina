@@ -12,6 +12,20 @@
      [:workflows op-id]
      (merge schema/workflow {:id op-id, :name workflow-name, :base-dir base-dir}))))
 
+(defn edit-command [db op-data sid op-id op-time]
+  (let [[workflow-id command-id changes] op-data]
+    (update-in
+     db
+     [:workflows workflow-id :commands command-id]
+     (fn [command] (merge command changes)))))
+
+(defn edit-workflow [db op-data sid op-id op-time]
+  (let [new-workflow op-data]
+    (update-in
+     db
+     [:workflows (:id new-workflow)]
+     (fn [workflow] (merge workflow new-workflow)))))
+
 (defn remove-command [db op-data sid op-id op-time]
   (let [{command-id :id, workflow-id :workflow-id} op-data]
     (update-in
