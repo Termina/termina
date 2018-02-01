@@ -13,7 +13,8 @@
             [app.comp.reel :refer [comp-reel]]
             [app.comp.missing :refer [comp-missing]]
             [app.comp.home :refer [comp-home]]
-            [app.comp.workflow :refer [comp-workflow-container]]))
+            [app.comp.workflow :refer [comp-workflow-container]]
+            [app.comp.history :refer [comp-history]]))
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
@@ -34,12 +35,13 @@
       (comp-header (:logged-in? store))
       (=< nil 8)
       (if (:logged-in? store)
-        (let [router (:router store)]
+        (let [router (:router store), router-data (:data router)]
           (case (:name router)
             :profile (comp-profile (:user store))
-            :home (comp-home store states)
+            :home (comp-home router-data states)
             :workflows
-              (cursor-> :workflows comp-workflow-container states (:workflows store))
+              (cursor-> :workflows comp-workflow-container states (:workflows router-data))
+            :history (comp-history (:histories router-data))
             (comp-missing)))
         (comp-login states))
       (comp-inspect "Store" store style-debugger)

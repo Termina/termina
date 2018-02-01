@@ -6,7 +6,9 @@
 (def configs {:storage-key "/data/mvc-works/termina-storage.edn", :port 5021})
 
 (def database
-  {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}, :history []})
+  {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}, :histories []})
+
+(def history {:id nil, :pid 0, :started-at 0, :cwd "", :command ""})
 
 (def notification {:id nil, :kind nil, :text nil})
 
