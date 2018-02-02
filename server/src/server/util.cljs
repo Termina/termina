@@ -7,7 +7,7 @@
   (apply js/console.log (map (fn [x] (if (coll? x) (clj->js x) x)) args)))
 
 (defn map-val [f xs]
-  (assert (map? xs) "map-val deals maps")
+  (assert (or (map? xs) (seq? xs)) "map-val deals maps")
   (->> xs (map (fn [[k x]] [k (f x)]))))
 
 (defn try-verbosely! [x] (try x (catch js/Error e (.error js/console e))))

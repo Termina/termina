@@ -19,6 +19,12 @@
           new-path (join-segments [] (concat (string/split xs "/") (string/split ys "/")))]
       (if absolute? (str "/" new-path) new-path))))
 
+(defn map-val [f xs]
+  (assert (or (map? xs) (seq? xs)) "map-val deals maps")
+  (->> xs (map (fn [[k x]] [k (f x)]))))
+
+(defn map-with-index [f xs] (->> xs (map-indexed (fn [idx x] [idx (f x)]))))
+
 (defn test-join-path! []
   (println (pr-str (join-path "" "")))
   (println (pr-str (join-path "/" "")))

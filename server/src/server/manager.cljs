@@ -11,8 +11,9 @@
     (swap! *registry assoc pid proc)
     (dispatch! :process/create {:pid pid, :command command, :cwd cwd})
     (.on proc "exit" (fn [event] (dispatch! :process/finish pid)))
-    (.on proc.stdout "data" (fn [data] (dispatch! :process/stdout {:pid pid, :data data})))
-    (.on proc.stderr "data" (fn [data] (dispatch! :process/stderr {:pid pid, :data data})))))
+    (.on proc "error" (fn [event] (dispatch! :process/error [pid (str event)])))
+    (.on proc.stdout "data" (fn [data] (dispatch! :process/stdout [pid data])))
+    (.on proc.stderr "data" (fn [data] (dispatch! :process/stderr [pid data])))))
 
 (defn kill-process! [pid dispatch!]
   (let [proc (get @*registry pid)]

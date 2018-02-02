@@ -25,6 +25,13 @@
             :started-at op-time,
             :id op-id}))))))
 
+(defn error [db op-data sid op-id op-time]
+  (let [[pid data] op-data]
+    (update-in
+     db
+     [:processes pid :content]
+     (fn [content] (conj content {:type :error, :data data})))))
+
 (defn finish [db op-data sid op-id op-time]
   (assoc-in db [:processes op-data :alive?] false))
 
@@ -34,13 +41,15 @@
   (update-in db [:processes op-data] (fn [process] (assoc process :content []))))
 
 (defn stderr [db op-data sid op-id op-time]
-  (update-in
-   db
-   [:processes (:pid op-data) :content]
-   (fn [content] (conj content {:type :stderr, :data (:data op-data)}))))
+  (let [[pid data] op-data]
+    (update-in
+     db
+     [:processes pid :content]
+     (fn [content] (conj content {:type :stderr, :data data})))))
 
 (defn stdout [db op-data sid op-id op-time]
-  (update-in
-   db
-   [:processes (:pid op-data) :content]
-   (fn [content] (conj content {:type :stdout, :data (:data op-data)}))))
+  (let [[pid data] op-data]
+    (update-in
+     db
+     [:processes pid :content]
+     (fn [content] (conj content {:type :stdout, :data data})))))

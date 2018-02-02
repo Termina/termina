@@ -5,7 +5,8 @@
             [respo-ui.colors :as colors]
             [respo.comp.space :refer [=<]]
             [respo.macros :refer [defcomp list-> action-> <> span div button]]
-            [app.style :as style]))
+            [app.style :as style]
+            [app.util :refer [map-with-index]]))
 
 (defcomp
  comp-process
@@ -53,9 +54,11 @@
             :overflow :auto}}
    (->> (:content process)
         (take-last 4)
-        (map-indexed
-         (fn [idx chunk]
-           [idx
-            (<>
-             (:data chunk)
-             {:color (if (= :stderr (:type chunk)) (hsl 0 80 60) (hsl 0 0 0))})]))))))
+        (map-with-index
+         (fn [chunk]
+           (<>
+            (:data chunk)
+            {:color (case (:type chunk)
+               :stderr (hsl 60 80 60)
+               :error (hsl 0 80 60)
+               (hsl 0 0 0))})))))))
