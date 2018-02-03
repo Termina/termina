@@ -12,10 +12,10 @@
  comp-process
  (process)
  (div
-  {:style {:padding 16,
+  {:style {:padding 8,
            :margin 8,
            :font-family ui/font-code,
-           :background-color (if (:alive? process) (hsl 60 90 90) (hsl 240 50 98))}}
+           :background-color (if (:alive? process) (hsl 120 100 90) (hsl 240 50 98))}}
   (div
    {:style (merge ui/row {:align-items :center})}
    (<> (:command process))

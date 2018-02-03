@@ -18,14 +18,14 @@
  (let [state (or (:data states)
                  (if (some? base-command)
                    (select-keys base-command [:code :path])
-                   {:code "", :path ""}))]
+                   {:code "", :path "./"}))]
    (div
     {}
     (div {} (<> "Command"))
     (div
      {}
      (input
-      {:style (merge ui/input {:width 240, :font-family ui/font-code}),
+      {:style (merge ui/input {:width 320, :font-family ui/font-code}),
        :value (:code state),
        :placeholder "Command code",
        :on-input (mutation-> (assoc state :code (:value %e)))}))
@@ -33,7 +33,7 @@
     (div
      {}
      (input
-      {:style (merge ui/input {:width 240, :font-family ui/font-code}),
+      {:style (merge ui/input {:width 320, :font-family ui/font-code}),
        :value (:path state),
        :placeholder "Command path",
        :on-input (mutation-> (assoc state :path (:value %e)))}))
@@ -64,17 +64,11 @@
      (<> (:name workflow) {:font-size 24})
      (=< 8 nil)
      (<> (:base-dir workflow) {:font-family ui/font-code, :color (hsl 0 0 70)})
-     (=< 16 nil)
-     (button
-      {:style style/button,
-       :on-click (fn [e d! m!] (m! (assoc state :edit-command? true :base-command nil)))}
-      (<> "add"))
-     (=< 16 nil)
-     (button
-      {:style style/button, :on-click (action-> :workflow/remove (:id workflow))}
-      (<> "rm"))
-     (=< 16 nil)
-     (button {:style style/button, :on-click (fn [e d! m!] (on-edit! m!))} (<> "edit")))
+     (span {:style style/link, :inner-text "edit", :on-click (fn [e d! m!] (on-edit! m!))})
+     (span
+      {:style style/link,
+       :inner-text "rm",
+       :on-click (action-> :workflow/remove (:id workflow))}))
     (list->
      {}
      (->> (:commands workflow)
@@ -82,23 +76,28 @@
            (fn [[k command]]
              [k
               (div
-               {:style {:font-family ui/font-code}}
+               {}
                (<> (:code command) {:background-color (hsl 0 0 90), :padding "0 8px"})
-               (=< 8 nil)
+               (=< 8 {:font-family ui/font-code})
                (<> (:path command))
-               (=< 8 nil)
-               (button
-                {:style style/button,
+               (span
+                {:style style/link,
+                 :inner-text "edit",
+                 :on-click (mutation->
+                            (assoc state :edit-command? true :base-command command))})
+               (span
+                {:style style/link,
+                 :inner-text "rm",
                  :on-click (action->
                             :workflow/remove-command
-                            {:workflow-id (:id workflow), :id (:id command)})}
-                (<> "rm"))
-               (=< 8 nil)
-               (button
-                {:style style/button,
-                 :on-click (mutation->
-                            (assoc state :edit-command? true :base-command command))}
-                (<> "edit")))]))))
+                            [(:id workflow) (:id command)])}))]))))
+    (=< nil 16)
+    (div
+     {}
+     (button
+      {:style style/button,
+       :on-click (fn [e d! m!] (m! (assoc state :edit-command? true :base-command nil)))}
+      (<> "add")))
     (if (:edit-command? state)
       (let [on-close! (fn [m!]
                         (println "cursor" %cursor)
@@ -163,13 +162,7 @@
     {:style (merge ui/row {:padding 16})}
     (div
      {:style {:width 240}}
-     (div
-      {:style ui/row-parted}
-      (<> "Workflows")
-      (button
-       {:style style/button,
-        :on-click (fn [e d! m!] (m! (assoc state :edit-workflow? true :base-workflow nil)))}
-       (<> "add")))
+     (div {:style ui/row} (<> "Workflows"))
      (list->
       {}
       (->> workflows
@@ -185,7 +178,13 @@
                           (hsl 0 0 80)
                           (hsl 0 0 90))},
                 :on-click (mutation-> (assoc state :focused-id (:id workflow)))}
-               (<> (:name workflow))))))))
+               (<> (:name workflow)))))))
+     (div
+      {}
+      (button
+       {:style style/button,
+        :on-click (fn [e d! m!] (m! (assoc state :edit-workflow? true :base-workflow nil)))}
+       (<> "add"))))
     (=< 16 nil)
     (div
      {:style ui/flex}

@@ -3,7 +3,7 @@
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp mutation-> <> span div input button]]
+            [respo.macros :refer [defcomp mutation-> action-> <> span div input button]]
             [keycode.core :as keycode]
             [respo.comp.space :refer [=<]]))
 
@@ -15,13 +15,13 @@
     {}
     (input
      {:value (:cwd state),
-      :style (merge ui/input {:width 400, :font-family ui/font-code}),
+      :style (merge ui/input {:width 240, :font-family ui/font-code}),
       :placeholder "Current working directy",
       :on-input (mutation-> (assoc state :cwd (:value %e)))})
     (=< 8 nil)
     (input
      {:value (:command state),
-      :style (merge ui/input {:width 400, :font-family ui/font-code}),
+      :style (merge ui/input {:width 240, :font-family ui/font-code}),
       :placeholder "Command",
       :on-input (mutation-> (assoc state :command (:value %e)))})
     (=< 8 nil)

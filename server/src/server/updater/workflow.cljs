@@ -27,7 +27,7 @@
      (fn [workflow] (merge workflow new-workflow)))))
 
 (defn remove-command [db op-data sid op-id op-time]
-  (let [{command-id :id, workflow-id :workflow-id} op-data]
+  (let [[workflow-id command-id] op-data]
     (update-in
      db
      [:workflows workflow-id :commands]
