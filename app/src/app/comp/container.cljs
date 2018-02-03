@@ -33,7 +33,7 @@
        (<> "No connection!" style-alert)))
      (div
       {:style (merge ui/global ui/fullscreen ui/column)}
-      (comp-header (:logged-in? store))
+      (comp-header (:logged-in? store) (:router store))
       (=< nil 8)
       (if (:logged-in? store)
         (let [router (:router store), router-data (:data router)]

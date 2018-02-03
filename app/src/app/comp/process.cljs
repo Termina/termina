@@ -19,12 +19,9 @@
   (div
    {:style (merge ui/row {:align-items :center})}
    (<> (:command process))
-   (=< 16 nil)
-   (<>
-    (:cwd process)
-    {:font-size 12, :color (hsl 120 50 60), :vertical-align :top, :line-height "1.4em"}))
-  (div
-   {:style ui/row}
+   (span
+    {:on-click (action-> :router/change {:name :process, :params {:id (:pid process)}})}
+    (<> "view" style/link))
    (if (:alive? process)
      (button
       {:style style/button, :on-click (action-> :effect/kill (:pid process))}
@@ -32,10 +29,7 @@
      (button
       {:style style/button,
        :on-click (action-> :effect/run {:cwd (:cwd process), :command (:command process)})}
-      (<> "Redo")))
-   (span
-    {:on-click (action-> :router/change {:name :process, :params {:id (:pid process)}})}
-    (<> "view" style/link)))
+      (<> "Redo"))))
   (list->
    {:style {:font-family ui/font-code,
             :white-space :pre,
