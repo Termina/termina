@@ -22,7 +22,8 @@
    :justify-content :space-between,
    :padding "0 16px",
    :font-size 16,
-   :border-bottom (str "1px solid " (hsl 0 0 85))})
+   :border-bottom (str "1px solid " (hsl 0 0 94)),
+   :font-family ui/font-fancy})
 
 (def style-pointer {:cursor "pointer"})
 

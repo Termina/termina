@@ -23,7 +23,7 @@
 (defn prod-page []
   (let [html-content (make-string (comp-container {} nil))
         assets (read-string (slurp "dist/assets.edn"))
-        cdn (if preview? "" "http://cdn.tiye.me/cumulo-workflow/")
+        cdn (if preview? "" "http://cdn.tiye.me/termina/")
         prefix-cdn #(str cdn %)]
     (make-page
      html-content

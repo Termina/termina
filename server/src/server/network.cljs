@@ -15,6 +15,7 @@
 
 (defn run-server! [on-action! port]
   (let [WebSocketServer (.-Server ws), wss (new WebSocketServer (js-obj "port" port))]
+    (println "Listening on" port ". Connect with: http://repo.mvc-works.org/termina")
     (.on
      wss
      "connection"

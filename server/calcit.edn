@@ -411,7 +411,8 @@
               :type :expr, :id "B1jbfx8bgABb", :by nil, :at 1500541255553
               :data {
                "T" {:type :leaf, :id "ry2Zzg8WgCr-", :text "println", :by "root", :at 1500541255553}
-               "j" {:type :leaf, :id "BJpWGg8bgCr-", :text "|Found storage.", :by "root", :at 1500541255553}
+               "j" {:type :leaf, :id "BJpWGg8bgCr-", :text "|Found storage in", :by "root", :at 1517675491748}
+               "r" {:type :leaf, :by "root", :at 1517675497249, :text "filepath", :id "ryygNDQ8z"}
               }
              }
              "r" {
@@ -475,13 +476,6 @@
          "v" {:type :leaf, :text "on-exit!", :id "Skelr1np23-", :by "root", :at 1507806173399}
         }
        }
-       "yT" {
-        :type :expr, :id "rkpyflI-l0B-", :by nil, :at 1500541255553
-        :data {
-         "T" {:type :leaf, :id "SJR1GlLZeCSb", :text "println", :by "root", :at 1500541255553}
-         "j" {:type :leaf, :id "rJ1lMxLWeASZ", :text "|Server started.", :by "root", :at 1500541255553}
-        }
-       }
       }
      }
      "on-exit!" {
@@ -538,7 +532,14 @@
         :type :expr, :id "HkKBJ2anhW", :by "root", :at 1507806173399
         :data {
          "T" {:type :leaf, :text "println", :id "r1cH1nan3W", :by "root", :at 1507806173399}
-         "j" {:type :leaf, :text "|Saving file on exit", :id "BJiSk26n2Z", :by "root", :at 1507806173399}
+         "j" {:type :leaf, :text "|Saving file on exit:", :id "BJiSk26n2Z", :by "root", :at 1517675554347}
+         "n" {
+          :type :expr, :id "BJCM4wXIz", :by nil, :at 1500541255553
+          :data {
+           "T" {:type :leaf, :id "ry5v-eIbgASW", :text ":storage-key", :by "root", :at 1500541255553}
+           "j" {:type :leaf, :id "HJsDZgIWeABW", :text "schema/configs", :by "root", :at 1500541255553}
+          }
+         }
          "r" {:type :leaf, :text "code", :id "SyhBknp22-", :by "root", :at 1507806173399}
         }
        }
@@ -1311,6 +1312,15 @@
              }
             }
            }
+          }
+         }
+         "n" {
+          :type :expr, :by "root", :at 1517674913015, :id "r1eKoZP7LG"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517674914800, :text "println", :id "r1eKoZP7LGleaf"}
+           "j" {:type :leaf, :by "root", :at 1517675688639, :text "|Listening on", :id "HymioWD78M"}
+           "r" {:type :leaf, :by "root", :at 1517674924616, :text "port", :id "Sk7hWPmIf"}
+           "v" {:type :leaf, :by "root", :at 1517675670772, :text "|. Connect with: http://repo.mvc-works.org/termina", :id "Hylr_VvQUz"}
           }
          }
          "r" {
@@ -2357,7 +2367,14 @@
           :type :expr, :id "HyV5eUZgRrZ", :by nil, :at 1500541255553
           :data {
            "T" {:type :leaf, :id "SkSqx8WgCr-", :text ":storage-key", :by "root", :at 1500541255553}
-           "j" {:type :leaf, :id "Sk85xIbgRHW", :text "|/data/mvc-works/termina-storage.edn", :by "root", :at 1517236637783}
+           "j" {
+            :type :expr, :by "root", :at 1517675441859, :id "HkqnmPXLf"
+            :data {
+             "D" {:type :leaf, :by "root", :at 1517675442806, :text "str", :id "BJgchQD7UG"}
+             "L" {:type :leaf, :by "root", :at 1517675454846, :text "js/process.env.HOME", :id "Hkah7PQ8M"}
+             "T" {:type :leaf, :id "Sk85xIbgRHW", :text "|/.config/termina.edn", :by "root", :at 1517675461840}
+            }
+           }
           }
          }
          "r" {

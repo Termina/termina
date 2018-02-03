@@ -34,9 +34,10 @@
 (defn connect! []
   (setup-socket!
    *store
-   {:url (str "ws://" (.-hostname js/location) ":" (:port schema/configs)),
-    :on-close! (fn [event] (reset! *store nil) (.error js/console "Lost connection!")),
-    :on-open! (fn [event] (simulate-login!))}))
+   (let [app-host (.-hostname js/location)]
+     {:url (str "ws://" "localhost" ":" (:port schema/configs)),
+      :on-close! (fn [event] (reset! *store nil) (.error js/console "Lost connection!")),
+      :on-open! (fn [event] (simulate-login!))})))
 
 (def mount-target (.querySelector js/document ".app"))
 

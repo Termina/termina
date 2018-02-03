@@ -13,7 +13,9 @@
 (def initial-db
   (let [filepath (:storage-key schema/configs)]
     (if (fs/existsSync filepath)
-      (do (println "Found storage.") (read-string (fs/readFileSync filepath "utf8")))
+      (do
+       (println "Found storage in" filepath)
+       (read-string (fs/readFileSync filepath "utf8")))
       schema/database)))
 
 (defonce *reel (atom (merge reel-schema {:base initial-db, :db initial-db})))
@@ -33,7 +35,7 @@
 
 (defn on-exit! [code]
   (fs/writeFileSync (:storage-key schema/configs) (pr-str (assoc (:db @*reel) :sessions {})))
-  (println "Saving file on exit" code)
+  (println "Saving file on exit:" (:storage-key schema/configs) code)
   (.exit js/process))
 
 (defn proxy-dispatch! [& args] "Make dispatch hot relodable." (apply dispatch! args))
@@ -46,8 +48,7 @@
 (defn main! []
   (run-server! proxy-dispatch! (:port schema/configs))
   (render-loop!)
-  (.on js/process "SIGINT" on-exit!)
-  (println "Server started."))
+  (.on js/process "SIGINT" on-exit!))
 
 (defn reload! []
   (println "Code updated.")

@@ -1,8 +1,11 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "Boot Workflow ----",
+  "name": "termina",
+  "version": "0.1.0",
+  "description": "Start process from a Webpage",
   "main": "index.js",
+  "bin": {
+    "termina": "dist/main.js"
+  },
   "scripts": {
     "tiye": "rsync -r dist/main.js repo.tiye.me:servers/tiye",
     "compile": "shadow-cljs compile app",
@@ -12,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mvc-works/boot-workflow.git"
+    "url": "git+https://github.com/mvc-works/termina.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/mvc-works/boot-workflow/issues"
+    "url": "https://github.com/mvc-works/termina/issues"
   },
-  "homepage": "https://github.com/mvc-works/boot-workflow#readme",
+  "homepage": "https://github.com/mvc-works/termina#readme",
   "dependencies": {
     "md5": "^2.2.1",
     "shortid": "^2.2.6",
