@@ -9,7 +9,8 @@
             [respo.comp.space :refer [=<]]
             [clojure.string :as string]
             [app.style :as style]
-            [app.comp.dialog :refer [comp-dialog]]))
+            [app.comp.dialog :refer [comp-dialog]]
+            [app.util :refer [map-val]]))
 
 (defcomp
  comp-command-editor
@@ -172,20 +173,19 @@
      (list->
       {}
       (->> workflows
-           (map
-            (fn [[k workflow]]
-              [k
-               (div
-                {:style {:cursor :pointer,
-                         :margin "4px 0",
-                         :padding "0 8px",
-                         :min-width 40,
-                         :min-height 20,
-                         :background-color (if (= (:focused-id state) k)
-                           (hsl 0 0 80)
-                           (hsl 0 0 90))},
-                 :on-click (mutation-> (assoc state :focused-id k))}
-                (<> (:name workflow)))])))))
+           (map-val
+            (fn [workflow]
+              (div
+               {:style {:cursor :pointer,
+                        :margin "4px 0",
+                        :padding "0 8px",
+                        :min-width 40,
+                        :min-height 20,
+                        :background-color (if (= (:focused-id state) (:id workflow))
+                          (hsl 0 0 80)
+                          (hsl 0 0 90))},
+                :on-click (mutation-> (assoc state :focused-id (:id workflow)))}
+               (<> (:name workflow))))))))
     (=< 16 nil)
     (div
      {:style ui/flex}

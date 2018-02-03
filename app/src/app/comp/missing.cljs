@@ -4,4 +4,7 @@
             [respo-ui.core :as ui]
             [respo.macros :refer [defcomp <> span div]]))
 
-(defcomp comp-missing () (div {} (<> "Page missing")))
+(defcomp
+ comp-missing
+ (router)
+ (div {} (<> "Page missing") (div {:style {:font-family ui/font-code}} (<> router))))

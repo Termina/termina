@@ -14,7 +14,8 @@
             [app.comp.missing :refer [comp-missing]]
             [app.comp.home :refer [comp-home]]
             [app.comp.workflow :refer [comp-workflow-container]]
-            [app.comp.history :refer [comp-history]]))
+            [app.comp.history :refer [comp-history]]
+            [app.comp.process-detail :refer [comp-process-detail]]))
 
 (def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
 
@@ -42,8 +43,9 @@
             :workflows
               (cursor-> :workflows comp-workflow-container states (:workflows router-data))
             :history (comp-history (:histories router-data))
-            (comp-missing)))
+            :process (comp-process-detail router-data)
+            (comp-missing router)))
         (comp-login states))
-      (comp-inspect "Store" store style-debugger)
+      (comp-inspect "Store" (:router store) style-debugger)
       (comp-msg-list (get-in store [:notifications]) :session/remove-notification)
       (comp-reel (:reel-length store) {})))))

@@ -24,5 +24,7 @@
                   :history {:histories histories}
                   :workflows {:workflows workflows}
                   :home {:processes processes, :workflows workflows}
+                  :process
+                    (let [process-id (-> router :params :id)] (get processes process-id))
                   router))}
       nil))))

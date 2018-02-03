@@ -22,7 +22,7 @@
 
 (defn dispatch! [op op-data sid]
   (let [op-id (.generate shortid), op-time (.valueOf (js/Date.))]
-    (log-js! "Dispatch!" (str op) op-data sid)
+    (comment println "Dispatch!" op (type op-data))
     (try-verbosely!
      (cond
        (= op :effect/run) (create-process! op-data dispatch!)

@@ -3,7 +3,7 @@
 
 (def command {:id nil, :path ".", :code ""})
 
-(def configs {:storage-key "/data/mvc-works/termina-storage.edn", :port 5021})
+(def configs {:storage-key "/data/mvc-works/termina-storage.edn", :port 6200})
 
 (def database
   {:sessions {}, :users {}, :topics {}, :processes {}, :workflows {}, :histories []})
