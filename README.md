@@ -8,7 +8,7 @@ Termina
 npm i -g termina
 ```
 
-Connect to WebSocket server with http://repo.mvc-works.org/termina/
+Connect to WebSocket server with http://termina.mvc-works.org/
 
 ### Workflow
 
