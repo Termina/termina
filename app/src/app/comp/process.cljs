@@ -45,6 +45,6 @@
            (<>
             (:data chunk)
             {:color (case (:type chunk)
-               :stderr (hsl 60 80 60)
-               :error (hsl 0 80 60)
-               (hsl 0 0 0))})))))))
+               :stderr (hsl 60 80 36)
+               :error (hsl 0 80 50)
+               (hsl 60 0 0))})))))))

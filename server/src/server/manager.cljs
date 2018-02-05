@@ -1,5 +1,8 @@
 
-(ns server.manager (:require [verbosely.core :refer [log!]] ["child_process" :as cp]))
+(ns server.manager
+  (:require [verbosely.core :refer [log!]]
+            [clojure.string :as string]
+            ["child_process" :as cp]))
 
 (defonce *registry (atom {}))
 
@@ -8,6 +11,7 @@
         cwd (:cwd op-data)
         proc (.exec cp command (clj->js {:cwd cwd}))
         pid proc.pid]
+    (println "Run" (if (string/blank? cwd) "./" cwd) (pr-str command))
     (swap! *registry assoc pid proc)
     (dispatch! :process/create {:pid pid, :command command, :cwd cwd})
     (.on proc "exit" (fn [event] (dispatch! :process/finish pid)))

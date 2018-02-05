@@ -76,10 +76,15 @@
            (fn [[k command]]
              [k
               (div
-               {}
-               (<> (:code command) {:background-color (hsl 0 0 90), :padding "0 8px"})
-               (=< 8 {:font-family ui/font-code})
-               (<> (:path command))
+               {:style {:font-family ui/font-code}}
+               (<> (:path command) {:display :inline-block, :min-width 200})
+               (=< 8 nil)
+               (<>
+                (:code command)
+                {:background-color (hsl 0 0 95),
+                 :padding "0 8px",
+                 :display :inline-block,
+                 :min-width 320})
                (span
                 {:style style/link,
                  :inner-text "edit",
@@ -161,8 +166,8 @@
    (div
     {:style (merge ui/row {:padding 16})}
     (div
-     {:style {:width 240}}
-     (div {:style ui/row} (<> "Workflows"))
+     {:style {:width 200}}
+     (div {:style ui/row} (<> "Workflows" {:font-family ui/font-fancy}))
      (list->
       {}
       (->> workflows
@@ -170,13 +175,14 @@
             (fn [workflow]
               (div
                {:style {:cursor :pointer,
-                        :margin "4px 0",
                         :padding "0 8px",
+                        :margin-bottom 8,
                         :min-width 40,
                         :min-height 20,
-                        :background-color (if (= (:focused-id state) (:id workflow))
+                        :border-bottom (str "1px solid " (hsl 0 0 90)),
+                        :border-color (if (= (:id workflow) (:focused-id state))
                           (hsl 0 0 80)
-                          (hsl 0 0 90))},
+                          (hsl 0 0 94))},
                 :on-click (mutation-> (assoc state :focused-id (:id workflow)))}
                (<> (:name workflow)))))))
      (div
@@ -185,7 +191,7 @@
        {:style style/button,
         :on-click (fn [e d! m!] (m! (assoc state :edit-workflow? true :base-workflow nil)))}
        (<> "add"))))
-    (=< 16 nil)
+    (=< 32 nil)
     (div
      {:style ui/flex}
      (let [focused-id (:focused-id state)]
@@ -196,7 +202,7 @@
                            %cursor
                            (assoc state :edit-workflow? true :base-workflow workflow)))]
            (cursor-> :detail comp-workflow-detail states workflow on-edit!))
-         (div {} (<> "nothing")))))
+         (div {} (<> "Nothing" {:font-family ui/font-fancy})))))
     (if (:edit-workflow? state)
       (let [on-close! (fn [m!] (m! %cursor (assoc state :edit-workflow? false)))]
         (comp-dialog

@@ -3,7 +3,7 @@
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp <> div cursor-> span button]]
+            [respo.macros :refer [defcomp <> div cursor-> action-> span button pre]]
             [respo.comp.inspect :refer [comp-inspect]]
             [respo.comp.space :refer [=<]]
             [app.comp.header :refer [comp-header]]
@@ -17,7 +17,19 @@
             [app.comp.history :refer [comp-history]]
             [app.comp.process-detail :refer [comp-process-detail]]))
 
-(def style-alert {:font-family "Josefin Sans", :font-weight 100, :font-size 40})
+(defcomp
+ comp-offline
+ ()
+ (div
+  {:style (merge ui/global ui/fullscreen ui/center)}
+  (span
+   {:style {:font-family ui/font-fancy, :font-weight 100, :font-size 40, :cursor :pointer},
+    :title "Click to reconnect!",
+    :on-click (action-> :effect/connect nil)}
+   (<> "No connection!"))
+  (<>
+   "This is a placeholder page for Termina, install and run the command line to try again:")
+  (pre {:inner-text "npm i -g termina", :style {:font-family ui/font-code}})))
 
 (def style-debugger {:bottom 0, :left 0, :max-width "100%"})
 
@@ -26,11 +38,7 @@
  (states store)
  (let [state (:data states), session (:session store)]
    (if (nil? store)
-     (div
-      {:style (merge ui/global ui/fullscreen ui/center)}
-      (span
-       {:style {:cursor :pointer}, :on-click (fn [e d! m!] (d! :effect/connect nil))}
-       (<> "No connection!" style-alert)))
+     (comp-offline)
      (div
       {:style (merge ui/global ui/fullscreen ui/column)}
       (comp-header (:logged-in? store) (:router store))

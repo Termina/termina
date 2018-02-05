@@ -707,6 +707,15 @@
           }
          }
         }
+        "f" {
+         :type :expr, :by "root", :at 1517842618288, :id "Hybzpxe8IM"
+         :data {
+          "T" {:type :leaf, :by "root", :at 1517842618660, :text "[]", :id "Hybzpxe8IMleaf"}
+          "j" {:type :leaf, :by "root", :at 1517842622517, :text "clojure.string", :id "B1Zmpgx88M"}
+          "r" {:type :leaf, :by "root", :at 1517842623081, :text ":as", :id "SyPTge88z"}
+          "v" {:type :leaf, :by "root", :at 1517842625086, :text "string", :id "ry7walxILf"}
+         }
+        }
         "j" {
          :type :expr, :by "root", :at 1517154284837, :id "SklBgeuiBf"
          :data {
@@ -823,6 +832,35 @@
             :data {
              "T" {:type :leaf, :by "root", :at 1517196059116, :text "pid", :id "r1xMQQG3HGleaf"}
              "r" {:type :leaf, :by "root", :at 1517196062456, :text "proc.pid", :id "rk-4QXG3Sz"}
+            }
+           }
+          }
+         }
+         "n" {
+          :type :expr, :by "root", :at 1517842526713, :id "HJPDllILz"
+          :data {
+           "T" {:type :leaf, :by "root", :at 1517842683093, :text "println", :id "HJPDllILzleaf"}
+           "j" {:type :leaf, :by "root", :at 1517842684713, :text "|Run", :id "B1MhvgeULG"}
+           "r" {
+            :type :expr, :by "root", :at 1517842630389, :id "ryg06xx8Uz"
+            :data {
+             "D" {:type :leaf, :by "root", :at 1517842630950, :text "if", :id "ryJRgxULf"}
+             "T" {
+              :type :expr, :by "root", :at 1517842565826, :id "S1RYegLIf"
+              :data {
+               "D" {:type :leaf, :by "root", :at 1517842615343, :text "string/blank?", :id "B1eRtllL8M"}
+               "T" {:type :leaf, :by "root", :at 1517842543972, :text "cwd", :id "Bk-wulgI8z"}
+              }
+             }
+             "j" {:type :leaf, :by "root", :at 1517842637889, :text "|./", :id "rJlbAlxU8z"}
+             "r" {:type :leaf, :by "root", :at 1517842638755, :text "cwd", :id "rygU0xlULz"}
+            }
+           }
+           "v" {
+            :type :expr, :by "root", :at 1517842546154, :id "Byc_gxUUf"
+            :data {
+             "T" {:type :leaf, :by "root", :at 1517842548462, :text "pr-str", :id "BktOex88G"}
+             "j" {:type :leaf, :by "root", :at 1517842550719, :text "command", :id "SyTdxeIIf"}
             }
            }
           }

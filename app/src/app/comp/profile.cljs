@@ -22,7 +22,7 @@
  comp-profile
  (user)
  (div
-  {:style ui/flex}
+  {:style (merge ui/flex {:padding "8px 16px"})}
   (<> span (str "Hello! " (:name user)) nil)
   (=< 8 nil)
   (a {:style style-trigger, :on-click on-log-out} (<> span "Log out" nil))))

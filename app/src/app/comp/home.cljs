@@ -16,7 +16,7 @@
  (div
   {:style {:padding 8, :overflow :auto}}
   (div
-   {:style (merge ui/row {:align-items :center})}
+   {:style (merge ui/row-parted {:align-items :center})}
    (list->
     {:style ui/row}
     (->> (:workflows router-data)

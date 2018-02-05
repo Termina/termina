@@ -15,13 +15,13 @@
     {}
     (input
      {:value (:cwd state),
-      :style (merge ui/input {:width 240, :font-family ui/font-code}),
-      :placeholder "Current working directy",
+      :style (merge ui/input {:width 160, :font-family ui/font-code}),
+      :placeholder "cwd",
       :on-input (mutation-> (assoc state :cwd (:value %e)))})
     (=< 8 nil)
     (input
      {:value (:command state),
-      :style (merge ui/input {:width 240, :font-family ui/font-code}),
+      :style (merge ui/input {:width 160, :font-family ui/font-code}),
       :placeholder "Command",
       :on-input (mutation-> (assoc state :command (:value %e)))})
     (=< 8 nil)
