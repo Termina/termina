@@ -6,4 +6,4 @@
 
 (def input (merge ui/input {:width 320}))
 
-(def link (merge ui/clickable-text))
+(def link (merge ui/link))

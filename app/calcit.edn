@@ -9440,7 +9440,7 @@
           :type :expr, :id "r1pbNcLee0S-", :by nil, :at 1500541010211
           :data {
            "T" {:type :leaf, :id "H10WV5IgxAHZ", :text ":icon", :by "root", :at 1500541010211}
-           "j" {:type :leaf, :id "Sk1GNc8exArZ", :text "|http://cdn.tiye.me/logo/mvc-works.png", :by "root", :at 1516899995974}
+           "j" {:type :leaf, :id "Sk1GNc8exArZ", :text "|http://cdn.tiye.me/logo/termina.png", :by "root", :at 1520082722879}
           }
          }
          "v" {
@@ -9517,7 +9517,6 @@
                 :type :expr, :id "HkOX49LlxCSb", :by nil, :at 1500541010211
                 :data {
                  "T" {:type :leaf, :id "BJKXEcLge0rZ", :text "[]", :by "root", :at 1500541010211}
-                 "r" {:type :leaf, :id "HJs7Vc8elRHW", :text "|/lib.js", :by "root", :at 1515039103224}
                  "v" {:type :leaf, :id "BynXN5UxlRBb", :text "|/main.js", :by "root", :at 1515039105336}
                 }
                }
@@ -9905,7 +9904,7 @@
         :type :expr, :by "root", :at 1517671026592, :id "SJjdfLmUf"
         :data {
          "T" {:type :leaf, :by "root", :at 1517671027276, :text "merge", :id "BJW9Oz8QLf"}
-         "j" {:type :leaf, :by "root", :at 1517671033332, :text "ui/clickable-text", :id "SkrjdzImLz"}
+         "j" {:type :leaf, :by "root", :at 1520083259912, :text "ui/link", :id "SkrjdzImLz"}
         }
        }
       }
@@ -10522,4 +10521,8 @@
  }
  :saved-files {}
  :configs {:storage-key "calcit.edn", :extension ".cljs", :output "src", :port 6001}
+ :repl {
+  :alive? false
+  :logs {}
+ }
 }
