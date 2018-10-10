@@ -10,4 +10,5 @@
   {:text-decoration :underline,
    :cursor :pointer,
    :color (hsl 240 80 80),
-   :font-family ui/font-fancy})
+   :font-family ui/font-fancy,
+   :margin "0 8px"})

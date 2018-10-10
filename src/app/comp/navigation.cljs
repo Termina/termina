@@ -6,9 +6,17 @@
             [respo.macros :refer [defcomp <> action-> span div]]
             [app.config :as config]))
 
+(def style-logo {:cursor :pointer, :color (hsl 0 0 60)})
+
+(defn render-entry [router router-name title]
+  (div
+   {:style (merge style-logo (if (= router-name (:name router)) {:color :black})),
+    :on-click (action-> :router/change {:name router-name})}
+   (<> title)))
+
 (defcomp
  comp-navigation
- (logged-in? count-members)
+ (logged-in? router count-members)
  (div
   {:style (merge
            ui/row-center
@@ -19,8 +27,12 @@
             :border-bottom (str "1px solid " (hsl 0 0 0 0.1)),
             :font-family ui/font-fancy})}
   (div
-   {:on-click (action-> :router/change {:name :home}), :style {:cursor :pointer}}
-   (<> (:title config/site) nil))
+   {:style ui/row}
+   (render-entry router :home "Termina")
+   (=< 16 nil)
+   (render-entry router :workflows "Workflows")
+   (=< 16 nil)
+   (render-entry router :history "History"))
   (div
    {:style {:cursor "pointer"}, :on-click (action-> :router/change {:name :profile})}
    (<> (if logged-in? "Me" "Guest"))
