@@ -5,16 +5,17 @@
             [respo-ui.colors :as colors]
             [respo.core
              :refer
-             [defcomp <> action-> cursor-> mutation-> list-> span div input button]]
+             [defcomp <> action-> cursor-> mutation-> list-> span div input button a]]
             [respo.comp.space :refer [=<]]
             [clojure.string :as string]
             [app.style :as style]
-            [app.comp.dialog :refer [comp-dialog]]
-            [app.util :refer [map-val]]))
+            [app.util :refer [map-val]]
+            [inflow-popup.comp.popup :refer [comp-popup]]))
 
 (defcomp
  comp-command-editor
- (states on-close! workflow-id base-command)
+ (states on-toggle workflow-id base-command)
+ (println "command" base-command)
  (let [state (or (:data states)
                  (if (some? base-command)
                    (select-keys base-command [:code :path])
@@ -50,77 +51,37 @@
             :workflow/add-command
             {:workflow-id workflow-id, :code (:code state), :path (:path state)}))
          (m! nil)
-         (on-close! m!))}
+         (on-toggle m!))}
       (<> "add"))))))
 
 (defcomp
- comp-workflow-detail
- (states workflow on-edit!)
- (let [state (or (:data states) {:edit-command? false, :base-command nil})]
-   (div
-    {}
-    (div
-     {:style (merge ui/row {:align-items :center})}
-     (<> (:name workflow) {:font-size 24})
-     (=< 8 nil)
-     (<> (:base-dir workflow) {:font-family ui/font-code, :color (hsl 0 0 70)})
-     (span {:style style/link, :inner-text "edit", :on-click (fn [e d! m!] (on-edit! m!))})
-     (span
-      {:style style/link,
-       :inner-text "rm",
-       :on-click (action-> :workflow/remove (:id workflow))}))
-    (list->
-     {}
-     (->> (:commands workflow)
-          (map
-           (fn [[k command]]
-             [k
-              (div
-               {:style {:font-family ui/font-code}}
-               (<> (:path command) {:display :inline-block, :min-width 200})
-               (=< 8 nil)
-               (<>
-                (:code command)
-                {:background-color (hsl 0 0 95),
-                 :padding "0 8px",
-                 :display :inline-block,
-                 :min-width 320})
-               (span
-                {:style style/link,
-                 :inner-text "edit",
-                 :on-click (mutation->
-                            (assoc state :edit-command? true :base-command command))})
-               (span
-                {:style style/link,
-                 :inner-text "rm",
-                 :on-click (action->
-                            :workflow/remove-command
-                            [(:id workflow) (:id command)])}))]))))
-    (=< nil 16)
-    (div
-     {}
-     (button
-      {:style style/button,
-       :on-click (fn [e d! m!] (m! (assoc state :edit-command? true :base-command nil)))}
-      (<> "add")))
-    (if (:edit-command? state)
-      (let [on-close! (fn [m!]
-                        (println "cursor" %cursor)
-                        (m! %cursor (assoc state :edit-command? false)))
-            workflow-id (:id workflow)]
-        (comp-dialog
-         on-close!
-         (cursor->
-          :command
-          comp-command-editor
-          states
-          on-close!
-          workflow-id
-          (:base-command state))))))))
+ comp-command-row
+ (states command workflow-id)
+ (div
+  {:style {:font-family ui/font-code}}
+  (<> (:path command) {:display :inline-block, :min-width 200})
+  (=< 8 nil)
+  (<>
+   (:code command)
+   {:background-color (hsl 0 0 95),
+    :padding "0 8px",
+    :display :inline-block,
+    :min-width 320})
+  (cursor->
+   :add
+   comp-popup
+   states
+   {:trigger (a {:style style/link} (<> "edit")), :style {:display :inline-block}}
+   (fn [on-toggle]
+     (cursor-> :edit-command comp-command-editor states on-toggle workflow-id command)))
+  (span
+   {:style style/link,
+    :inner-text "rm",
+    :on-click (action-> :workflow/remove-command [workflow-id (:id command)])})))
 
 (defcomp
  comp-workflow-editor
- (states on-close! base-workflow)
+ (states base-workflow on-toggle)
  (let [state (or (:data states)
                  (if (some? base-workflow)
                    (select-keys base-workflow [:name :base-dir])
@@ -155,14 +116,50 @@
              (d! :workflow/edit (assoc data :id (:id base-workflow)))
              (d! :workflow/create data))
            (m! nil)
-           (on-close! m!)))}
-      (<> "Create Workflow"))))))
+           (on-toggle m!)))}
+      (<> "Submit"))))))
+
+(defcomp
+ comp-workflow-detail
+ (states workflow)
+ (div
+  {}
+  (div
+   {:style (merge ui/row {:align-items :center})}
+   (<> (:name workflow) {:font-size 24})
+   (=< 8 nil)
+   (<> (:base-dir workflow) {:font-family ui/font-code, :color (hsl 0 0 70)})
+   (cursor->
+    :edit
+    comp-popup
+    states
+    {:trigger (span {:style style/link, :inner-text "edit"}),
+     :style {:display :inline-block}}
+    (fn [on-toggle] (cursor-> :editor comp-workflow-editor states workflow on-toggle)))
+   (span
+    {:style style/link,
+     :inner-text "rm",
+     :on-click (action-> :workflow/remove (:id workflow))}))
+  (list->
+   {}
+   (->> (:commands workflow)
+        (map
+         (fn [[k command]] [k (cursor-> k comp-command-row states command (:id workflow))]))))
+  (=< nil 16)
+  (div
+   {}
+   (cursor->
+    :add
+    comp-popup
+    states
+    {:trigger (button {:style style/button} (<> "add"))}
+    (fn [on-toggle]
+      (cursor-> :add-command comp-command-editor states on-toggle (:id workflow) nil))))))
 
 (defcomp
  comp-workflow-container
  (states workflows)
- (let [state (or (:data states)
-                 {:focused-id nil, :edit-workflow? false, :base-workflow nil})]
+ (let [state (or (:data states) {:focused-id nil, :base-workflow nil})]
    (div
     {:style (merge ui/row {:padding 16})}
     (div
@@ -187,24 +184,17 @@
                (<> (:name workflow)))))))
      (div
       {}
-      (button
-       {:style style/button,
-        :on-click (fn [e d! m!] (m! (assoc state :edit-workflow? true :base-workflow nil)))}
-       (<> "add"))))
+      (cursor->
+       :workflow-editor
+       comp-popup
+       states
+       {:trigger (button {:style style/button} (<> "add"))}
+       (fn [on-toggle] (cursor-> :editor comp-workflow-editor states nil on-toggle)))))
     (=< 32 nil)
     (div
      {:style ui/flex}
      (let [focused-id (:focused-id state)]
        (if (and (some? focused-id) (some? (get workflows focused-id)))
-         (let [workflow (get workflows focused-id)
-               on-edit! (fn [m!]
-                          (m!
-                           %cursor
-                           (assoc state :edit-workflow? true :base-workflow workflow)))]
-           (cursor-> :detail comp-workflow-detail states workflow on-edit!))
-         (div {} (<> "Nothing" {:font-family ui/font-fancy})))))
-    (if (:edit-workflow? state)
-      (let [on-close! (fn [m!] (m! %cursor (assoc state :edit-workflow? false)))]
-        (comp-dialog
-         on-close!
-         (cursor-> :editor comp-workflow-editor states on-close! (:base-workflow state))))))))
+         (let [workflow (get workflows focused-id)]
+           (cursor-> :detail comp-workflow-detail states workflow))
+         (div {} (<> "Nothing" {:font-family ui/font-fancy}))))))))
