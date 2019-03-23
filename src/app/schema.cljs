@@ -1,11 +1,12 @@
 
 (ns app.schema )
 
-(def command {:id nil, :path ".", :code ""})
+(def command {:id nil, :title "", :path ".", :code ""})
 
 (def history {:id nil, :pid 0, :started-at 0, :cwd "", :command ""})
 
-(def process {:pid 0, :content [], :started-at 0, :alive? false, :cwd "", :command ""})
+(def process
+  {:title "", :pid 0, :content [], :started-at 0, :alive? false, :cwd "", :command ""})
 
 (def router {:name nil, :title nil, :data {}, :router nil})
 
@@ -18,7 +19,7 @@
 
 (def user {:name nil, :id nil, :nickname nil, :avatar nil, :password nil})
 
-(def workflow {:id nil, :name nil, :base-dir "~/", :commands {}})
+(def workflow {:id nil, :name nil, :base-dir "~/", :commands (do command {})})
 
 (def database
   {:sessions (do session {}),
