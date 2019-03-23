@@ -28,4 +28,4 @@
    :server-folder "tiye.me:servers/termina",
    :theme "#eeeeff",
    :storage-key "termina",
-   :storage-file "storage.edn"})
+   :storage-file "termina.edn"})
