@@ -62,7 +62,7 @@
   (add-watch *store :changes #(render-app! render!))
   (add-watch *states :changes #(render-app! render!))
   (on-page-touch #(if (nil? @*store) (connect!)))
-  (println "App started!"))
+  (check-version!))
 
 (defn reload! [] (clear-cache!) (render-app! render!) (println "Code updated."))
 
