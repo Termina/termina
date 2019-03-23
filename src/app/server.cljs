@@ -7,18 +7,22 @@
             ["fs" :as fs]
             ["child_process" :as cp]
             ["path" :as path]
+            ["latest-version" :as latest-version]
+            ["chalk" :as chalk]
             [app.config :as config]
-            [cumulo-util.file :refer [write-mildly! get-backup-path! merge-local-edn!]]
+            [cumulo-util.file :refer [write-mildly! merge-local-edn!]]
             [cumulo-util.core :refer [id! repeat! unix-time! delay!]]
             [app.twig.container :refer [twig-container]]
             [recollect.diff :refer [diff-twig]]
             [recollect.twig :refer [render-twig]]
             [ws-edn.server :refer [wss-serve! wss-send! wss-each!]]
-            [app.manager :refer [create-process! kill-process!]]))
+            [app.manager :refer [create-process! kill-process!]]
+            [favored-edn.core :refer [write-edn]])
+  (:require-macros [clojure.core.strint :refer [<<]]))
 
 (defonce *client-caches (atom {}))
 
-(def storage-file (path/join js/__dirname (:storage-file config/site)))
+(def storage-file (path/join js/process.env.HOME ".config" (:storage-file config/site)))
 
 (def initial-db
   (merge-local-edn!
@@ -30,11 +34,27 @@
 
 (defonce *reader-reel (atom @*reel))
 
+(defn check-version! []
+  (let [pkg (.parse js/JSON (fs/readFileSync (path/join js/__dirname "../package.json")))
+        version (.-version pkg)]
+    (-> (latest-version (.-name pkg))
+        (.then
+         (fn [npm-version]
+           (if (= npm-version version)
+             (println "Running latest version" version)
+             (println
+              (.yellow
+               chalk
+               (<<
+                "New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add @jimengio/locales-editor\n")))))))))
+
 (defn persist-db! []
-  (let [file-content (pr-str (assoc (:db @*reel) :sessions {}))
-        backup-path (get-backup-path!)]
-    (write-mildly! storage-file file-content)
-    (write-mildly! backup-path file-content)))
+  (let [file-content (write-edn
+                      (-> (:db @*reel)
+                          (assoc :sessions {})
+                          (assoc :processes {})
+                          (assoc :histories {})))]
+    (write-mildly! storage-file file-content)))
 
 (defn dispatch! [op op-data sid]
   (let [op-id (id!), op-time (unix-time!)]
@@ -94,7 +114,8 @@
   (render-loop!)
   (js/process.on "SIGINT" on-exit!)
   (repeat! 600 #(persist-db!))
-  (println "Server started."))
+  (println "Server started. Open UI on " (.blue chalk "http://termina.mvc-works.org/"))
+  (check-version!))
 
 (defn reload! []
   (println "Code updated.")
