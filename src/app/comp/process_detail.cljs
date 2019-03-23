@@ -3,7 +3,7 @@
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp <> action-> span div pre list->]]
+            [respo.core :refer [defcomp <> action-> span div pre list->]]
             [respo.comp.space :refer [=<]]
             [app.util :refer [map-with-index]]
             [app.style :as style]))

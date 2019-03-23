@@ -6,7 +6,8 @@
             [cljs.reader :refer [read-string]]
             [app.schema :as schema]
             [app.config :as config]
-            [app.util :refer [get-env!]]))
+            [cumulo-util.build :refer [get-ip!]])
+  (:require-macros [clojure.core.strint :refer [<<]]))
 
 (def base-info
   {:title (:title config/site),
@@ -19,16 +20,14 @@
    ""
    (merge
     base-info
-    {:styles [(:dev-ui config/site) "/entry/main.css"],
+    {:styles [(<< "http://~(get-ip!):8100/main.css") "/entry/main.css"],
      :scripts ["/client.js"],
      :inline-styles []})))
-
-(def local-bundle? (= "local-bundle" (get-env! "mode")))
 
 (defn prod-page []
   (let [html-content (make-string (comp-container {} nil))
         assets (read-string (slurp "dist/assets.edn"))
-        cdn (if local-bundle? "" (:cdn-url config/site))
+        cdn (if config/cdn? (:cdn-url config/site) "")
         prefix-cdn #(str cdn %)]
     (make-page
      html-content
@@ -38,6 +37,7 @@
        :scripts (map #(-> % :output-name prefix-cdn) assets)}))))
 
 (defn main! []
-  (if (contains? config/bundle-builds (get-env! "mode"))
-    (spit "dist/index.html" (prod-page))
-    (spit "target/index.html" (dev-page))))
+  (println "Running mode:" (if config/dev? "dev" "release"))
+  (if config/dev?
+    (spit "target/index.html" (dev-page))
+    (spit "dist/index.html" (prod-page))))

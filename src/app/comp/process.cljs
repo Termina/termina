@@ -4,7 +4,7 @@
             [respo-ui.core :as ui]
             [respo-ui.colors :as colors]
             [respo.comp.space :refer [=<]]
-            [respo.macros :refer [defcomp list-> action-> <> span div button]]
+            [respo.core :refer [defcomp list-> action-> <> span div button]]
             [app.style :as style]
             [app.util :refer [map-with-index]]))
 

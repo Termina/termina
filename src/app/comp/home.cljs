@@ -4,7 +4,7 @@
             [respo-ui.core :as ui]
             [respo.comp.space :refer [=<]]
             [respo-ui.colors :as colors]
-            [respo.macros :refer [defcomp cursor-> action-> list-> button <> span div]]
+            [respo.core :refer [defcomp cursor-> action-> list-> button <> span div]]
             [app.comp.commander :refer [comp-commander]]
             [app.comp.process :refer [comp-process]]
             [app.util :refer [join-path map-val]]
