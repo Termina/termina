@@ -10,7 +10,7 @@
 
 (defn render-entry [router router-name title]
   (div
-   {:style (merge style-logo (if (= router-name (:name router)) {:color :black})),
+   {:style (merge style-logo (if (= router-name (:name router)) {:color :white})),
     :on-click (action-> :router/change {:name router-name})}
    (<> title)))
 
@@ -20,12 +20,13 @@
  (div
   {:style (merge
            ui/row-center
-           {:height 48,
+           {:height 32,
             :justify-content :space-between,
             :padding "0 16px",
             :font-size 16,
             :border-bottom (str "1px solid " (hsl 0 0 0 0.1)),
-            :font-family ui/font-fancy})}
+            :font-family ui/font-fancy,
+            :background-color (hsl 0 0 0 0.6)})}
   (div
    {:style ui/row}
    (render-entry router :home "Termina")

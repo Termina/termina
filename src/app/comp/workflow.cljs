@@ -24,7 +24,8 @@
                    {:name "", :base-dir "./"}))]
    (div
     {}
-    (div {} (<> "Workflow"))
+    (div {} (<> "Workflow" {:font-family ui/font-fancy}))
+    (=< nil 6)
     (div
      {}
      (input
@@ -32,7 +33,7 @@
        :placeholder "Workflow name",
        :value (:name state),
        :on-input (mutation-> (assoc state :name (:value %e)))}))
-    (=< nil 16)
+    (=< nil 8)
     (div
      {}
      (input
@@ -64,10 +65,12 @@
    {:style (merge ui/row-parted)}
    (div
     {:style ui/row-middle}
-    (<> (:name workflow) {:font-size 24})
+    (<>
+     "Commands"
+     {:font-size 24, :font-family ui/font-fancy, :color (hsl 0 0 70), :font-weight 100})
     (=< 8 nil)
     (<> (:base-dir workflow) {:font-family ui/font-code, :color (hsl 0 0 70)})
-    (=< 8 nil)
+    (=< 40 nil)
     (cursor->
      :add
      comp-popup
@@ -108,7 +111,7 @@
  (states workflows)
  (let [state (or (:data states) {:focused-id nil, :base-workflow nil})]
    (div
-    {:style (merge ui/row {:padding 16})}
+    {:style (merge ui/flex ui/row {:padding 16})}
     (div
      {:style {:width 200}}
      (div
@@ -120,6 +123,7 @@
        states
        {:trigger (comp-i :plus 16 (hsl 200 80 60))}
        (fn [on-toggle] (cursor-> :editor comp-workflow-editor states nil on-toggle))))
+     (=< nil 8)
      (list->
       {}
       (->> workflows
@@ -128,20 +132,27 @@
               (div
                {:style {:cursor :pointer,
                         :padding "0 8px",
-                        :margin-bottom 8,
                         :min-width 40,
                         :min-height 20,
-                        :border-bottom (str "1px solid " (hsl 0 0 90)),
-                        :border-color (if (= (:id workflow) (:focused-id state))
-                          (hsl 0 0 80)
-                          (hsl 0 0 94))},
+                        :border-bottom (str "1px solid " (hsl 0 0 94)),
+                        :line-height "36px",
+                        :background-color (if (= (:id workflow) (:focused-id state))
+                          (hsl 0 0 94)
+                          (hsl 0 0 100))},
                 :on-click (mutation-> (assoc state :focused-id (:id workflow)))}
                (<> (:name workflow))))))))
-    (=< 32 nil)
+    (div {:style {:width 1, :background-color (hsl 0 0 100 0.2), :margin 16}})
     (div
-     {:style ui/flex}
+     {:style (merge ui/flex {:padding 8})}
      (let [focused-id (:focused-id state)]
        (if (and (some? focused-id) (some? (get workflows focused-id)))
          (let [workflow (get workflows focused-id)]
            (cursor-> :detail comp-workflow-detail states workflow))
-         (div {} (<> "Nothing" {:font-family ui/font-fancy}))))))))
+         (div
+          {}
+          (<>
+           "Nothing"
+           {:font-family ui/font-fancy,
+            :color (hsl 0 0 70),
+            :font-size 20,
+            :font-weight 100}))))))))

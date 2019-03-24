@@ -64,7 +64,7 @@
    (if (nil? store)
      (comp-offline)
      (div
-      {:style (merge ui/global ui/fullscreen ui/column)}
+      {:style (merge ui/global ui/fullscreen ui/column {:color (hsl 0 0 70)})}
       (comp-navigation (:logged-in? store) router (:count store))
       (if (:logged-in? store)
         (let [router (:router store), router-data (:data router)]

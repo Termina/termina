@@ -15,18 +15,19 @@
 (defcomp
  comp-command-editor
  (states base-command on-submit)
+ (println "code" base-command)
  (let [state (or (:data states)
                  (if (some? base-command)
-                   (select-keys base-command [:code :path])
+                   (select-keys base-command [:code :path :title])
                    {:title "", :code "", :path "./"}))]
    (div
     {:style ui/column}
-    (div {} (<> "Command" {:font-family ui/font-fancy}))
+    (div {} (<> "Command" {:font-size 16, :font-family ui/font-fancy}))
     (=< nil 8)
     (input
      {:style (merge ui/input {:width 320, :font-family ui/font-code}),
       :value (:title state),
-      :placeholder "Titlte",
+      :placeholder "title...",
       :on-input (mutation-> (assoc state :title (:value %e)))})
     (=< nil 8)
     (input
@@ -52,38 +53,45 @@
  comp-command-row
  (states command workflow-id)
  (div
-  {:style (merge ui/row-middle {:font-family ui/font-code})}
-  (<> (or (:title command) "Task"))
-  (<> (:path command) {:display :inline-block, :min-width 200})
-  (=< 8 nil)
-  (<>
-   (:code command)
-   {:background-color (hsl 0 0 95),
-    :padding "0 8px",
-    :display :inline-block,
-    :min-width 320})
-  (=< 8 nil)
-  (cursor->
-   :add
-   comp-popup
-   states
-   {:trigger (comp-i :edit-2 14 (hsl 200 80 60)), :style {:display :inline-block}}
-   (fn [on-toggle]
-     (cursor->
-      :edit-command
-      comp-command-editor
-      states
-      command
-      (fn [command-draft d! m!]
-        (d! :workflow/edit-command [workflow-id (:id command) command-draft])
-        (on-toggle m!)))))
-  (=< 8 nil)
-  (cursor->
-   :remove
-   comp-confirm
-   states
-   {:trigger (comp-i :x 18 (hsl 0 80 60))}
-   (fn [e d! m!] (d! :workflow/remove-command [workflow-id (:id command)])))))
+  {:style (merge
+           ui/column
+           {:border "1px solid #ddd", :padding "4px 8px", :width 600, :margin "16px 8px"})}
+  (div
+   {:style ui/row-parted}
+   (<> (or (:title command) "Task") {:font-size 20})
+   (div
+    {:style ui/row-parted}
+    (cursor->
+     :add
+     comp-popup
+     states
+     {:trigger (comp-i :edit-2 14 (hsl 200 80 60)), :style {:display :inline-block}}
+     (fn [on-toggle]
+       (cursor->
+        :edit-command
+        comp-command-editor
+        states
+        command
+        (fn [command-draft d! m!]
+          (d! :workflow/edit-command [workflow-id (:id command) command-draft])
+          (on-toggle m!)))))
+    (=< 8 nil)
+    (cursor->
+     :remove
+     comp-confirm
+     states
+     {:trigger (comp-i :x 18 (hsl 0 80 60))}
+     (fn [e d! m!] (d! :workflow/remove-command [workflow-id (:id command)])))))
+  (div
+   {:style (merge ui/row-middle {:font-family ui/font-code})}
+   (<> (:path command) {:display :inline-block})
+   (=< 24 nil)
+   (<>
+    (:code command)
+    {:background-color (hsl 0 0 99),
+     :padding "0 8px",
+     :display :inline-block,
+     :min-width 320}))))
 
 (defcomp
  comp-commander
