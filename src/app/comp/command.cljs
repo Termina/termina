@@ -18,29 +18,32 @@
  (let [state (or (:data states)
                  (if (some? base-command)
                    (select-keys base-command [:code :path])
-                   {:code "", :path "./"}))]
+                   {:title "", :code "", :path "./"}))]
    (div
-    {}
-    (div {} (<> "Command"))
-    (div
-     {}
-     (input
-      {:style (merge ui/input {:width 320, :font-family ui/font-code}),
-       :value (:code state),
-       :placeholder "Command code",
-       :on-input (mutation-> (assoc state :code (:value %e)))}))
-    (=< nil 16)
-    (div
-     {}
-     (input
-      {:style (merge ui/input {:width 320, :font-family ui/font-code}),
-       :value (:path state),
-       :placeholder "Command path",
-       :on-input (mutation-> (assoc state :path (:value %e)))}))
+    {:style ui/column}
+    (div {} (<> "Command" {:font-family ui/font-fancy}))
+    (=< nil 8)
+    (input
+     {:style (merge ui/input {:width 320, :font-family ui/font-code}),
+      :value (:title state),
+      :placeholder "Titlte",
+      :on-input (mutation-> (assoc state :title (:value %e)))})
+    (=< nil 8)
+    (input
+     {:style (merge ui/input {:width 320, :font-family ui/font-code}),
+      :value (:code state),
+      :placeholder "Command code",
+      :on-input (mutation-> (assoc state :code (:value %e)))})
+    (=< nil 8)
+    (input
+     {:style (merge ui/input {:width 320, :font-family ui/font-code}),
+      :value (:path state),
+      :placeholder "Command path",
+      :on-input (mutation-> (assoc state :path (:value %e)))})
     (=< nil 16)
     (div
      {:style ui/row-parted}
-     (span {})
+     (span nil)
      (button
       {:style style/button,
        :on-click (fn [e d! m!]
@@ -48,16 +51,20 @@
            (d! :workflow/edit-command [workflow-id (:id base-command) state])
            (d!
             :workflow/add-command
-            {:workflow-id workflow-id, :code (:code state), :path (:path state)}))
+            {:workflow-id workflow-id,
+             :title (:title state),
+             :code (:code state),
+             :path (:path state)}))
          (m! nil)
          (on-toggle m!))}
-      (<> "add"))))))
+      (<> "Submit"))))))
 
 (defcomp
  comp-command-row
  (states command workflow-id)
  (div
   {:style (merge ui/row-middle {:font-family ui/font-code})}
+  (<> (or (:title command) "Task"))
   (<> (:path command) {:display :inline-block, :min-width 200})
   (=< 8 nil)
   (<>

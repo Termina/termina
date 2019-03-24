@@ -3,7 +3,10 @@
 
 (defn add-command [db op-data sid op-id op-time]
   (let [{workflow-id :workflow-id, code :code, path :path} op-data]
-    (assoc-in db [:workflows workflow-id :commands op-id] {:id op-id, :code code, :path path})))
+    (assoc-in
+     db
+     [:workflows workflow-id :commands op-id]
+     {:id op-id, :title (:title op-data), :code code, :path path})))
 
 (defn create-workflow [db op-data sid op-id op-time]
   (let [{workflow-name :name, base-dir :base-dir} op-data]
