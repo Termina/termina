@@ -9,7 +9,9 @@
         proc (.exec cp command (clj->js {:cwd cwd}))
         pid proc.pid]
     (swap! *registry assoc pid proc)
-    (dispatch! :process/create {:pid pid, :command command, :cwd cwd})
+    (dispatch!
+     :process/create
+     {:pid pid, :command command, :cwd cwd, :title (:title op-data)})
     (.on
      proc
      "exit"

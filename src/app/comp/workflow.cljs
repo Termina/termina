@@ -106,6 +106,14 @@
         (map
          (fn [[k command]] [k (cursor-> k comp-command-row states command (:id workflow))]))))))
 
+(def style-workflow-entry
+  {:cursor :pointer,
+   :padding "0 8px",
+   :min-width 40,
+   :min-height 20,
+   :border-bottom (str "1px solid " (hsl 0 0 94 0.1)),
+   :line-height "36px"})
+
 (defcomp
  comp-workflow-container
  (states workflows)
@@ -130,15 +138,11 @@
            (map-val
             (fn [workflow]
               (div
-               {:style {:cursor :pointer,
-                        :padding "0 8px",
-                        :min-width 40,
-                        :min-height 20,
-                        :border-bottom (str "1px solid " (hsl 0 0 94)),
-                        :line-height "36px",
-                        :background-color (if (= (:id workflow) (:focused-id state))
-                          (hsl 0 0 94)
-                          (hsl 0 0 100))},
+               {:style (merge
+                        style-workflow-entry
+                        {:background-color (if (= (:id workflow) (:focused-id state))
+                           (hsl 0 0 100 0.2)
+                           (hsl 0 0 100 0))}),
                 :on-click (mutation-> (assoc state :focused-id (:id workflow)))}
                (<> (:name workflow))))))))
     (div {:style {:width 1, :background-color (hsl 0 0 100 0.2), :margin 16}})

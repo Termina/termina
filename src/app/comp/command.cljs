@@ -10,12 +10,30 @@
             [feather.core :refer [comp-i]]
             [inflow-popup.comp.popup :refer [comp-popup]]
             [respo-alerts.comp.alerts :refer [comp-confirm]]
-            [app.style :as style]))
+            [app.style :as style]
+            [app.util :refer [join-path map-val]]))
+
+(defcomp
+ comp-command-button
+ (workflow)
+ (div
+  {:style {:background-color (hsl 60 90 47),
+           :padding "0 8px",
+           :display :inline-block,
+           :cursor :pointer,
+           :margin 8},
+   :on-click (fn [e d! m!]
+     (doseq [command (vals (:commands workflow))]
+       (d!
+        :effect/run
+        {:command (:code command),
+         :cwd (join-path (:base-dir workflow) (:path command)),
+         :title (:title command)})))}
+  (<> (:name workflow))))
 
 (defcomp
  comp-command-editor
  (states base-command on-submit)
- (println "code" base-command)
  (let [state (or (:data states)
                  (if (some? base-command)
                    (select-keys base-command [:code :path :title])
@@ -55,7 +73,12 @@
  (div
   {:style (merge
            ui/column
-           {:border "1px solid #ddd", :padding "4px 8px", :width 600, :margin "16px 8px"})}
+           {:border (str "1px solid " (hsl 0 0 100 0.3)),
+            :border-radius "4px",
+            :padding "8px 8px",
+            :width 600,
+            :margin "16px 8px",
+            :color :white})}
   (div
    {:style ui/row-parted}
    (<> (or (:title command) "Task") {:font-size 20})
@@ -84,36 +107,13 @@
      (fn [e d! m!] (d! :workflow/remove-command [workflow-id (:id command)])))))
   (div
    {:style (merge ui/row-middle {:font-family ui/font-code})}
-   (<> (:path command) {:display :inline-block})
+   (<>
+    (:path command)
+    {:display :inline-block, :background-color (hsl 0 0 100 0.2), :padding "0 8px"})
    (=< 24 nil)
    (<>
     (:code command)
-    {:background-color (hsl 0 0 99),
+    {:background-color (hsl 0 0 100 0.2),
      :padding "0 8px",
      :display :inline-block,
      :min-width 320}))))
-
-(defcomp
- comp-commander
- (states)
- (let [state (or (:data states) {:command "", :cwd ""})]
-   (div
-    {}
-    (input
-     {:value (:cwd state),
-      :style (merge ui/input {:width 160, :font-family ui/font-code}),
-      :placeholder "cwd",
-      :on-input (mutation-> (assoc state :cwd (:value %e)))})
-    (=< 8 nil)
-    (input
-     {:value (:command state),
-      :style (merge ui/input {:width 160, :font-family ui/font-code}),
-      :placeholder "Command",
-      :on-input (mutation-> (assoc state :command (:value %e)))})
-    (=< 8 nil)
-    (button
-     {:style ui/button,
-      :on-click (fn [e d! m!]
-        (println state)
-        (d! :effect/run {:command (:command state), :cwd (:cwd state)}))}
-     (<> "Run")))))
