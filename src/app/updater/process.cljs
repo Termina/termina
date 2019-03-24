@@ -35,8 +35,6 @@
 (defn finish [db op-data sid op-id op-time]
   (assoc-in db [:processes op-data :alive?] false))
 
-(defn kill [db op-data sid op-id op-time] (assoc-in db [:processes op-data :alive?] false))
-
 (defn shorten-content [db op-data sid op-id op-time]
   (update-in db [:processes op-data] (fn [process] (assoc process :content []))))
 

@@ -18,7 +18,6 @@
             :user/log-out user/log-out
             :router/change router/change
             :process/create process/create
-            :process/kill process/kill
             :process/stdout process/stdout
             :process/stderr process/stderr
             :process/clear process/clear

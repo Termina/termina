@@ -52,7 +52,12 @@
   (let [file-content (write-edn
                       (-> (:db @*reel)
                           (assoc :sessions {})
-                          (assoc :processes {})
+                          (update
+                           :processes
+                           (fn [processes]
+                             (->> processes
+                                  (map (fn [[k v]] [k (assoc v :alive? false)]))
+                                  (into {}))))
                           (assoc :histories {})))]
     (write-mildly! storage-file file-content)))
 
