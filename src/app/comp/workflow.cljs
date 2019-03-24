@@ -74,7 +74,14 @@
      states
      {:trigger (comp-i :plus 16 (hsl 200 80 60))}
      (fn [on-toggle]
-       (cursor-> :add-command comp-command-editor states on-toggle (:id workflow) nil))))
+       (cursor->
+        :add-command
+        comp-command-editor
+        states
+        nil
+        (fn [command-draft d! m!]
+          (d! :workflow/add-command {:workflow-id (:id workflow), :draft command-draft})
+          (on-toggle m!))))))
    (div
     {:style ui/row-parted}
     (cursor->

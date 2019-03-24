@@ -14,7 +14,7 @@
 
 (defcomp
  comp-command-editor
- (states on-toggle workflow-id base-command)
+ (states base-command on-submit)
  (let [state (or (:data states)
                  (if (some? base-command)
                    (select-keys base-command [:code :path])
@@ -45,18 +45,7 @@
      {:style ui/row-parted}
      (span nil)
      (button
-      {:style style/button,
-       :on-click (fn [e d! m!]
-         (if (some? base-command)
-           (d! :workflow/edit-command [workflow-id (:id base-command) state])
-           (d!
-            :workflow/add-command
-            {:workflow-id workflow-id,
-             :title (:title state),
-             :code (:code state),
-             :path (:path state)}))
-         (m! nil)
-         (on-toggle m!))}
+      {:style style/button, :on-click (fn [e d! m!] (on-submit state d! m!) (m! nil))}
       (<> "Submit"))))))
 
 (defcomp
@@ -80,7 +69,14 @@
    states
    {:trigger (comp-i :edit-2 14 (hsl 200 80 60)), :style {:display :inline-block}}
    (fn [on-toggle]
-     (cursor-> :edit-command comp-command-editor states on-toggle workflow-id command)))
+     (cursor->
+      :edit-command
+      comp-command-editor
+      states
+      command
+      (fn [command-draft d! m!]
+        (d! :workflow/edit-command [workflow-id (:id command) command-draft])
+        (on-toggle m!)))))
   (=< 8 nil)
   (cursor->
    :remove

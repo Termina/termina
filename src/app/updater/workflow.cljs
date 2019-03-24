@@ -2,11 +2,8 @@
 (ns app.updater.workflow (:require [app.schema :as schema]))
 
 (defn add-command [db op-data sid op-id op-time]
-  (let [{workflow-id :workflow-id, code :code, path :path} op-data]
-    (assoc-in
-     db
-     [:workflows workflow-id :commands op-id]
-     {:id op-id, :title (:title op-data), :code code, :path path})))
+  (let [{workflow-id :workflow-id, draft :draft} op-data]
+    (assoc-in db [:workflows workflow-id :commands op-id] (merge draft {:id op-id}))))
 
 (defn create-workflow [db op-data sid op-id op-time]
   (let [{workflow-name :name, base-dir :base-dir} op-data]
