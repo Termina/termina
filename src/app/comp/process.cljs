@@ -16,8 +16,7 @@
    :max-height 400,
    :max-width 800,
    :overflow :auto,
-   :background-color (hsl 0 0 0 0.5),
-   :padding 8})
+   :background-color (hsl 0 0 0 0.5)})
 
 (defcomp
  comp-process
@@ -62,9 +61,28 @@
           (take-last 4)
           (map-with-index
            (fn [chunk]
-             (<>
-              (:data chunk)
-              {:color (case (:type chunk)
-                 :stderr (hsl 60 80 36)
-                 :error (hsl 0 80 50)
-                 (hsl 60 0 80))}))))))))
+             (let [code-part (<>
+                              (:data chunk)
+                              {:color (case (:type chunk)
+                                 :stderr (hsl 60 80 36)
+                                 :error (hsl 0 80 50)
+                                 (hsl 60 0 80)),
+                               :padding 8,
+                               :display :block})
+                   urls (re-seq (re-pattern "https?://\\S+") (:data chunk))]
+               (if (empty? urls)
+                 code-part
+                 (div
+                  {}
+                  (list->
+                   {}
+                   (->> urls
+                        (map
+                         (fn [url]
+                           [url
+                            (a
+                             {:inner-text url,
+                              :target "_blank",
+                              :href url,
+                              :style {:color (hsl 200 80 70), :margin "0 8px"}})]))))
+                  code-part))))))))))
