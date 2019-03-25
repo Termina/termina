@@ -2,7 +2,10 @@
 body {
   margin: 0;
   overscroll-behavior-y: none;
-}
+  background-color: rgb(44,66,92);
+  background-image: url(https://cdn.tiye.me/background/gnome-bg.jpg);
+  background-size: cover;
+ }
 
 body * {
   box-sizing: border-box;

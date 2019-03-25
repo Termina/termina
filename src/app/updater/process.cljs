@@ -9,21 +9,21 @@
      (->> processes (filter (fn [[pid process]] (:alive? process))) (into {})))))
 
 (defn create [db op-data sid op-id op-time]
-  (-> db
-      (assoc-in
-       [:processes (:pid op-data)]
-       (merge schema/process op-data {:started-at op-time, :alive? true}))
-      (update
-       :histories
-       (fn [histories]
-         (conj
-          histories
-          (merge
-           schema/history
-           {:command (:command op-data),
-            :cwd (:cwd op-data),
-            :started-at op-time,
-            :id op-id}))))))
+  (let [new-history (merge
+                     schema/history
+                     {:command (:command op-data),
+                      :cwd (:cwd op-data),
+                      :started-at op-time,
+                      :id op-id,
+                      :title (:title op-data)})]
+    (-> db
+        (assoc-in
+         [:processes (:pid op-data)]
+         (merge schema/process op-data {:started-at op-time, :alive? true}))
+        (update
+         :histories
+         (fn [histories]
+           (if (vector? histories) (conj histories new-history) [new-history]))))))
 
 (defn error [db op-data sid op-id op-time]
   (let [[pid data] op-data]
