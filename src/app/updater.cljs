@@ -30,5 +30,6 @@
             :workflow/remove-command workflow/remove-command
             :workflow/edit-command workflow/edit-command
             :workflow/edit workflow/edit-workflow
+            :process/clear-history process/clear-history
             (do (println "Unknown op:" op) identity))]
     (f db op-data sid op-id op-time)))

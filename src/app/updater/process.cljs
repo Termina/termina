@@ -8,6 +8,8 @@
    (fn [processes]
      (->> processes (filter (fn [[pid process]] (:alive? process))) (into {})))))
 
+(defn clear-history [db op-data sid op-id op-time] (assoc db :histories []))
+
 (defn create [db op-data sid op-id op-time]
   (let [new-history (merge
                      schema/history

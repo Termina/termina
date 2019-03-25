@@ -41,10 +41,7 @@
     (a {:style style/link, :on-click (action-> :process/clear nil)} (<> "Clear"))))
   (=< nil 8)
   (list->
-   {:style (merge
-            ui/flex
-            ui/row
-            {:align-items :flex-start, :flex-wrap :wrap, :overflow :auto})}
+   {:style (merge ui/flex {:overflow :auto, :padding-bottom 120})}
    (->> (:processes router-data)
         (sort (fn [x y] (- (:started-at (val y)) (:started-at (val x)))))
         (map (fn [[pid process]] [pid (comp-process process)]))))))

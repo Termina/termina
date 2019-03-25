@@ -78,6 +78,7 @@
             :border-radius "4px",
             :padding "8px 8px",
             :width 600,
+            :min-width :max-content,
             :margin "16px 8px",
             :color :white})}
   (div
