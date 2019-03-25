@@ -16,7 +16,13 @@
      proc
      "exit"
      (fn [event] (dispatch! :process/finish pid) (swap! *registry dissoc pid)))
-    (.on proc "error" (fn [event] (dispatch! :process/error [pid (str event)])))
+    (.on
+     proc
+     "error"
+     (fn [event]
+       (js/console.error event)
+       (dispatch! :process/error [pid (str event)])
+       (dispatch! :process/finish pid)))
     (.on proc.stdout "data" (fn [data] (dispatch! :process/stdout [pid data])))
     (.on proc.stderr "data" (fn [data] (dispatch! :process/stderr [pid data])))))
 
