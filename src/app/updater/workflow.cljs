@@ -10,7 +10,17 @@
     (assoc-in
      db
      [:workflows op-id]
-     (merge schema/workflow {:id op-id, :name workflow-name, :base-dir base-dir}))))
+     (merge
+      schema/workflow
+      {:id op-id,
+       :name workflow-name,
+       :base-dir base-dir,
+       :commands {op-id (merge
+                         schema/command
+                         {:id op-id,
+                          :title workflow-name,
+                          :path base-dir,
+                          :code "echo nothing yet"})}}))))
 
 (defn edit-command [db op-data sid op-id op-time]
   (let [[workflow-id command-id changes] op-data]

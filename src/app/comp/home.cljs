@@ -27,7 +27,7 @@
      :quick-panel
      comp-popup
      states
-     {:trigger (button {:style ui/button, :inner-text "Run"})}
+     {:trigger (button {:style style/button, :inner-text "Run"})}
      (fn [on-toggle]
        (cursor->
         :quick-run

@@ -21,9 +21,9 @@
    (div
     {:style ui/row-middle}
     (=< 8 nil)
-    (<> (:title process) style/text)
+    (<> (or (:title process) "Task") style/text)
     (=< 8 nil)
-    (<> (:cwd process) style/text)
+    (<> (:cwd process) (merge style/text {:font-size 10, :color (hsl 0 0 60)}))
     (=< 8 nil)
     (<> (:command process) style/text))
    (div

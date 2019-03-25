@@ -20,6 +20,7 @@
             :process/create process/create
             :process/stdout process/stdout
             :process/stderr process/stderr
+            :process/error process/error
             :process/clear process/clear
             :process/finish process/finish
             :process/shorten-content process/shorten-content

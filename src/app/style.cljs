@@ -1,7 +1,7 @@
 
 (ns app.style (:require [hsl.core :refer [hsl]] [respo-ui.core :as ui]))
 
-(def button (merge ui/button {}))
+(def button (merge ui/button {:background-color :transparent}))
 
 (def input (merge ui/input {:width 320}))
 
