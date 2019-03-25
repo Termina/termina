@@ -37,16 +37,13 @@
                         {:margin "0px",
                          :background-color (hsl 200 80 24),
                          :padding "4px 8px",
-                         :max-width 800,
-                         :border-bottom (str "1px solid " (hsl 0 0 0 0.2))})}
+                         :width 960,
+                         :min-width :max-content,
+                         :border-bottom (str "1px solid " (hsl 0 0 0 0.2)),
+                         :word-break :break-word})}
                (<>
                 (-> (:started-at history) dayjs (.format "MM-DD HH:mm:ss"))
                 (merge style/text {:font-size 12, :color (hsl 0 0 70)}))
-               (=< 8 nil)
-               (<>
-                (or (:title history) "Task")
-                (merge style/text {:width 200, :white-space :nowrap}))
-               (=< 8 nil)
-               (<> (:cwd history) (merge style/text {:width 160, :white-space :nowrap}))
-               (=< 8 nil)
-               (<> (:command history) style/text))])))))))
+               (<> (or (:title history) "Task") (merge style/text {:min-width 160}))
+               (<> (:command history) (merge style/text {:min-width 160}))
+               (<> (:cwd history) (merge style/text)))])))))))

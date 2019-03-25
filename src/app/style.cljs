@@ -13,4 +13,8 @@
    :margin "0 8px"})
 
 (def text
-  {:padding "0 8px", :line-height "24px", :height 24, :display :inline-block, :color :white})
+  {:padding "0 8px",
+   :line-height "24px",
+   :min-height 24,
+   :display :inline-block,
+   :color :white})
