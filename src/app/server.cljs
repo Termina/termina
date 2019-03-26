@@ -57,8 +57,7 @@
                            (fn [processes]
                              (->> processes
                                   (map (fn [[k v]] [k (assoc v :alive? false)]))
-                                  (into {}))))
-                          (assoc :histories {})))]
+                                  (into {}))))))]
     (write-mildly! storage-file file-content)))
 
 (defn dispatch! [op op-data sid]
