@@ -72,5 +72,3 @@
   (on-page-touch #(if (nil? @*store) (connect!))))
 
 (defn reload! [] (clear-cache!) (render-app! render!) (println "Code updated."))
-
-(set! js/window.onload main!)
