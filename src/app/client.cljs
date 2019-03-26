@@ -50,7 +50,11 @@
 (def mount-target (.querySelector js/document ".app"))
 
 (defn on-window-keydown [event]
-  (when (and (= "k" (.-key event)) (.-metaKey event)) (dispatch! :process/clear nil)))
+  (when (and (= "k" (.-key event)) (.-metaKey event))
+    (case (-> @*store :router :name)
+      :home (dispatch! :process/clear nil)
+      :history (dispatch! :process/clear-history nil)
+      (do (println "no thing to clear in" (-> @*store :router :name))))))
 
 (defn render-app! [renderer]
   (renderer mount-target (comp-container @*states @*store) dispatch!))
