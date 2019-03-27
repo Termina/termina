@@ -15,8 +15,7 @@
    :line-height "1.5em",
    :max-height 400,
    :max-width 800,
-   :overflow :auto,
-   :background-color (hsl 0 0 0 0.5)})
+   :overflow :auto})
 
 (defcomp
  comp-process
@@ -26,7 +25,8 @@
            {:margin 8,
             :font-family ui/font-code,
             :border-radius "4px",
-            :display :inline-block})}
+            :display :inline-block,
+            :vertical-align :top})}
   (div
    {:style (merge
             ui/row-parted
@@ -61,19 +61,10 @@
           (take-last 4)
           (map-with-index
            (fn [chunk]
-             (let [code-part (<>
-                              (:data chunk)
-                              {:color (case (:type chunk)
-                                 :stderr (hsl 60 80 36)
-                                 :error (hsl 0 80 50)
-                                 (hsl 60 0 80)),
-                               :padding 8,
-                               :display :block})
-                   urls (re-seq (re-pattern "https?://\\S+") (:data chunk))]
-               (if (empty? urls)
-                 code-part
-                 (div
-                  {}
+             (let [urls (re-seq (re-pattern "https?://\\S+") (:data chunk))]
+               (div
+                {:style {:margin-top 2, :display :block, :background-color (hsl 0 0 0 0.5)}}
+                (if-not (empty? urls)
                   (list->
                    {}
                    (->> urls
@@ -84,5 +75,12 @@
                              {:inner-text url,
                               :target "_blank",
                               :href url,
-                              :style {:color (hsl 200 80 70), :margin "0 8px"}})]))))
-                  code-part))))))))))
+                              :style {:color (hsl 200 80 70), :margin "0 8px"}})])))))
+                (<>
+                 (:data chunk)
+                 {:color (case (:type chunk)
+                    :stderr (hsl 60 80 36)
+                    :error (hsl 0 80 50)
+                    (hsl 60 0 80)),
+                  :padding 8,
+                  :display :block}))))))))))
