@@ -6326,6 +6326,13 @@
                    "j" {:type :leaf, :by "B1y7Rc-Zz", :at 1553536258075, :text ":inline-block", :id "Yc-wdhqN1l"}
                   }
                  }
+                 "yT" {
+                  :type :expr, :by "B1y7Rc-Zz", :at 1553669891318, :id "4s2UW--jRa"
+                  :data {
+                   "T" {:type :leaf, :by "B1y7Rc-Zz", :at 1553669893939, :text ":vertical-align", :id "4s2UW--jRaleaf"}
+                   "j" {:type :leaf, :by "B1y7Rc-Zz", :at 1553669894653, :text ":top", :id "tPzQF8dv5U"}
+                  }
+                 }
                 }
                }
               }

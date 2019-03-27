@@ -25,7 +25,8 @@
            {:margin 8,
             :font-family ui/font-code,
             :border-radius "4px",
-            :display :inline-block})}
+            :display :inline-block,
+            :vertical-align :top})}
   (div
    {:style (merge
             ui/row-parted
