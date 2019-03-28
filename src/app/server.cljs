@@ -17,7 +17,8 @@
             [recollect.twig :refer [render-twig]]
             [ws-edn.server :refer [wss-serve! wss-send! wss-each!]]
             [app.manager :refer [create-process! kill-process!]]
-            [favored-edn.core :refer [write-edn]])
+            [favored-edn.core :refer [write-edn]]
+            ["url-parse" :as url-parse])
   (:require-macros [clojure.core.strint :refer [<<]]))
 
 (defonce *client-caches (atom {}))
@@ -100,9 +101,9 @@
     (sync-clients! @*reader-reel))
   (delay! 0.2 render-loop!))
 
-(defn run-server! []
+(defn run-server! [port]
   (wss-serve!
-   (:port config/site)
+   port
    {:on-open (fn [sid socket]
       (dispatch! :session/connect nil sid)
       (js/console.info "New client.")),
@@ -117,11 +118,15 @@
 
 (defn main! []
   (println "Running mode:" (if config/dev? "dev" "release"))
-  (run-server!)
+  (let [user-port (if (some? (.-port js/process.env)) (js/parseInt (.-port js/process.env)))
+        port (or user-port (:port config/site))
+        ui-url (url-parse "http://termina.mvc-works.org/" true)]
+    (run-server! port)
+    (set! (.. ui-url -query -port) port)
+    (println "Server started. Open UI on " (.blue chalk (.toString ui-url))))
   (render-loop!)
   (js/process.on "SIGINT" on-exit!)
   (repeat! 600 #(persist-db!))
-  (println "Server started. Open UI on " (.blue chalk "http://termina.mvc-works.org/"))
   (check-version!))
 
 (defn reload! []
