@@ -135,6 +135,7 @@
      (list->
       {}
       (->> workflows
+           (sort-by (fn [[k workflow]] (:name workflow)))
            (map-val
             (fn [workflow]
               (div

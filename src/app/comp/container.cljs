@@ -70,7 +70,7 @@
         (let [router (:router store), router-data (:data router)]
           (case (:name router)
             :profile (comp-profile (:user store) router-data)
-            :home (comp-home router-data states)
+            :home (cursor-> :home comp-home states router-data)
             :workflows
               (cursor-> :workflows comp-workflow-container states (:workflows router-data))
             :history (comp-history (:histories router-data))
