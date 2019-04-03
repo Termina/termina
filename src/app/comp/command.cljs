@@ -21,7 +21,7 @@
            :padding "0 8px",
            :display :inline-block,
            :cursor :pointer,
-           :margin 8,
+           :margin-left 8,
            :color (hsl 0 0 40)},
    :on-click (fn [e d! m!]
      (doseq [command (vals (:commands workflow))]

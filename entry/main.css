@@ -16,3 +16,7 @@ body * {
 .dev-shadows * {
   box-shadow: 0 0 1px hsla(0,0%,0%,0.3);
 }
+
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: hsla(0,0%,100%,0.4);
+}
