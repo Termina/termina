@@ -12,7 +12,8 @@
             [app.style :as style]
             [app.comp.command :refer [comp-command-button comp-command-editor]]
             [inflow-popup.comp.popup :refer [comp-popup]]
-            [fuzzy-filter.core :refer [parse-by-letter]]))
+            [fuzzy-filter.core :refer [parse-by-letter]]
+            [clojure.string :as string]))
 
 (def style-filter
   {:min-width 60,
@@ -35,7 +36,7 @@
    (div
     {:style (merge ui/flex ui/column {:padding 8, :overflow :auto})}
     (div
-     {:style (merge ui/row-parted {:align-items :center})}
+     {:style (merge ui/row-parted {:align-items :center, :padding "0 8px"})}
      (div
       {:style ui/row-middle}
       (input
@@ -48,7 +49,10 @@
        (->> (:workflows router-data)
             (filter
              (fn [[k workflow]]
-               (:matches? (parse-by-letter (:name workflow) (:query state)))))
+               (:matches?
+                (parse-by-letter
+                 (string/lower-case (:name workflow))
+                 (string/lower-case (:query state))))))
             (sort-by (fn [[k workflow]] (:name workflow)))
             (map-val (fn [workflow] (comp-command-button workflow))))))
      (div
