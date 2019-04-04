@@ -47,7 +47,7 @@
               (.yellow
                chalk
                (<<
-                "New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add @jimengio/locales-editor\n")))))))))
+                "New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add termina\n")))))))))
 
 (defn persist-db! []
   (let [file-content (write-edn

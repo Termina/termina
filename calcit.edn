@@ -13274,7 +13274,7 @@
                       :type :expr, :by "B1y7Rc-Zz", :at 1553330395307, :id "D2zcDCqx6ff"
                       :data {
                        "T" {:type :leaf, :by "B1y7Rc-Zz", :at 1553330395307, :text "<<", :id "drnk7GpVtdq"}
-                       "j" {:type :leaf, :by "B1y7Rc-Zz", :at 1553330395307, :text "\"New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add @jimengio/locales-editor\n", :id "nHeLT0dXN0q"}
+                       "j" {:type :leaf, :by "B1y7Rc-Zz", :at 1554349422630, :text "\"New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add termina\n", :id "nHeLT0dXN0q"}
                       }
                      }
                     }
