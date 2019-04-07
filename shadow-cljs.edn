@@ -6,7 +6,7 @@
                 [mvc-works/fuzzy-filter "0.0.6"]
                 [cumulo/recollect       "0.5.0"]
                 [cumulo/reel            "0.1.1"]
-                [cumulo/util            "0.1.6"]
+                [cumulo/util            "0.1.7"]
                 [respo                  "0.10.9"]
                 [respo/ui               "0.3.10"]
                 [respo/alerts           "0.3.11"]
