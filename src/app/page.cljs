@@ -13,7 +13,8 @@
   {:title (:title config/site),
    :icon (:icon config/site),
    :ssr nil,
-   :inline-styles [(slurp "entry/main.css")]})
+   :inline-styles [(slurp "entry/main.css")],
+   :manifest "manifest.json"})
 
 (defn dev-page []
   (make-page
