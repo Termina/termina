@@ -13,7 +13,7 @@
    :white-space :pre,
    :font-size 12,
    :line-height "1.5em",
-   :max-height 400,
+   :max-height 240,
    :max-width 800,
    :overflow :auto})
 

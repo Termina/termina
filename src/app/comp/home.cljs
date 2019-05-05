@@ -38,14 +38,14 @@
     (div
      {:style (merge ui/row-parted {:align-items :center, :padding "0 8px"})}
      (div
-      {:style ui/row-middle}
+      {:style (merge ui/flex ui/row-middle)}
       (input
        {:style style-filter,
         :value (:query state),
         :placeholder "filter...",
         :on-input (fn [e d! m!] (m! (assoc state :query (:value e))))})
       (list->
-       {:style ui/row}
+       {:style (merge ui/flex ui/row {:flex-wrap :wrap})}
        (->> (:workflows router-data)
             (filter
              (fn [[k workflow]]

@@ -7,7 +7,7 @@
       "sizes": "400x400"
     }
   ],
-  "start_url": "index.html?host=192.168.1.178",
+  "start_url": "index.html?host=192.168.1.180&version=2",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#eeeeff",
