@@ -87,4 +87,5 @@
                     :error (hsl 0 80 50)
                     (hsl 60 0 80)),
                   :padding 8,
-                  :display :block}))))))))))
+                  :display :block,
+                  :white-space :pre-line}))))))))))
