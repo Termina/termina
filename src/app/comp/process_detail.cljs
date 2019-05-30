@@ -2,7 +2,6 @@
 (ns app.comp.process-detail
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo-ui.colors :as colors]
             [respo.core :refer [defcomp <> action-> span div pre list-> code button]]
             [respo.comp.space :refer [=<]]
             [app.util :refer [map-with-index]]
