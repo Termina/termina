@@ -2,7 +2,6 @@
 (ns app.comp.process
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo-ui.colors :as colors]
             [respo.comp.space :refer [=<]]
             [respo.core :refer [defcomp list-> action-> <> span div button a]]
             [app.style :as style]

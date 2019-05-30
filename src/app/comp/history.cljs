@@ -2,7 +2,6 @@
 (ns app.comp.history
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo-ui.colors :as colors]
             [respo.core :refer [defcomp <> action-> list-> span div button]]
             [respo.comp.space :refer [=<]]
             [app.style :as style]

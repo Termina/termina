@@ -2,12 +2,11 @@
 (ns app.comp.command
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo-ui.colors :as colors]
             [respo.core
              :refer
              [defcomp cursor-> mutation-> action-> <> span div input button a]]
             [respo.comp.space :refer [=<]]
-            [feather.core :refer [comp-i]]
+            [feather.core :refer [comp-i comp-icon]]
             [inflow-popup.comp.popup :refer [comp-popup]]
             [respo-alerts.comp.alerts :refer [comp-confirm]]
             [app.style :as style]
@@ -83,7 +82,17 @@
             :color :white})}
   (div
    {:style ui/row-parted}
-   (<> (or (:title command) "Task") {:font-size 20})
+   (div
+    {:style ui/row-middle}
+    (<> (or (:title command) "Task") {:font-size 20})
+    (=< 8 nil)
+    (comp-icon
+     :play
+     {:font-size 14, :cursor :pointer, :color (hsl 200 80 70)}
+     (fn [e d! m!]
+       (d!
+        :effect/run
+        {:cwd (:path command), :command (:code command), :title (:title command)}))))
    (div
     {:style ui/row-parted}
     (cursor->
