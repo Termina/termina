@@ -47,11 +47,11 @@
       (a
        {:style style/link,
         :inner-text "Redo",
-        :on-click (action->
-                   :effect/run
-                   {:cwd (:cwd process),
-                    :command (:command process),
-                    :title (:title process)})}))))
+        :on-click (fn [e d! m!]
+          (d!
+           :effect/run
+           {:cwd (:cwd process), :command (:command process), :title (:title process)})
+          (d! :process/remove-dead (:pid process)))}))))
   (div
    {:style (merge ui/row-middle {:background-color (hsl 0 0 0 0.5), :font-size 10})}
    (<> (:command process) (merge style/text))

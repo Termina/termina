@@ -73,6 +73,12 @@
              {:command (:code draft), :cwd (:path draft), :title (:title draft)})
             (on-toggle m!)))))
       (=< 8 nil)
+      (button
+       {:style style/button,
+        :inner-text "Kill all",
+        :on-click (fn [e d! m!]
+          (doseq [pid (keys (:processes router-data))] (d! :effect/kill pid)))})
+      (=< 8 nil)
       (a {:style style/link, :on-click (action-> :process/clear nil)} (<> "Clear"))))
     (=< nil 8)
     (list->

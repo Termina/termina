@@ -23,6 +23,7 @@
             :process/error process/error
             :process/clear process/clear
             :process/finish process/finish
+            :process/remove-dead process/remove-dead
             :process/shorten-content process/shorten-content
             :workflow/create workflow/create-workflow
             :workflow/remove workflow/remove-workflow

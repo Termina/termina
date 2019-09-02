@@ -7,14 +7,15 @@
                 [cumulo/recollect       "0.5.0"]
                 [cumulo/reel            "0.1.1"]
                 [cumulo/util            "0.1.10"]
-                [respo                  "0.10.11"]
+                [respo                  "0.10.12"]
                 [respo/ui               "0.3.13"]
-                [respo/alerts           "0.3.12"]
+                [respo/alerts           "0.3.13"]
                 [respo/message          "0.3.4"]
                 [respo/feather          "0.1.1"]
                 [respo/inflow-popup     "0.2.8"]
                 [cirru/bisection-key    "0.1.5"]
                 [cirru/favored-edn      "0.1.1"]
+                [medley                 "1.1.0"]
                 [org.clojure/core.incubator "0.1.4"]]
  :repositories {"central" {:url "https://maven.aliyun.com/nexus/content/groups/public/"}
                 "clojars" {:url "https://mirrors.ustc.edu.cn/clojars/"}}
