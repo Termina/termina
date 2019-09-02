@@ -1,6 +1,6 @@
 {
   "name": "termina",
-  "version": "0.1.7-a1",
+  "version": "0.1.7-a3",
   "description": "Start process from a Webpage",
   "bin": {
     "termina": "dist/server.js"
@@ -14,6 +14,7 @@
     "up": "yarn build-cdn && yarn upload",
     "serve": "http-server dist -s",
     "pkg": "rm -rf dist/* && yarn shadow-cljs release server",
+    "prepare": "yarn pkg",
     "ln": "cd target && rm -f entry && ln -s ../entry",
     "prod": "yarn install --production"
   },
