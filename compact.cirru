@@ -17,6 +17,7 @@
           [] app.comp.command :refer $ [] comp-command-button comp-command-editor
           [] fuzzy-filter.core :refer $ [] parse-by-letter
           respo-alerts.core :refer $ comp-modal
+          respo.comp.inspect :refer $ comp-inspect
       :defs $ {}
         |comp-home $ quote
           defcomp comp-home (states router-data)
@@ -70,7 +71,7 @@
                         d! cursor $ assoc state :pop? false
                     =< 8 nil
                     button $ {} (:style style/button) (:inner-text "\"Kill all")
-                      :on-click $ fn (e d! m!)
+                      :on-click $ fn (e d!)
                         &doseq
                           pid $ keys (:processes router-data)
                           d! :effect/kill pid
@@ -153,7 +154,7 @@
                   comp-messages
                     get-in store $ [] :session :messages
                     {}
-                    fn (info d! m!) (d! :session/remove-message info)
+                    fn (info d!) (d! :session/remove-message info)
                   when dev? $ comp-reel (:reel-length store) ({})
         |comp-offline $ quote
           defcomp comp-offline () $ div
@@ -187,7 +188,7 @@
       :defs $ {}
         |remove-command $ quote
           defn remove-command (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] workflow-id command-id
                   , op-data
               update-in db ([] :workflows workflow-id :commands)
@@ -200,8 +201,8 @@
         |create-workflow $ quote
           defn create-workflow (db op-data sid op-id op-time)
             let
-                  {} (workflow-name :name) (base-dir :base-dir)
-                  , op-data
+                workflow-name $ :name op-data
+                base-dir $ :base-dir op-data
               assoc-in db ([] :workflows op-id)
                 merge schema/workflow $ {} (:id op-id) (:name workflow-name) (:base-dir base-dir)
                   :commands $ {}
@@ -216,14 +217,14 @@
                 fn (workflow) (merge workflow new-workflow)
         |add-command $ quote
           defn add-command (db op-data sid op-id op-time)
-            let
-                  {} (workflow-id :workflow-id) (draft :draft)
+            let-sugar
+                  {} workflow-id draft
                   , op-data
               assoc-in db ([] :workflows workflow-id :commands op-id)
                 merge draft $ {} (:id op-id)
         |edit-command $ quote
           defn edit-command (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] workflow-id command-id changes
                   , op-data
               update-in db ([] :workflows workflow-id :commands command-id)
@@ -267,39 +268,37 @@
           def command $ {} (:id nil) (:title "\"") (:path "\".") (:code "\"")
     |app.server $ {}
       :ns $ quote
-        ns app.server
-          :require ([] app.schema :as schema)
-            [] app.updater :refer $ [] updater
-            [] cljs.reader :refer $ [] read-string
-            [] cumulo-reel.core :refer $ [] reel-reducer refresh-reel reel-schema
-            [] "\"fs" :as fs
-            [] "\"child_process" :as cp
-            [] "\"path" :as path
-            [] "\"latest-version" :as latest-version
-            [] "\"chalk" :as chalk
-            [] app.config :as config
-            [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
-            [] cumulo-util.core :refer $ [] id! repeat! unix-time! delay!
-            [] app.twig.container :refer $ [] twig-container
-            [] recollect.diff :refer $ [] diff-twig
-            [] recollect.twig :refer $ [] render-twig
-            [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
-            [] app.manager :refer $ [] create-process! kill-process!
-            [] favored-edn.core :refer $ [] write-edn
-            [] "\"url-parse" :as url-parse
-          :require-macros $ [] clojure.core.strint :refer ([] <<)
+        ns app.server $ :require ([] app.schema :as schema)
+          [] app.updater :refer $ [] updater
+          [] cumulo-reel.core :refer $ [] reel-reducer refresh-reel reel-schema
+          [] "\"fs" :as fs
+          [] "\"child_process" :as cp
+          [] "\"path" :as path
+          [] "\"latest-version" :default latest-version
+          [] "\"chalk" :as chalk
+          [] app.config :as config
+          [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
+          [] cumulo-util.core :refer $ [] id! repeat! unix-time! delay!
+          [] app.twig.container :refer $ [] twig-container
+          [] recollect.diff :refer $ [] diff-twig
+          [] recollect.twig :refer $ [] render-twig new-twig-loop! clear-twig-caches!
+          [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
+          [] app.manager :refer $ [] create-process! kill-process!
+          [] "\"url-parse" :default url-parse
       :defs $ {}
+        |*initial-db $ quote
+          defatom *initial-db $ merge-local-edn! schema/database storage-file
+            fn (found?)
+              if found? (println "\"Found local EDN data") (println "\"Found no data")
         |persist-db! $ quote
           defn persist-db! () $ let
-              file-content $ write-edn
+              file-content $ format-cirru-edn
                 -> (:db @*reel)
                   assoc :sessions $ {}
                   update :processes $ fn (processes)
-                    ->> processes
-                      map $ fn
-                          [] k v
+                    -> processes $ map-kv
+                      fn (k v)
                         [] k $ assoc v :alive? false
-                      into $ {}
             write-mildly! storage-file file-content
         |sync-clients! $ quote
           defn sync-clients! (reel)
@@ -309,26 +308,23 @@
                   records $ :records reel
                   session $ get-in db ([] :sessions sid)
                   old-store $ or (get @*client-caches sid) nil
-                  new-store $ render-twig (twig-container db session records) old-store
+                  new-store $ twig-container db session records
                   changes $ diff-twig old-store new-store
                     {} $ :key :id
-                ; when config/dev? $ println "\"Changes for" sid |: (pr-str changes) (count records)
+                when config/dev? $ println "\"Changes for" sid "\":" changes (count records)
                 if
                   not= changes $ []
                   do
                     wss-send! sid $ {} (:kind :patch) (:data changes)
                     swap! *client-caches assoc sid new-store
-        |initial-db $ quote
-          def initial-db $ merge-local-edn! schema/database storage-file
-            fn (found?)
-              if found? (println "\"Found local EDN data") (println "\"Found no data")
+            new-twig-loop!
         |storage-file $ quote
           def storage-file $ path/join js/process.env.HOME "\".config" (:storage-file config/site)
-        |*reader-reel $ quote
-          defonce *reader-reel $ atom @*reel
+        |*reader-reel $ quote (defatom *reader-reel @*reel)
         |*reel $ quote
           defatom *reel $ merge reel-schema
-            {} (:base initial-db) (:db initial-db)
+            {} (:base @*initial-db) (:db @*initial-db)
+        |*proxied-dispatch! $ quote (defatom *proxied-dispatch! dispatch!)
         |main! $ quote
           defn main! ()
             println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
@@ -339,16 +335,17 @@
                 port $ or user-port (:port config/site)
                 ui-url $ url-parse "\"http://termina.mvc-works.org/" true
               run-server! port
-              set! (.. ui-url -query -port) port
-              println "\"Server started. Open UI on " $ .blue chalk (.toString ui-url)
-            render-loop!
+              set! (-> ui-url .-query .-port) port
+              println "\"Server started. Open UI on " $ chalk/blue (.toString ui-url)
+            render-loop! *loop-trigger
             js/process.on "\"SIGINT" on-exit!
-            repeat! 600 $ "#()" persist-db!
+            repeat! 600 $ \ persist-db!
             check-version!
+        |*loop-trigger $ quote (defatom *loop-trigger 0)
         |on-exit! $ quote
-          defn on-exit! (code) (persist-db!)
+          defn on-exit! (code _) (persist-db!)
             ; println "|exit code is:" $ pr-str code
-            .exit js/process
+            js/process.exit
         |dispatch! $ quote
           defn dispatch! (op op-data sid)
             let
@@ -359,8 +356,8 @@
                 cond
                     = op :effect/persist
                     persist-db!
-                  (= op :effect/run) (create-process! op-data dispatch!)
-                  (= op :effect/kill) (kill-process! op-data dispatch!)
+                  (= op :effect/run) (create-process! op-data dispatch! sid)
+                  (= op :effect/kill) (kill-process! op-data dispatch! sid)
                   true $ reset! *reel (reel-reducer @*reel updater op op-data sid op-id op-time)
                 fn (error) (js/console.error error)
         |check-version! $ quote
@@ -372,49 +369,52 @@
               latest-version $ .-name pkg
               .then $ fn (npm-version)
                 if (= npm-version version) (println "\"Running latest version" version)
-                  println $ .yellow chalk (<< "\"New version ~{npm-version} available, current one is ~{version} . Please upgrade!\n\nyarn global add termina\n")
+                  println $ chalk/yellow (str "\"New version " npm-version "\" available, current one is " version "\" . Please upgrade!\n\nyarn global add termina\n")
         |run-server! $ quote
           defn run-server! (port)
             wss-serve! port $ {}
-              :on-open $ fn (sid socket) (dispatch! :session/connect nil sid) (js/console.info "|New client.")
+              :on-open $ fn (sid socket) (@*proxied-dispatch! :session/connect nil sid) (println "\"New client.")
               :on-data $ fn (sid action)
-                case (:kind action)
-                  :op $ dispatch! (:op action) (:data action) sid
-                  println "\"unknown data" action
-              :on-close $ fn (sid event) (js/console.warn "|Client closed!") (dispatch! :session/disconnect nil sid)
-              :on-error $ fn (error) (.error js/console error)
+                case-default (:kind action) (println "\"unknown action:" action)
+                  :op $ @*proxied-dispatch! (:op action) (:data action) sid
+              :on-close $ fn (sid event) (println "\"Client closed!") (@*proxied-dispatch! :session/disconnect nil sid)
+              :on-error $ fn (error) (js/console.error error)
         |render-loop! $ quote
-          defn render-loop! ()
-            when-not (identical? @*reader-reel @*reel) (reset! *reader-reel @*reel) (sync-clients! @*reader-reel)
-            delay! 0.2 render-loop!
+          defn render-loop! (*loop)
+            when
+              not $ identical? @*reader-reel @*reel
+              reset! *reader-reel @*reel
+              sync-clients! @*reader-reel
+            reset! *loop $ delay! 0.2
+              fn () $ render-loop! *loop
         |*client-caches $ quote
-          defonce *client-caches $ atom ({})
+          defatom *client-caches $ {}
         |reload! $ quote
-          defn reload! () (println "|Code updated.")
-            reset! *reel $ refresh-reel @*reel initial-db updater
+          defn reload! () (println "\"Code updated.") (clear-twig-caches!) (reset! *proxied-dispatch! dispatch!)
+            reset! *reel $ refresh-reel @*reel @*initial-db updater
+            js/clearTimeout @*loop-trigger
+            render-loop! *loop-trigger
             sync-clients! @*reader-reel
     |app.twig.container $ {}
       :ns $ quote
         ns app.twig.container $ :require
-          [] recollect.twig :refer $ [] deftwig
           [] app.twig.user :refer $ [] twig-user
           [] "\"randomcolor" :as color
       :defs $ {}
         |twig-container $ quote
-          deftwig twig-container (db session records)
-            let
+          defn twig-container (db session records)
+            let-sugar
                 logged-in? $ some? (:user-id session)
                 router $ :router session
                 base-data $ {} (:logged-in? logged-in?) (:session session)
                   :reel-length $ count records
-                ({} (workflows :workflows) (processes :processes) (histories :histories))
-                  , db
+                ({} workflows processes histories) db
               merge base-data $ if logged-in?
                 {}
                   :user $ twig-user
                     get-in db $ [] :users (:user-id session)
                   :router $ assoc router :data
-                    case (:name router)
+                    case-default (:name router) ({})
                       :history $ {} (:histories histories)
                       :workflows $ {} (:workflows workflows)
                       :home $ {} (:processes processes) (:workflows workflows)
@@ -422,18 +422,15 @@
                           process-id $ -> router :params :id
                         get processes process-id
                       :profile $ twig-members (:sessions db) (:users db)
-                      {}
                   :count $ count (:sessions db)
                   :color $ color/randomColor
                 , nil
         |twig-members $ quote
-          deftwig twig-members (sessions users)
-            ->> sessions
-              map $ fn
-                  [] k session
+          defn twig-members (sessions users)
+            -> sessions $ map-kv
+              fn (k session)
                 [] k $ get-in users
                   [] (:user-id session) :name
-              into $ {}
     |app.updater $ {}
       :ns $ quote
         ns app.updater $ :require ([] app.updater.session :as session) ([] app.updater.user :as user) ([] app.updater.router :as router) ([] app.schema :as schema)
@@ -473,10 +470,9 @@
     |app.twig.user $ {}
       :ns $ quote
         ns app.twig.user $ :require
-          [] recollect.twig :refer $ [] deftwig
       :defs $ {}
         |twig-user $ quote
-          deftwig twig-user (user) (dissoc user :password)
+          defn twig-user (user) (dissoc user :password)
     |app.updater.process $ {}
       :ns $ quote
         ns app.updater.process $ :require ([] app.schema :as schema)
@@ -496,14 +492,12 @@
         |clear $ quote
           defn clear (db op-data sid op-id op-time)
             update db :processes $ fn (processes)
-              ->> processes
-                filter $ fn
-                    [] pid process
-                  :alive? process
-                into $ {}
+              -> processes $ filter
+                fn (pair)
+                  :alive? $ last pair
         |error $ quote
           defn error (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] pid data
                   , op-data
               update-in db ([] :processes pid :content)
@@ -524,7 +518,7 @@
                   [] :processes $ :pid op-data
                   merge schema/process op-data $ {} (:started-at op-time) (:alive? true)
                 update :histories $ fn (histories)
-                  if (vector? histories) (conj histories new-history) ([] new-history)
+                  if (list? histories) (conj histories new-history) ([] new-history)
         |finish $ quote
           defn finish (db op-data sid op-id op-time)
             assoc-in db ([] :processes op-data :alive?) false
@@ -533,7 +527,7 @@
             assoc db :histories $ []
         |stderr $ quote
           defn stderr (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] pid data
                   , op-data
               update-in db ([] :processes pid :content)
@@ -541,7 +535,7 @@
                   conj content $ {} (:type :stderr) (:data data)
         |stdout $ quote
           defn stdout (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] pid data
                   , op-data
               update-in db ([] :processes pid :content)
@@ -552,53 +546,57 @@
         ns app.manager $ :require ([] |child_process :as cp)
       :defs $ {}
         |kill-process! $ quote
-          defn kill-process! (pid dispatch!)
+          defn kill-process! (pid dispatch! sid)
             let
                 proc $ get @*registry pid
               if (some? proc)
                 do $ .kill proc "\"SIGINT"
-                dispatch! :process/finish pid
+                dispatch! :process/finish pid sid
         |create-process! $ quote
-          defn create-process! (op-data dispatch!)
+          defn create-process! (op-data dispatch! sid)
             let
                 command $ :command op-data
                 cwd $ :cwd op-data
-                proc $ .exec cp command
-                  clj->js $ {} (:cwd cwd)
-                pid proc.pid
+                proc $ cp/exec command
+                  js-object $ :cwd cwd
+                pid $ .-pid proc
               swap! *registry assoc pid proc
-              dispatch! :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
-                :title $ :title op-data
-              .on proc "\"exit" $ fn (event) (dispatch! :process/finish pid) (swap! *registry dissoc pid)
+              dispatch! :process/create
+                {} (:pid pid) (:command command) (:cwd cwd)
+                  :title $ :title op-data
+                , sid
+              .on proc "\"exit" $ fn (event _) (dispatch! :process/finish pid sid) (swap! *registry dissoc pid)
               .on proc "\"error" $ fn (event) (js/console.error event)
-                dispatch! :process/error $ [] pid (str event)
-                dispatch! :process/finish pid
-              .on proc.stdout |data $ fn (data)
-                dispatch! :process/stdout $ [] pid data
-              .on proc.stderr |data $ fn (data)
-                dispatch! :process/stderr $ [] pid data
+                dispatch! :process/error
+                  [] pid $ str event
+                  , sid
+                dispatch! :process/finish pid sid
+              .on (.-stdout proc) |data $ fn (data)
+                dispatch! :process/stdout ([] pid data) sid
+              .on (.-stderr proc) |data $ fn (data)
+                dispatch! :process/stderr ([] pid data) sid
         |*registry $ quote
-          defonce *registry $ atom ({})
+          defatom *registry $ {}
     |app.updater.user $ {}
       :ns $ quote
         ns app.updater.user $ :require
           [] app.util :refer $ [] find-first
-          [] |md5 :as md5
+          [] |md5 :default md5
       :defs $ {}
         |sign-up $ quote
           defn sign-up (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] username password
                   , op-data
-                maybe-user $ find-first
+                maybe-user $ find
+                  vals $ :users db
                   fn (user)
                     = username $ :name user
-                  vals $ :users db
               if (some? maybe-user)
                 update-in db ([] :sessions sid :messages)
                   fn (messages)
                     assoc messages op-id $ {} (:id op-id)
-                      :text $ str "|Name is token: " username
+                      :text $ str "\"Name is taken: " username
                 -> db
                   assoc-in ([] :sessions sid :user-id) op-id
                   assoc-in ([] :users op-id)
@@ -610,13 +608,12 @@
             assoc-in db ([] :sessions sid :user-id) nil
         |log-in $ quote
           defn log-in (db op-data sid op-id op-time)
-            let
+            let-sugar
                   [] username password
                   , op-data
-                maybe-user $ find-first
-                  fn (user)
+                maybe-user $ -> (:users db) (vals) (.to-list)
+                  find $ fn (user)
                     and $ = username (:name user)
-                  vals $ :users db
               update-in db ([] :sessions sid)
                 fn (session)
                   if (some? maybe-user)
@@ -625,10 +622,10 @@
                       assoc session :user-id $ :id maybe-user
                       update session :messages $ fn (messages)
                         assoc messages op-id $ {} (:id op-id)
-                          :text $ str "|Wrong password for " username
+                          :text $ str "\"Wrong password for " username
                     update session :messages $ fn (messages)
                       assoc messages op-id $ {} (:id op-id)
-                        :text $ str "|No user named: " username
+                        :text $ str "\"No user named: " username
     |app.comp.process $ {}
       :ns $ quote
         ns app.comp.process $ :require
@@ -676,7 +673,7 @@
                           d! :effect/kill $ :pid process
                       <> "\"Kill"
                     a $ {} (:style style/link) (:inner-text "\"Redo")
-                      :on-click $ fn (e d! m!)
+                      :on-click $ fn (e d!)
                         d! :effect/run $ {}
                           :cwd $ :cwd process
                           :command $ :command process
@@ -696,18 +693,18 @@
                 empty? $ :content process
                 list->
                   {} $ :style style-content-list
-                  ->> (:content process) (take-last 4)
-                    map-with-index $ fn (chunk)
-                      let
+                  -> (:content process) (.to-list) (take-last 4)
+                    .map-indexed $ fn (idx chunk)
+                      [] idx $ let
                           urls $ to-calcit-data
-                            .!matches (:data chunk) url-pattern
+                            .!match (:data chunk) url-pattern
                         div
                           {} $ :style
                             {} (:margin-top 2) (:display :block)
                               :background-color $ hsl 0 0 0 0.5
                           if-not (empty? urls)
                             list-> ({})
-                              ->> urls $ map
+                              -> urls $ map
                                 fn (url)
                                   [] url $ a
                                     {} (:inner-text url) (:target "\"_blank") (:href url)
@@ -792,6 +789,7 @@
         |comp-login $ quote
           defcomp comp-login (states)
             let
+                cursor $ :cursor states
                 state $ or (:data states) initial-state
               div
                 {} $ :style (merge ui/flex ui/center)
@@ -802,13 +800,15 @@
                       input $ {} (:placeholder |Username)
                         :value $ :username state
                         :style ui/input
-                        :on-input $ on-input state :username
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :username (:value e)
                     =< nil 8
                     div ({})
                       input $ {} (:placeholder |Password)
                         :value $ :password state
                         :style ui/input
-                        :on-input $ on-input state :password
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :password (:value e)
                   =< nil 8
                   div
                     {} $ :style
@@ -824,11 +824,8 @@
           defn on-submit (username password signup?)
             fn (e dispatch!)
               dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-              .setItem js/localStorage (:storage-key config/site) ([] username password)
-        |on-input $ quote
-          defn on-input (state k)
-            fn (e dispatch! mutate!)
-              mutate! $ assoc state k (:value e)
+              .setItem js/localStorage (:storage-key config/site)
+                format-cirru-edn $ [] username password
     |app.style $ {}
       :ns $ quote
         ns app.style $ :require
@@ -1172,7 +1169,7 @@
                 merge ui/flex ui/column $ {} (:padding "|16px 16px") (:font-family ui/font-code) (:overflow :auto)
               div ({})
                 button $ {} (:style style/button) (:inner-text "\"Clear")
-                  :on-click $ fn (e d! m!) (d! :process/clear-history nil)
+                  :on-click $ fn (e d!) (d! :process/clear-history nil)
               =< nil 16
               if (empty? histories)
                 <> "\"Empty" $ {} (:font-family ui/font-fancy) (:font-weight 100) (:color :white)
@@ -1420,9 +1417,9 @@
               list->
                 {} $ :style
                   merge ui/flex $ {} (:overflow :auto) (:padding-bottom 120)
-                ->> (:content process)
-                  map-with-index $ fn (chunk)
-                    div
+                -> (:content process)
+                  map-indexed $ fn (idx chunk)
+                    [] idx $ div
                       {} $ :style
                         {}
                           :border $ str "\"1px solid " (hsl 0 0 100 0.3)
@@ -1449,9 +1446,14 @@
           [] recollect.patch :refer $ [] patch-twig
           [] cumulo-util.core :refer $ [] on-page-touch
           [] "\"url-parse" :default url-parse
+          "\"bottom-tip" :default hud!
+          "\"./calcit.build-errors" :default client-errors
+          "\"../js-out/calcit.build-errors" :default server-errors
       :defs $ {}
         |render-app! $ quote
-          defn render-app! () $ render! mount-target (comp-container @*states @*store) dispatch!
+          defn render-app! () $ render! mount-target
+            comp-container (:states @*states) @*store
+            , dispatch!
         |on-window-keydown $ quote
           defn on-window-keydown (event)
             when
@@ -1464,6 +1466,7 @@
                 do $ println "\"no thing to clear in" (-> @*store :router :name)
         |*states $ quote
           defatom *states $ {}
+            :states $ {}
         |mount-target $ quote
           def mount-target $ .querySelector js/document |.app
         |connect! $ quote
@@ -1510,7 +1513,13 @@
                 dispatch! :user/log-in $ parse-cirru-edn raw
               do $ println "\"Found no storage."
         |reload! $ quote
-          defn reload! () (clear-cache!) (render-app!) (println "|Code updated.")
+          defn reload! () $ if
+            or (some? client-errors) (some? server-errors)
+            hud! "\"error" $ str client-errors &newline server-errors
+            do (hud! "\"inactive" nil) (remove-watch *store :changes) (remove-watch *states :changes) (clear-cache!) (render-app!)
+              add-watch *store :changes $ fn (store prev) (render-app!)
+              add-watch *states :changes $ fn (states prev) (render-app!)
+              println "\"Code updated."
     |app.config $ {}
       :ns $ quote (ns app.config)
       :defs $ {}
@@ -1523,4 +1532,4 @@
         |dev? $ quote
           def dev? $ = "\"dev" (get-env "\"mode")
         |site $ quote
-          def site $ {} (:port 11014) (:title "\"Termina") (:icon "\"http://cdn.tiye.me/logo/termina.png") (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/termina/") (:cdn-folder "\"tiye.me:cdn/termina") (:upload-folder "\"tiye.me:repo/mvc-works/termina/") (:server-folder "\"tiye.me:servers/termina") (:theme "\"#eeeeff") (:storage-key "\"termina") (:storage-file "\"termina.edn")
+          def site $ {} (:port 11014) (:title "\"Termina") (:icon "\"http://cdn.tiye.me/logo/termina.png") (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/termina/") (:cdn-folder "\"tiye.me:cdn/termina") (:upload-folder "\"tiye.me:repo/mvc-works/termina/") (:server-folder "\"tiye.me:servers/termina") (:theme "\"#eeeeff") (:storage-key "\"termina") (:storage-file "\"termina.cirru")

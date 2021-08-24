@@ -4,17 +4,13 @@ Termina
 
 > A simplified terminal to use servers.
 
-![](https://img.shields.io/npm/v/termina.svg?label=termina%20on%20npm&style=flat-square)
+Connect to WebSocket server with http://r.tiye.me/Termina/termina .
 
-```bash
-npm i -g termina
-```
-
-Connect to WebSocket server with http://termina.mvc-works.org/
+TODO: new npm package.
 
 ### Workflow
 
-https://github.com/Cumulo/cumulo-workflow
+https://github.com/Cumulo/cumulo-workflow.calcit/ .
 
 ### License
 
