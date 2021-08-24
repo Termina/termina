@@ -1,9 +1,11 @@
 
-.shadow-cljs/
+js-out/
 cli/
-entry
-target/
+assets/
 src/
-calcit.edn
-shadow-cljs.edn
+calcit.cirru
 yarn.lock
+
+/server.js
+/client.js
+/index.html
