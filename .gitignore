@@ -8,3 +8,5 @@ dist/
 out-page/
 
 yarn-error.log
+
+dist-server/
