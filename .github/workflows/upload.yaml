@@ -10,18 +10,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
-    - name: ACTIONS_ALLOW_UNSECURE_COMMANDS
-      id: ACTIONS_ALLOW_UNSECURE_COMMANDS
-      run: echo 'ACTIONS_ALLOW_UNSECURE_COMMANDS=true' >> $GITHUB_ENV
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: 'yarn'
 
-    - name: add cr
-      run: |
-        mkdir -p $GITHUB_WORKSPACE/bin
-        wget -O $GITHUB_WORKSPACE/bin/cr http://repo.calcit-lang.org/binaries/linux/cr
-        chmod +x $GITHUB_WORKSPACE/bin/cr
-        echo "::add-path::$GITHUB_WORKSPACE/bin"
+    - uses: supplypike/setup-bin@v3
+      with:
+        uri: 'https://github.com/calcit-lang/calcit/releases/download/0.6.21/cr'
+        name: 'cr'
+        version: '0.6.21'
 
     - name: "prepare modules"
       run: >
@@ -41,12 +41,12 @@ jobs:
 
     - run: yarn && yarn compile-server && yarn compile-page && yarn release-page && yarn release-server
 
-    - run: mkdir -p dist-server && mv js-out/bundle.js dist-server && cp package.json dist-server/
+    - run: mkdir -p dist-server && mv dist/server.js dist-server && cp package.json dist-server/
       name: Copy server scripts
 
     - name: Upload web assets
       id: deploy
-      uses: Pendect/action-rsyncer@v1.1.0
+      uses: Pendect/action-rsyncer@v2.0.0
       env:
         DEPLOY_KEY: ${{secrets.rsync_private_key}}
       with:
@@ -61,7 +61,7 @@ jobs:
 
     - name: Upload server script
       id: deploy-server
-      uses: Pendect/action-rsyncer@v1.1.0
+      uses: Pendect/action-rsyncer@v2.0.0
       env:
         DEPLOY_KEY: ${{secrets.rsync_private_key}}
       with:
