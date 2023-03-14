@@ -29,10 +29,7 @@ jobs:
         name: 'caps'
         version: '0.6.24'
 
-    - run: caps --ci && yarn && yarn compile-server && yarn compile-page && yarn release-page && yarn release-server
-
-    - run: mkdir -p dist-server && mv dist/server.js dist-server && cp package.json dist-server/
-      name: Copy server scripts
+    - run: caps --ci && yarn && yarn compile-page && yarn release-page
 
     - name: Upload web assets
       id: deploy
@@ -48,18 +45,3 @@ jobs:
 
     - name: Display status from deploy
       run: echo "${{ steps.deploy.outputs.status }}"
-
-    - name: Upload server script
-      id: deploy-server
-      uses: Pendect/action-rsyncer@v2.0.0
-      env:
-        DEPLOY_KEY: ${{secrets.rsync_private_key}}
-      with:
-        flags: '-avzr --progress'
-        options: ''
-        ssh_options: ''
-        src: 'dist-server/*'
-        dest: 'rsync-user@tiye.me:/servers/paste-sharing/'
-
-    - name: Display status from deploy
-      run: echo "${{ steps.deploy-server.outputs.status }}"
