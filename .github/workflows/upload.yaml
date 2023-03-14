@@ -29,7 +29,7 @@ jobs:
         name: 'caps'
         version: '0.6.24'
 
-    - run: caps --ci && yarn && yarn compile-page && yarn release-page
+    - run: caps --ci && yarn && yarn compile-server && yarn compile-page && yarn release-page
 
     - name: Upload web assets
       id: deploy
