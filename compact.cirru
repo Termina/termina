@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version nil)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.7-a4)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -1080,8 +1080,10 @@
             {} (:base @*initial-db) (:db @*initial-db)
         |check-version! $ quote
           defn check-version! () $ let
-              pkg $ .parse js/JSON
-                fs/readFileSync $ path/join js/__dirname "\"../package.json"
+              pkg $ js/JSON.parse
+                fs/readFileSync $ path/join
+                  fileURLToPath $ new js/URL "\"." js/import.meta.url
+                  , "\"../package.json"
               version $ .-version pkg
             ->
               latest-version $ .-name pkg
@@ -1184,6 +1186,7 @@
           [] "\"node:path" :as path
           [] "\"latest-version" :default latest-version
           [] "\"chalk" :default chalk
+          "\"node:url" :refer $ fileURLToPath
           [] app.config :as config
           [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
           [] cumulo-util.core :refer $ [] id! repeat! unix-time! delay!

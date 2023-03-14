@@ -1,6 +1,6 @@
 
 {}
-  :configs $ {} (:init-fn |app.server/main!) (:port 6001) (:reload-fn |app.server/reload!) (:storage-key |calcit.cirru)
+  :configs $ {} (:init-fn |app.server/main!) (:port 6001) (:reload-fn |app.server/reload!) (:storage-key |calcit.cirru) (:version |0.1.7-a4)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -7751,15 +7751,22 @@
                           |T $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |9fmBxZh-Tc) (:text |pkg) (:type :leaf)
                           |j $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |1Xt_zoFg_B) (:type :expr)
                             :data $ {}
-                              |T $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |e-AC8wMXwK) (:text |.parse) (:type :leaf)
-                              |j $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |ccHJdx5ioM) (:text |js/JSON) (:type :leaf)
+                              |j $ {} (:at 1678780329260) (:by |B1y7Rc-Zz) (:id |ccHJdx5ioM) (:text |js/JSON.parse) (:type :leaf)
                               |r $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |3lCDvQsC1r) (:type :expr)
                                 :data $ {}
                                   |T $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |9kWamdSl0B) (:text |fs/readFileSync) (:type :leaf)
                                   |j $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |Xfnz29knwK7) (:type :expr)
                                     :data $ {}
                                       |T $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |YXIVf4tdLcN) (:text |path/join) (:type :leaf)
-                                      |j $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |S-CtQ9AIeWE) (:text |js/__dirname) (:type :leaf)
+                                      |j $ {} (:at 1678780288198) (:by |B1y7Rc-Zz) (:type :expr)
+                                        :data $ {}
+                                          |T $ {} (:at 1678780309055) (:by |B1y7Rc-Zz) (:id |S-CtQ9AIeWE) (:text |fileURLToPath) (:type :leaf)
+                                          |b $ {} (:at 1678780310049) (:by |B1y7Rc-Zz) (:type :expr)
+                                            :data $ {}
+                                              |T $ {} (:at 1678780310500) (:by |B1y7Rc-Zz) (:text |new) (:type :leaf)
+                                              |b $ {} (:at 1678780313260) (:by |B1y7Rc-Zz) (:text |js/URL) (:type :leaf)
+                                              |h $ {} (:at 1678780314369) (:by |B1y7Rc-Zz) (:text "|\".") (:type :leaf)
+                                              |l $ {} (:at 1678780325307) (:by |B1y7Rc-Zz) (:text |js/import.meta.url) (:type :leaf)
                                       |r $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |JDlG-pbBEFc) (:text "|\"../package.json") (:type :leaf)
                       |j $ {} (:at 1553330395307) (:by |B1y7Rc-Zz) (:id |gHDqoo2KTrv) (:type :expr)
                         :data $ {}
@@ -8524,6 +8531,13 @@
                     |j $ {} (:at 1553330566606) (:by |B1y7Rc-Zz) (:id |VSJqKPT74X) (:text "|\"chalk") (:type :leaf)
                     |r $ {} (:at 1676244762796) (:by |B1y7Rc-Zz) (:id |yHCCyPhiSB) (:text |:default) (:type :leaf)
                     |v $ {} (:at 1553330566606) (:by |B1y7Rc-Zz) (:id |h8YHuRBEGz) (:text |chalk) (:type :leaf)
+                |yu $ {} (:at 1678780291068) (:by |B1y7Rc-Zz) (:type :expr)
+                  :data $ {}
+                    |T $ {} (:at 1678780293129) (:by |B1y7Rc-Zz) (:text "|\"node:url") (:type :leaf)
+                    |b $ {} (:at 1678780297246) (:by |B1y7Rc-Zz) (:text |:refer) (:type :leaf)
+                    |h $ {} (:at 1678780300276) (:by |B1y7Rc-Zz) (:type :expr)
+                      :data $ {}
+                        |T $ {} (:at 1678780300599) (:by |B1y7Rc-Zz) (:text |fileURLToPath) (:type :leaf)
                 |yvT $ {} (:at 1553327825468) (:by |B1y7Rc-Zz) (:id |VZ7u1zIqqY) (:type :expr)
                   :data $ {}
                     |T $ {} (:at 1553327825468) (:by |B1y7Rc-Zz) (:id |I0cB6Qry6m) (:text |[]) (:type :leaf)

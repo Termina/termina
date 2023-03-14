@@ -14,32 +14,22 @@ jobs:
 
     - uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
         cache: 'yarn'
 
     - uses: supplypike/setup-bin@v3
       with:
-        uri: 'https://github.com/calcit-lang/calcit/releases/download/0.6.21/cr'
+        uri: 'https://github.com/calcit-lang/calcit/releases/download/0.6.24/cr'
         name: 'cr'
-        version: '0.6.21'
+        version: '0.6.24'
 
-    - name: "prepare modules"
-      run: >
-        mkdir -p ~/.config/calcit/modules/ && cd ~/.config/calcit/modules/
-        && git clone https://github.com/calcit-lang/lilac.git
-        && git clone https://github.com/calcit-lang/memof.git
-        && git clone https://github.com/calcit-lang/recollect.git
-        && git clone https://github.com/Respo/respo.calcit.git
-        && git clone https://github.com/Respo/respo-ui.calcit.git
-        && git clone https://github.com/Respo/respo-message.calcit.git
-        && git clone https://github.com/Cumulo/cumulo-util.calcit.git
-        && git clone https://github.com/Cumulo/cumulo-reel.calcit.git
-        && git clone https://github.com/mvc-works/ws-edn.calcit.git
-        && git clone https://github.com/Respo/respo-feather.calcit.git
-        && git clone https://github.com/Respo/alerts.calcit.git
-        && git clone https://github.com/mvc-works/fuzzy-filter.git
+    - uses: supplypike/setup-bin@v3
+      with:
+        uri: 'https://github.com/calcit-lang/calcit/releases/download/0.6.24/caps'
+        name: 'caps'
+        version: '0.6.24'
 
-    - run: yarn && yarn compile-server && yarn compile-page && yarn release-page && yarn release-server
+    - run: caps --ci && yarn && yarn compile-server && yarn compile-page && yarn release-page && yarn release-server
 
     - run: mkdir -p dist-server && mv dist/server.js dist-server && cp package.json dist-server/
       name: Copy server scripts
