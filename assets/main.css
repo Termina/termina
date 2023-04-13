@@ -3,7 +3,7 @@ body {
   margin: 0;
   overscroll-behavior-y: none;
   background-color: rgb(44,66,92);
-  background-image: url(https://cdn.tiye.me/background/gnome-bg.jpg);
+/* background-image: url(https://cdn.tiye.me/background/gnome-bg.jpg); */
   background-size: cover;
  }
 
@@ -27,11 +27,12 @@ body * {
 }
 
 ::-webkit-scrollbar-track {
-  background-color: hsla(0,0%,100%);
+  background-color: rgb(44,66,92);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: hsla(200,100%,76%,0.8);
+  background-color: hsla(200,20%,70%,0.8);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-corner {
