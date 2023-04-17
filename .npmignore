@@ -1,5 +1,5 @@
 
-js-out/
+page-out/
 cli/
 assets/
 src/
@@ -9,3 +9,6 @@ yarn.lock
 /server.js
 /client.js
 /index.html
+
+compact.cirru
+.compact-inc.cirru

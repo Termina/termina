@@ -598,17 +598,18 @@
                     merge style/text $ {} (:color :black)
                 div
                   {} $ :style ui/row-middle
-                  span
-                    {} $ :on-click
-                      fn (e d!)
-                        d! :router/change $ {} (:name :process)
-                          :params $ {}
-                            :id $ :pid process
-                    <> "\"view" style/link
+                  button $ {}
+                    :style $ merge style/button
+                      {} (:color :red) (:border-color :red)
+                    :on-click $ fn (e d!)
+                      d! :router/change $ {} (:name :process)
+                        :params $ {}
+                          :id $ :pid process
+                    :inner-text "\"View"
                   if (:alive? process)
-                    button
+                    a
                       {}
-                        :style $ merge style/button
+                        :style $ merge style/link
                           {} (:color :red) (:border-color :red)
                         :on-click $ fn (e d!)
                           d! :effect/kill $ :pid process
@@ -705,24 +706,26 @@
               =< nil 16
               list->
                 {} $ :style
-                  merge ui/flex $ {} (:overflow :auto) (:padding-bottom 120)
+                  merge ui/flex
+                    {} (:overflow :auto) (:padding-bottom 120)
+                    {}
+                      :border $ str "\"1px solid " (hsl 0 0 100 0.3)
+                      :padding 8
+                      :background-color $ hsl 0 0 0 0.5
+                      :margin "\"16px 0"
+                      :overflow :auto
+                      :word-break :break-all
+                      :line-height 1.4
                 -> (:content process)
                   map-indexed $ fn (idx chunk)
-                    [] idx $ div
-                      {} $ :style
-                        {}
-                          :border $ str "\"1px solid " (hsl 0 0 100 0.3)
-                          :padding 8
-                          :background-color $ hsl 0 0 0 0.5
-                          :margin "\"16px 0"
-                          :max-height 400
-                          :overflow :auto
-                          :max-width 880
-                      div ({})
-                        <> $ :type chunk
-                      pre $ {}
-                        :style $ {} (:line-height 1.4) (:font-size 12) (:margin "\"0")
-                        :inner-text $ :data chunk
+                    [] idx $ span
+                      {}
+                        :style $ merge
+                          {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
+                          if
+                            = :stderr $ :type chunk
+                            {} $ :color :red
+                        :inner-text $ .!replace (:data chunk) &newline (str &newline &newline)
       :ns $ quote
         ns app.comp.process-detail $ :require
           [] respo-ui.core :refer $ [] hsl
