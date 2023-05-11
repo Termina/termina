@@ -359,13 +359,26 @@
                           |j $ {} (:at 1553330756973) (:by |B1y7Rc-Zz) (:id |taHuxwz5n) (:text |event) (:type :leaf)
                   |r $ {} (:at 1553621925078) (:by |B1y7Rc-Zz) (:id |P8zrzZSG-) (:type :expr)
                     :data $ {}
-                      |D $ {} (:at 1553621926812) (:by |B1y7Rc-Zz) (:id |MQTjHP-tml) (:text |case) (:type :leaf)
+                      |D $ {} (:at 1683802939416) (:by |B1y7Rc-Zz) (:id |MQTjHP-tml) (:text |case-default) (:type :leaf)
                       |L $ {} (:at 1553621931272) (:by |B1y7Rc-Zz) (:id |W5-ivYfQeA) (:type :expr)
                         :data $ {}
                           |T $ {} (:at 1553621931272) (:by |B1y7Rc-Zz) (:id |AgxB4MlKxx) (:text |->) (:type :leaf)
                           |j $ {} (:at 1553621931272) (:by |B1y7Rc-Zz) (:id |UsEQv7ZmBv) (:text |@*store) (:type :leaf)
                           |r $ {} (:at 1553621931272) (:by |B1y7Rc-Zz) (:id |erhR0OxPMX) (:text |:router) (:type :leaf)
                           |v $ {} (:at 1553621931272) (:by |B1y7Rc-Zz) (:id |l06PjyOTuL) (:text |:name) (:type :leaf)
+                      |P $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:type :expr)
+                        :data $ {}
+                          |T $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |do) (:type :leaf)
+                          |b $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:type :expr)
+                            :data $ {}
+                              |T $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |println) (:type :leaf)
+                              |b $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text "|\"no thing to clear in") (:type :leaf)
+                              |h $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:type :expr)
+                                :data $ {}
+                                  |T $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |->) (:type :leaf)
+                                  |b $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |@*store) (:type :leaf)
+                                  |h $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |:router) (:type :leaf)
+                                  |l $ {} (:at 1683802940987) (:by |B1y7Rc-Zz) (:text |:name) (:type :leaf)
                       |T $ {} (:at 1553621932234) (:by |B1y7Rc-Zz) (:id |NnVVOgSKS5) (:type :expr)
                         :data $ {}
                           |D $ {} (:at 1553621934787) (:by |B1y7Rc-Zz) (:id |OfYbsUmwXa) (:text |:home) (:type :leaf)
@@ -382,19 +395,6 @@
                               |T $ {} (:at 1553621943509) (:by |B1y7Rc-Zz) (:id |Hlvqo7iMbB) (:text |dispatch!) (:type :leaf)
                               |j $ {} (:at 1553621948271) (:by |B1y7Rc-Zz) (:id |Ana1TZGK82) (:text |:process/clear-history) (:type :leaf)
                               |r $ {} (:at 1553621943509) (:by |B1y7Rc-Zz) (:id |qlLDMsDPBi) (:text |nil) (:type :leaf)
-                      |r $ {} (:at 1553621953918) (:by |B1y7Rc-Zz) (:id |RDSbeN9l0) (:type :expr)
-                        :data $ {}
-                          |T $ {} (:at 1553621955156) (:by |B1y7Rc-Zz) (:id |RDSbeN9l0leaf) (:text |do) (:type :leaf)
-                          |j $ {} (:at 1553621957530) (:by |B1y7Rc-Zz) (:id |e6_N7ZM7c) (:type :expr)
-                            :data $ {}
-                              |T $ {} (:at 1553621958373) (:by |B1y7Rc-Zz) (:id |4uXq3-6f7) (:text |println) (:type :leaf)
-                              |j $ {} (:at 1553621971849) (:by |B1y7Rc-Zz) (:id |UQpE12UTQN) (:text "|\"no thing to clear in") (:type :leaf)
-                              |r $ {} (:at 1553621973335) (:by |B1y7Rc-Zz) (:id |Frpb5hWF2s) (:type :expr)
-                                :data $ {}
-                                  |T $ {} (:at 1553621973335) (:by |B1y7Rc-Zz) (:id |TGnPl7DVhg) (:text |->) (:type :leaf)
-                                  |j $ {} (:at 1553621973335) (:by |B1y7Rc-Zz) (:id |ZYe1omAomc) (:text |@*store) (:type :leaf)
-                                  |r $ {} (:at 1553621973335) (:by |B1y7Rc-Zz) (:id |6N0fYKEjsd) (:text |:router) (:type :leaf)
-                                  |v $ {} (:at 1553621973335) (:by |B1y7Rc-Zz) (:id |MtgWXxz309) (:text |:name) (:type :leaf)
           |reload! $ {} (:at 1629797005620) (:by |B1y7Rc-Zz) (:type :expr)
             :data $ {}
               |T $ {} (:at 1629797005620) (:by |B1y7Rc-Zz) (:text |defn) (:type :leaf)

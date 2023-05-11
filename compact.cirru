@@ -55,10 +55,10 @@
               and
                 = "\"k" $ .-key event
                 .-metaKey event
-              case (-> @*store :router :name)
+              case-default (-> @*store :router :name)
+                do $ println "\"no thing to clear in" (-> @*store :router :name)
                 :home $ dispatch! :process/clear nil
                 :history $ dispatch! :process/clear-history nil
-                do $ println "\"no thing to clear in" (-> @*store :router :name)
         |reload! $ quote
           defn reload! () $ if
             or (some? client-errors) (some? server-errors)
