@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.7-a4)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.8)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -55,10 +55,10 @@
               and
                 = "\"k" $ .-key event
                 .-metaKey event
-              case (-> @*store :router :name)
+              case-default (-> @*store :router :name)
+                do $ println "\"no thing to clear in" (-> @*store :router :name)
                 :home $ dispatch! :process/clear nil
                 :history $ dispatch! :process/clear-history nil
-                do $ println "\"no thing to clear in" (-> @*store :router :name)
         |reload! $ quote
           defn reload! () $ if
             or (some? client-errors) (some? server-errors)
@@ -1011,23 +1011,23 @@
                 {} (:pid pid) (:command command) (:cwd cwd)
                   :title $ :title op-data
                 , sid
-              .on proc "\"exit" $ fn (event _) (dispatch! :process/finish pid sid) (swap! *registry dissoc pid)
-              .on proc "\"error" $ fn (event) (js/console.error event)
+              .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event) (dispatch! :process/finish pid sid) (swap! *registry dissoc pid)
+              .!on proc "\"error" $ fn (event) (js/console.error event)
                 dispatch! :process/error
                   [] pid $ str event
                   , sid
                 dispatch! :process/finish pid sid
-              .on (.-stdout proc) |data $ fn (data)
+              .!on (.-stdout proc) |data $ fn (data)
                 dispatch! :process/stdout ([] pid data) sid
-              .on (.-stderr proc) |data $ fn (data)
+              .!on (.-stderr proc) |data $ fn (data)
                 dispatch! :process/stderr ([] pid data) sid
         |kill-process! $ quote
           defn kill-process! (pid dispatch! sid)
             let
                 proc $ get @*registry pid
               if (some? proc)
-                do $ .kill proc "\"SIGINT"
-                dispatch! :process/finish pid sid
+                do $ .!kill proc "\"SIGTERM"
+                do (eprintln "\"[warn] process not found in registry:" pid @*registry) (dispatch! :process/finish pid sid)
       :ns $ quote
         ns app.manager $ :require ([] |child_process :as cp)
     |app.schema $ {}

@@ -1,21 +1,21 @@
-name: Try to upload
+
+name: npm publish
 
 on:
-  push:
-    branches:
-      - main
-  pull_request: {}
+  release:
+    types: [created]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  publish-npm:
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
 
     - uses: actions/setup-node@v3
       with:
         node-version: 18
-        cache: 'yarn'
+        registry-url: https://registry.npmjs.org/
+        cache: yarn
 
     - uses: supplypike/setup-bin@v3
       with:
@@ -31,6 +31,9 @@ jobs:
 
     - run: caps --ci && yarn && yarn compile-server && yarn compile-page && yarn release-page
 
+    # - run: mkdir -p dist-server && mv js-out/bundle.js dist-server
+    #   name: Copy server scripts
+
     - name: Upload web assets
       id: deploy
       uses: Pendect/action-rsyncer@v2.0.0
@@ -45,3 +48,22 @@ jobs:
 
     - name: Display status from deploy
       run: echo "${{ steps.deploy.outputs.status }}"
+
+    # - name: Upload server script
+    #   id: deploy-server
+    #   uses: Pendect/action-rsyncer@v1.1.0
+    #   env:
+    #     DEPLOY_KEY: ${{secrets.rsync_private_key}}
+    #   with:
+    #     flags: '-avzr --progress'
+    #     options: ''
+    #     ssh_options: ''
+    #     src: 'dist-server/*'
+    #     dest: 'rsync-user@tiye.me:/servers/rebase-hell/'
+
+    # - name: Display status from deploy
+    #   run: echo "${{ steps.deploy-server.outputs.status }}"
+
+    - run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.npm_token}}
