@@ -33,6 +33,7 @@
               :effect/connect $ connect!
         |main! $ quote
           defn main! ()
+            if config/dev? $ load-console-formatter!
             println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
             render-app!
             connect!
@@ -105,7 +106,7 @@
                   :cursor :pointer
                   :margin 4
                   :color $ hsl 0 0 40
-                :on-click $ fn (e d! m!)
+                :on-click $ fn (e d!)
                   &doseq
                     command $ vals (:commands workflow)
                     d! :effect/run $ {}
@@ -186,7 +187,7 @@
                   div
                     {} $ :style ui/row-parted
                     comp-icon :edit-2
-                      &{} :fonr-size 14 :color (hsl 200 80 60) :cursor :pointer
+                      &{} :font-size 14 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
                         d! cursor $ assoc state :pop? true
                     comp-modal
@@ -204,7 +205,7 @@
                     comp-icon :x
                       &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                       fn (e d!)
-                        .show! remove-plugin d! $ fn ()
+                        .show remove-plugin d! $ fn ()
                           d! :workflow/remove-command $ [] workflow-id (:id command)
                 div
                   {} $ :style
@@ -808,7 +809,7 @@
                         :color $ hsl 200 80 60
                         :cursor :pointer
                       fn (e d!)
-                        d! cursor $ assoc state :pop? false
+                        d! cursor $ assoc state :pop? true
                     comp-modal
                       {} (:title |Demo)
                         :style $ {} (:width 400)
@@ -916,9 +917,12 @@
                         .show remove-plugin d! $ fn ()
                           d! :workflow/remove $ :id workflow
                 list-> ({})
-                  -> (:commands workflow)
-                    .map-pair $ fn (k command)
-                      [] k $ comp-command-row (>> states k) command (:id workflow)
+                  -> (:commands workflow) (.to-list)
+                    map $ fn (entry)
+                      let-sugar
+                            [] k command
+                            , entry
+                        [] k $ comp-command-row (>> states k) command (:id workflow)
                 .render remove-plugin
         |comp-workflow-editor $ quote
           defcomp comp-workflow-editor (states base-workflow on-toggle)
@@ -928,7 +932,9 @@
                   if (some? base-workflow)
                     select-keys base-workflow $ [] :name :base-dir
                     {} (:name |) (:base-dir |./)
-              div ({})
+              div
+                {} $ :style
+                  merge ui/column $ {} (:padding "\"8px")
                 div ({})
                   <> "\"Workflow" $ {} (:font-family ui/font-fancy)
                 =< nil 6
@@ -962,7 +968,7 @@
                             d! :workflow/edit $ assoc data :id (:id base-workflow)
                             d! :workflow/create data
                           d! cursor nil
-                          on-toggle
+                          on-toggle d!
                     <> "\"Submit"
         |style-workflow-entry $ quote
           def style-workflow-entry $ {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)
