@@ -253,9 +253,7 @@
                 router-data $ :data router
               if (nil? store) (comp-offline)
                 div
-                  {} $ :style
-                    merge ui/global ui/fullscreen ui/column $ {}
-                      :color $ hsl 0 0 70
+                  {} $ :class-name css-container
                   comp-navigation (:logged-in? store) router $ :count store
                   if (:logged-in? store)
                     let
@@ -266,7 +264,7 @@
                         :home $ comp-home (>> states :home) router-data
                         :workflows $ comp-workflow-container (>> states :workflows) (:workflows router-data)
                         :history $ comp-history (:histories router-data)
-                        :process $ comp-process-detail router-data
+                        :process $ comp-process-detail (>> states :detail) router-data
                     comp-login states
                   comp-status-color $ :color store
                   when dev? $ comp-inspect |Store store
@@ -296,41 +294,48 @@
               <> "|No connection..." $ {} (:font-family ui/font-fancy) (:font-size 24)
         |comp-status-color $ quote
           defcomp comp-status-color (color)
-            div $ {}
-              :style $ let
-                  size 24
-                {} (:width size) (:height size) (:position :absolute) (:bottom 60) (:left 8) (:background-color color) (:border-radius "\"50%") (:opacity 0.6) (:pointer-events :none)
+            div $ {} (:class-name css-status)
+              :style $ {} (:background-color color)
+        |css-container $ quote
+          defstyle css-container $ {}
+            "\"&" $ merge ui/global ui/fullscreen ui/column
+              {} $ :color (hsl 0 0 70)
+        |css-status $ quote
+          defstyle css-status $ {}
+            "\"&" $ let
+                size 24
+              {} (:width size) (:height size) (:position :absolute) (:bottom 60) (:left 8) (:border-radius "\"50%") (:opacity 0.6) (:pointer-events :none)
         |style-body $ quote
           def style-body $ {} (:padding "|8px 16px")
       :ns $ quote
         ns app.comp.container $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp <> >> div span button
-          [] respo.comp.inspect :refer $ [] comp-inspect
-          [] respo.comp.space :refer $ [] =<
-          [] app.comp.navigation :refer $ [] comp-navigation
-          [] app.comp.profile :refer $ [] comp-profile
-          [] app.comp.login :refer $ [] comp-login
-          [] respo-message.comp.messages :refer $ [] comp-messages
-          [] cumulo-reel.comp.reel :refer $ [] comp-reel
-          [] app.config :refer $ [] dev?
-          [] app.schema :as schema
-          [] app.config :as config
-          [] app.comp.missing :refer $ [] comp-missing
-          [] app.comp.home :refer $ [] comp-home
-          [] app.comp.workflow :refer $ [] comp-workflow-container
-          [] app.comp.history :refer $ [] comp-history
-          [] app.comp.process-detail :refer $ [] comp-process-detail
+          respo-ui.core :refer $ hsl
+          respo-ui.core :as ui
+          respo.core :refer $ defcomp <> >> div span button
+          respo.comp.inspect :refer $ comp-inspect
+          respo.comp.space :refer $ =<
+          app.comp.navigation :refer $ comp-navigation
+          app.comp.profile :refer $ comp-profile
+          app.comp.login :refer $ comp-login
+          respo-message.comp.messages :refer $ comp-messages
+          cumulo-reel.comp.reel :refer $ comp-reel
+          app.config :refer $ dev?
+          app.schema :as schema
+          app.config :as config
+          app.comp.missing :refer $ comp-missing
+          app.comp.home :refer $ comp-home
+          app.comp.workflow :refer $ comp-workflow-container
+          app.comp.history :refer $ comp-history
+          app.comp.process-detail :refer $ comp-process-detail
+          respo.css :refer $ defstyle
     |app.comp.history $ {}
       :defs $ {}
         |comp-history $ quote
           defcomp comp-history (histories)
             div
-              {} $ :style
-                merge ui/flex ui/column $ {} (:padding "|16px 16px") (:font-family ui/font-code) (:overflow :auto)
+              {} $ :class-name css-history-page
               div ({})
-                button $ {} (:style style/button) (:inner-text "\"Clear")
+                button $ {} (:class-name css/button) (:inner-text "\"Clear")
                   :on-click $ fn (e d!) (d! :process/clear-history nil)
               =< nil 16
               if (empty? histories)
@@ -342,24 +347,35 @@
                     fn (history)
                       [] (:id history)
                         div
-                          {} $ :style
-                            merge ui/row-middle $ {} (:margin "\"0px")
-                              :background-color $ hsl 200 80 24
-                              :padding "\"4px 8px"
-                              :width 960
-                              :min-width :max-content
-                              :border-bottom $ str "\"1px solid " (hsl 0 0 0 0.2)
-                              :word-break :break-word
+                          {} $ :class-name css-history
                           <>
                             -> (:started-at history) dayjs $ .format "\"MM-DD HH:mm:ss"
-                            merge style/text $ {} (:font-size 12)
-                              :color $ hsl 0 0 70
+                            , css-date-text
                           <>
                             or (:title history) "\"Task"
                             merge style/text $ {} (:min-width 160)
                           <> (:command history)
                             merge style/text $ {} (:min-width 160)
                           <> (:cwd history) (merge style/text)
+        |css-date-text $ quote
+          defstyle css-date-text $ {}
+            "\"&" $ merge style/text
+              {} (:font-size 12)
+                :color $ hsl 0 0 70
+        |css-history $ quote
+          defstyle css-history $ {}
+            "\"&" $ merge ui/row-middle
+              {} (:margin "\"0px")
+                :background-color $ hsl 200 80 24
+                :padding "\"4px 8px"
+                :width 960
+                :min-width :max-content
+                :border-bottom $ str "\"1px solid " (hsl 0 0 0 0.2)
+                :word-break :break-word
+        |css-history-page $ quote
+          defstyle css-history-page $ {}
+            "\"&" $ merge ui/flex ui/column
+              {} (:padding "|16px 16px") (:font-family ui/font-code) (:overflow :auto)
       :ns $ quote
         ns app.comp.history $ :require
           [] respo-ui.core :refer $ [] hsl
@@ -368,6 +384,8 @@
           [] respo.comp.space :refer $ [] =<
           [] app.style :as style
           [] "\"dayjs" :default dayjs
+          respo.css :refer $ defstyle
+          respo-ui.css :as css
     |app.comp.home $ {}
       :defs $ {}
         |comp-home $ quote
@@ -377,16 +395,14 @@
                 state $ or (:data states)
                   {} (:query "\"") (:pop? false)
               div
-                {} $ :style
-                  merge ui/flex ui/column $ {} (:padding 8) (:overflow :auto)
+                {} $ :class-name css-home
                 div
                   {} $ :style
                     merge ui/row-parted $ {} (:align-items :center) (:padding "\"0 8px")
                   div
                     {} $ :style (merge ui/flex ui/row-middle)
-                    input $ {} (:style style-filter)
+                    input $ {} (:class-name css-filter) (:placeholder "\"filter...")
                       :value $ :query state
-                      :placeholder "\"filter..."
                       :on-input $ fn (e d!)
                         d! cursor $ assoc state :query (:value e)
                     list->
@@ -403,7 +419,9 @@
                           [] k $ comp-command-button workflow
                   div
                     {} $ :style ui/row-middle
-                    button $ {} (:style style/button) (:inner-text "\"Run")
+                    button $ {}
+                      :class-name $ str-spaced css/button style/css-button
+                      :inner-text "\"Run"
                       :on-click $ fn (e d!)
                         d! cursor $ assoc state :pop? true
                     comp-modal
@@ -421,7 +439,9 @@
                       fn (d!)
                         d! cursor $ assoc state :pop? false
                     =< 8 nil
-                    button $ {} (:style style/button) (:inner-text "\"Kill all")
+                    button $ {}
+                      :class-name $ str-spaced css/button style/css-button
+                      :inner-text "\"Kill all"
                       :on-click $ fn (e d!)
                         &doseq
                           pid $ keys (:processes router-data)
@@ -442,30 +462,37 @@
                         :started-at $ last x
                     .map-pair $ fn (pid process)
                       [] pid $ comp-process process
-        |style-filter $ quote
-          def style-filter $ {} (:min-width 60) (:width 60) (:background-color :transparent)
-            :color $ hsl 0 0 100 0.8
-            :border-width "\"0 0 1px 0"
-            :border-bottom $ str "\"1px solid " (hsl 0 0 100 0.5)
-            :border-radius 0
-            :outline :none
-            :line-height "\"28px"
-            :font-size 14
-            :font-family ui/font-normal
-            :padding "\"0 8px"
+        |css-filter $ quote
+          defstyle css-filter $ {}
+            "\"&" $ {} (:min-width 60) (:width 60) (:background-color :transparent)
+              :color $ hsl 0 0 100 0.8
+              :border-width "\"0 0 1px 0"
+              :border-bottom $ str "\"1px solid " (hsl 0 0 100 0.5)
+              :border-radius 0
+              :outline :none
+              :line-height "\"28px"
+              :font-size 14
+              :font-family ui/font-normal
+              :padding "\"0 8px"
+        |css-home $ quote
+          defstyle css-home $ {}
+            "\"&" $ merge ui/flex ui/column
+              {} (:padding 8) (:overflow :auto)
       :ns $ quote
         ns app.comp.home $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.comp.space :refer $ [] =<
-          [] respo.core :refer $ [] defcomp >> list-> button <> span div a input
-          [] app.comp.process :refer $ [] comp-process
-          [] app.util :refer $ [] join-path map-val
-          [] app.style :as style
-          [] app.comp.command :refer $ [] comp-command-button comp-command-editor
-          [] fuzzy-filter.core :refer $ [] parse-by-letter
+          respo-ui.core :refer $ hsl
+          respo-ui.core :as ui
+          respo.comp.space :refer $ =<
+          respo.core :refer $ defcomp >> list-> button <> span div a input
+          app.comp.process :refer $ comp-process
+          app.util :refer $ join-path map-val
+          app.style :as style
+          app.comp.command :refer $ comp-command-button comp-command-editor
+          fuzzy-filter.core :refer $ parse-by-letter
           respo-alerts.core :refer $ comp-modal
           respo.comp.inspect :refer $ comp-inspect
+          respo-ui.css :as css
+          respo.css :refer $ defstyle
     |app.comp.login $ {}
       :defs $ {}
         |comp-login $ quote
@@ -538,11 +565,7 @@
         |comp-navigation $ quote
           defcomp comp-navigation (logged-in? router count-members)
             div
-              {} $ :style
-                merge ui/row-center $ {} (:height 32) (:justify-content :space-between) (:padding "|0 16px") (:font-size 16)
-                  :border-bottom $ str "|1px solid " (hsl 0 0 0 0.1)
-                  :font-family ui/font-fancy
-                  :background-color $ hsl 0 0 0 0.6
+              {} $ :class-name css-nav
               div
                 {} $ :style ui/row
                 render-entry router :home |Termina
@@ -558,6 +581,13 @@
                 <> $ if logged-in? |Me |Guest
                 =< 8 nil
                 <> count-members
+        |css-nav $ quote
+          defstyle css-nav $ {}
+            "\"&" $ merge ui/row-center
+              {} (:height 32) (:justify-content :space-between) (:padding "|0 16px") (:font-size 16)
+                :border-bottom $ str "|1px solid " (hsl 0 0 0 0.1)
+                :font-family ui/font-fancy
+                :background-color $ hsl 0 0 0 0.04
         |render-entry $ quote
           defn render-entry (router router-name title)
             div
@@ -574,31 +604,29 @@
             :color $ hsl 0 0 60
       :ns $ quote
         ns app.comp.navigation $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.comp.space :refer $ [] =<
-          [] respo.core :refer $ [] defcomp <> >> span div
-          [] app.config :as config
+          respo-ui.core :refer $ hsl
+          respo-ui.core :as ui
+          respo.comp.space :refer $ =<
+          respo.core :refer $ defcomp <> >> span div
+          app.config :as config
+          respo.css :refer $ defstyle
     |app.comp.process $ {}
       :defs $ {}
         |comp-process $ quote
           defcomp comp-process (process)
             div
-              {} $ :style
-                merge $ {} (:margin 8) (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top)
+              {} $ :class-name css-process
               div
-                {} $ :style
-                  merge ui/row-parted
-                    {} (:background-color "\"rgb(213,214,209)") (:color :black) (:padding "\"4px 4px")
-                    if (:alive? process)
-                      {} $ :background-color (hsl 50 100 60)
+                {} (:class-name css-title-bar)
+                  :style $ if (:alive? process)
+                    {} $ :background-color (hsl 50 100 60)
                 div
                   {} $ :style ui/row-middle
                   <>
                     or (:title process) "\"Task"
                     merge style/text $ {} (:color :black)
                 div
-                  {} $ :style ui/row-middle
+                  {} $ :class-name css/row-middle
                   button $ {}
                     :style $ merge style/button
                       {} (:color :red) (:border-color :red)
@@ -609,9 +637,7 @@
                     :inner-text "\"View"
                   if (:alive? process)
                     a
-                      {}
-                        :style $ merge style/link
-                          {} (:color :red) (:border-color :red)
+                      {} (:class-name css-link-kill)
                         :on-click $ fn (e d!)
                           d! :effect/kill $ :pid process
                       <> "\"Kill"
@@ -623,10 +649,7 @@
                           :title $ :title process
                         d! :process/remove-dead $ :pid process
               div
-                {} $ :style
-                  merge ui/row-middle $ {}
-                    :background-color $ hsl 0 0 0 0.5
-                    :font-size 10
+                {} $ :class-name css-process-log
                 <> (:command process) (merge style/text)
                 =< 8 nil
                 <> (:cwd process)
@@ -635,7 +658,7 @@
               if-not
                 empty? $ :content process
                 list->
-                  {} $ :style style-content-list
+                  {} $ :class-name css-content-list
                   -> (:content process) (.to-list) (take-last 4)
                     .map-indexed $ fn (idx chunk)
                       [] idx $ let
@@ -662,79 +685,147 @@
                               :padding 8
                               :display :block
                               :white-space :pre-line
-        |style-content-list $ quote
-          def style-content-list $ {} (:font-family ui/font-code) (:white-space :pre) (:font-size 12) (:line-height "\"1.5em") (:max-height 240) (:max-width 800) (:overflow :auto)
+        |css-content-list $ quote
+          defstyle css-content-list $ {}
+            "\"&" $ {} (:font-family ui/font-code) (:white-space :pre) (:font-size 12) (:line-height "\"1.5em") (:max-height 240) (:max-width 800) (:overflow :auto) (:border-radius "\"4px")
+        |css-link-kill $ quote
+          defstyle css-link-kill $ {}
+            "\"&" $ merge style/link
+              {} (:color :red) (:border-color :red)
+        |css-process $ quote
+          defstyle css-process $ {}
+            "\"&" $ merge
+              {} (:margin 8) (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)")
+        |css-process-log $ quote
+          defstyle css-process-log $ {}
+            "\"&" $ merge ui/row-middle
+              {}
+                :background-color $ hsl 0 0 0 0.5
+                :font-size 10
+        |css-title-bar $ quote
+          defstyle css-title-bar $ {}
+            "\"&" $ merge ui/row-parted
+              {} (:background-color "\"rgb(213,214,209)") (:color :black) (:padding "\"4px 4px") (:border-radius "\"4px")
         |url-pattern $ quote
           def url-pattern $ new js/RegExp "\"https?://\\S+" "\"g"
       :ns $ quote
         ns app.comp.process $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.comp.space :refer $ [] =<
-          [] respo.core :refer $ [] defcomp list-> >> <> span div button a
-          [] app.style :as style
-          [] app.util :refer $ [] map-with-index
+          respo-ui.core :refer $ hsl
+          respo-ui.core :as ui
+          respo.comp.space :refer $ =<
+          respo.core :refer $ defcomp list-> >> <> span div button a
+          app.style :as style
+          app.util :refer $ map-with-index
           respo-alerts.core :refer $ comp-alerts
+          respo.css :refer $ defstyle
+          respo-ui.css :as css
     |app.comp.process-detail $ {}
       :defs $ {}
         |comp-process-detail $ quote
-          defcomp comp-process-detail (process)
-            div
-              {} $ :style
-                merge ui/flex ui/column $ {} (:padding "|8px 16px") (:overflow :auto)
+          defcomp comp-process-detail (states process)
+            let
+                cursor $ :cursor states
+                state $ either (:data states)
+                  {} $ :filter "\""
               div
-                {} $ :style
-                  merge ui/row-middle $ {} (:font-family ui/font-code)
-                code $ {}
-                  :inner-text $ or (:title process) "\"Task"
-                  :style $ merge style/text
-                    {} $ :padding "\"0 8px"
-                =< 16 nil
-                <> (:command process) style/text
-                =< 16 nil
-                <> (:cwd process) style/text
-                =< 16 nil
-                <> (:pid process) style/text
-                =< 16 nil
-                if-not
-                  empty? $ :content process
-                  button
-                    {}
-                      :on-click $ fn (e d!)
-                        d! :process/shorten-content $ :pid process
-                      :style style/button
-                    <> "\"Shorten"
-              =< nil 16
-              list->
-                {} $ :style
-                  merge ui/flex
-                    {} (:overflow :auto) (:padding-bottom 120)
-                    {}
-                      :border $ str "\"1px solid " (hsl 0 0 100 0.3)
-                      :padding 8
-                      :background-color $ hsl 0 0 0 0.5
-                      :margin "\"16px 0"
-                      :overflow :auto
-                      :word-break :break-all
-                      :line-height 1.4
-                -> (:content process)
-                  map-indexed $ fn (idx chunk)
-                    [] idx $ span
-                      {}
-                        :style $ merge
-                          {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
-                          if
-                            = :stderr $ :type chunk
-                            {} $ :color :red
-                        :inner-text $ .!replace (:data chunk) &newline (str &newline &newline)
+                {} $ :class-name css-process
+                div
+                  {} $ :style ui/row-parted
+                  div
+                    {} $ :class-name css-toolbar
+                    code $ {}
+                      :inner-text $ or (:title process) "\"Task"
+                      :style $ merge style/text
+                        {} $ :padding "\"0 8px"
+                    =< 16 nil
+                    <> (:command process) style/text
+                    =< 16 nil
+                    <> (:cwd process) style/text
+                    =< 16 nil
+                    <> (:pid process) style/text
+                    =< 16 nil
+                    if-not
+                      empty? $ :content process
+                      button
+                        {}
+                          :on-click $ fn (e d!)
+                            d! :process/shorten-content $ :pid process
+                          :style style/button
+                        <> "\"Shorten"
+                    =< 8 nil
+                    if (:alive? process)
+                      a
+                        {}
+                          :style $ merge style/link
+                            {} (:color :red) (:border-color :red)
+                          :on-click $ fn (e d!)
+                            d! :effect/kill $ :pid process
+                        <> "\"Kill"
+                      a $ {} (:style style/link) (:inner-text "\"Redo")
+                        :on-click $ fn (e d!)
+                          d! :effect/run $ {}
+                            :cwd $ :cwd process
+                            :command $ :command process
+                            :title $ :title process
+                          d! :process/remove-dead $ :pid process
+                  input $ {} (:class-name css-filter)
+                    :value $ :filter state
+                    :on-input $ fn (e d!)
+                      d! cursor $ assoc state :filter (:value e)
+                =< nil 16
+                list->
+                  {} $ :class-name css-logs-list
+                  -> (:content process)
+                    filter $ fn (chunk)
+                      if
+                        blank? $ :filter state
+                        , true $ .includes? (:data chunk) (:filter state)
+                    map-indexed $ fn (idx chunk)
+                      [] idx $ span
+                        {} (:class-name css-log)
+                          :style $ merge
+                            if
+                              = :stderr $ :type chunk
+                              {} $ :color :red
+                          :inner-text $ .!replace (:data chunk) &newline (str &newline &newline)
+        |css-filter $ quote
+          defstyle css-filter $ {}
+            "\"&" $ merge ui/input
+              {}
+                :color $ hsl 0 0 100
+                :background-color $ hsl 0 0 100 0
+        |css-log $ quote
+          defstyle css-log $ {}
+            "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
+        |css-logs-list $ quote
+          defstyle css-logs-list $ {}
+            "\"&" $ merge ui/flex
+              {} (:overflow :auto) (:padding-bottom 120)
+              {}
+                :border $ str "\"1px solid " (hsl 0 0 100 0.3)
+                :padding 8
+                :background-color $ hsl 0 0 0 0.5
+                :margin "\"16px 0"
+                :overflow :auto
+                :word-break :break-all
+                :line-height 1.4
+        |css-process $ quote
+          defstyle css-process $ {}
+            "\"&" $ merge ui/flex ui/column
+              {} (:padding "|8px 16px") (:overflow :auto)
+        |css-toolbar $ quote
+          defstyle css-toolbar $ {}
+            "\"&" $ merge ui/row-middle
+              {} $ :font-family ui/font-code
       :ns $ quote
         ns app.comp.process-detail $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp <> >> span div pre list-> code button
-          [] respo.comp.space :refer $ [] =<
-          [] app.util :refer $ [] map-with-index
-          [] app.style :as style
+          respo-ui.core :refer $ hsl
+          respo-ui.core :as ui
+          respo.core :refer $ defcomp <> >> span div pre list-> code button a input
+          respo.comp.space :refer $ =<
+          app.util :refer $ map-with-index
+          app.style :as style
+          respo.css :refer $ defstyle
     |app.comp.profile $ {}
       :defs $ {}
         |comp-profile $ quote
@@ -1210,6 +1301,11 @@
         |button $ quote
           def button $ merge ui/button
             {} $ :background-color :transparent
+        |css-button $ quote
+          defstyle css-button $ {}
+            "\"button$0" $ {} (:background-color :transparent)
+            "\"button$0:hover" $ {}
+              :background-color $ hsl 0 0 100 0.06
         |input $ quote
           def input $ merge ui/input
             {} $ :width 320
@@ -1224,6 +1320,7 @@
         ns app.style $ :require
           [] respo-ui.core :refer $ [] hsl
           [] respo-ui.core :as ui
+          respo.css :refer $ defstyle
     |app.twig.container $ {}
       :defs $ {}
         |twig-container $ quote
