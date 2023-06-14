@@ -744,14 +744,6 @@
                     =< 16 nil
                     <> (:pid process) style/text
                     =< 16 nil
-                    if-not
-                      empty? $ :content process
-                      button
-                        {}
-                          :on-click $ fn (e d!)
-                            d! :process/shorten-content $ :pid process
-                          :style style/button
-                        <> "\"Shorten"
                     =< 8 nil
                     if (:alive? process)
                       a
@@ -768,10 +760,21 @@
                             :command $ :command process
                             :title $ :title process
                           d! :process/remove-dead $ :pid process
-                  input $ {} (:class-name css-filter)
-                    :value $ :filter state
-                    :on-input $ fn (e d!)
-                      d! cursor $ assoc state :filter (:value e)
+                  div
+                    {} $ :style
+                      merge ui/row-middle $ {} (:gap 8)
+                    if-not
+                      empty? $ :content process
+                      a
+                        {}
+                          :on-click $ fn (e d!)
+                            d! :process/shorten-content $ :pid process
+                          :style style/link
+                        <> "\"Clear"
+                    input $ {} (:class-name css-filter)
+                      :value $ :filter state
+                      :on-input $ fn (e d!)
+                        d! cursor $ assoc state :filter (:value e)
                 =< nil 16
                 list->
                   {} $ :class-name css-logs-list
@@ -794,6 +797,7 @@
               {}
                 :color $ hsl 0 0 100
                 :background-color $ hsl 0 0 100 0
+                :border-color $ hsl 0 0 100 0.4
         |css-log $ quote
           defstyle css-log $ {}
             "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
