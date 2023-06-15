@@ -695,7 +695,7 @@
         |css-process $ quote
           defstyle css-process $ {}
             "\"&" $ merge
-              {} (:margin 8) (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)")
+              {} (:margin 8) (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)") (:transition-duration "\"300ms")
         |css-process-log $ quote
           defstyle css-process-log $ {}
             "\"&" $ merge ui/row-middle
@@ -726,17 +726,17 @@
             let
                 cursor $ :cursor states
                 state $ either (:data states)
-                  {} $ :filter "\""
+                  {} (:filter "\"") (:wrap? true)
               div
                 {} $ :class-name css-process
                 div
                   {} $ :style ui/row-parted
                   div
                     {} $ :class-name css-toolbar
-                    code $ {}
+                    span $ {}
                       :inner-text $ or (:title process) "\"Task"
                       :style $ merge style/text
-                        {} $ :padding "\"0 8px"
+                        {} (:font-family ui/font-fancy) (:padding "\"0 8px")
                     =< 16 nil
                     <> (:command process) style/text
                     =< 16 nil
@@ -763,6 +763,16 @@
                   div
                     {} $ :style
                       merge ui/row-middle $ {} (:gap 8)
+                    input $ {} (:type "\"checkbox")
+                      :style $ {} (:cursor :pointer) (:opacity 0.8)
+                      :checked $ :wrap? state
+                      :on-input $ fn (e d!)
+                        d! cursor $ assoc state :wrap?
+                          not $ :wrap? state
+                    input $ {} (:class-name css-filter)
+                      :value $ :filter state
+                      :on-input $ fn (e d!)
+                        d! cursor $ assoc state :filter (:value e)
                     if-not
                       empty? $ :content process
                       a
@@ -771,26 +781,28 @@
                             d! :process/shorten-content $ :pid process
                           :style style/link
                         <> "\"Clear"
-                    input $ {} (:class-name css-filter)
-                      :value $ :filter state
-                      :on-input $ fn (e d!)
-                        d! cursor $ assoc state :filter (:value e)
-                =< nil 16
-                list->
+                =< nil 8
+                div
                   {} $ :class-name css-logs-list
-                  -> (:content process)
-                    filter $ fn (chunk)
-                      if
-                        blank? $ :filter state
-                        , true $ .includes? (:data chunk) (:filter state)
-                    map-indexed $ fn (idx chunk)
-                      [] idx $ span
-                        {} (:class-name css-log)
-                          :style $ merge
-                            if
-                              = :stderr $ :type chunk
-                              {} $ :color :red
-                          :inner-text $ .!replace (:data chunk) &newline (str &newline &newline)
+                  list->
+                    {} $ :style
+                      {} $ :white-space
+                        if (:wrap? state) "\"normal" "\"pre"
+                    -> (:content process)
+                      filter $ fn (chunk)
+                        if
+                          blank? $ :filter state
+                          , true $ .includes? (:data chunk) (:filter state)
+                      map-indexed $ fn (idx chunk)
+                        [] idx $ span
+                          {} (:class-name css-log)
+                            :style $ merge
+                              if
+                                = :stderr $ :type chunk
+                                {} $ :color :red
+                            :inner-text $ do (:data chunk)
+                              ; .!replace (:data chunk) &newline $ str &newline &newline
+                  =< nil 200
         |css-filter $ quote
           defstyle css-filter $ {}
             "\"&" $ merge ui/input
@@ -804,19 +816,17 @@
         |css-logs-list $ quote
           defstyle css-logs-list $ {}
             "\"&" $ merge ui/flex
-              {} (:overflow :auto) (:padding-bottom 120)
-              {}
+              {} (:overflow :auto)
                 :border $ str "\"1px solid " (hsl 0 0 100 0.3)
                 :padding 8
                 :background-color $ hsl 0 0 0 0.5
-                :margin "\"16px 0"
                 :overflow :auto
                 :word-break :break-all
                 :line-height 1.4
         |css-process $ quote
           defstyle css-process $ {}
             "\"&" $ merge ui/flex ui/column
-              {} (:padding "|8px 16px") (:overflow :auto)
+              {} (; :padding "|8px 16px") (:overflow :auto)
         |css-toolbar $ quote
           defstyle css-toolbar $ {}
             "\"&" $ merge ui/row-middle
