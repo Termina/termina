@@ -726,7 +726,7 @@
             let
                 cursor $ :cursor states
                 state $ either (:data states)
-                  {} (:filter "\"") (:wrap? true)
+                  {} (:filter "\"") (:filter? true) (:wrap? true)
               div
                 {} $ :class-name css-process
                 div
@@ -740,7 +740,9 @@
                     =< 16 nil
                     <> (:command process) style/text
                     =< 16 nil
-                    <> (:cwd process) style/text
+                    <> (:cwd process)
+                      merge style/text $ {} (:font-size 12)
+                        :color $ hsl 0 0 70
                     =< 16 nil
                     <> (:pid process) style/text
                     =< 16 nil
@@ -762,13 +764,21 @@
                           d! :process/remove-dead $ :pid process
                   div
                     {} $ :style
-                      merge ui/row-middle $ {} (:gap 8)
+                      merge ui/row-middle $ {} (:gap 4)
                     input $ {} (:type "\"checkbox")
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
                       :checked $ :wrap? state
                       :on-input $ fn (e d!)
                         d! cursor $ assoc state :wrap?
                           not $ :wrap? state
+                    <> "\"Wrap?"
+                    =< 8 nil
+                    input $ {} (:type "\"checkbox")
+                      :style $ {} (:cursor :pointer) (:opacity 0.8)
+                      :checked $ :filter? state
+                      :on-input $ fn (e d!)
+                        d! cursor $ assoc state :filter?
+                          not $ :filter? state
                     input $ {} (:class-name css-filter)
                       :value $ :filter state
                       :on-input $ fn (e d!)
@@ -791,7 +801,9 @@
                     -> (:content process)
                       filter $ fn (chunk)
                         if
-                          blank? $ :filter state
+                          or
+                            not $ :filter? state
+                            blank? $ :filter state
                           , true $ .includes? (:data chunk) (:filter state)
                       map-indexed $ fn (idx chunk)
                         [] idx $ span
