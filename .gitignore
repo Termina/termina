@@ -10,3 +10,5 @@ out-page/
 yarn-error.log
 
 dist-server/
+
+.DS_Store
