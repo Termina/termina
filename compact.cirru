@@ -23,14 +23,15 @@
                 :on-close $ fn (event) (reset! *store nil) (js/console.error "\"Lost connection!")
                 :on-data on-server-data
         |dispatch! $ quote
-          defn dispatch! (op op-data)
+          defn dispatch! (op)
             when
-              and config/dev? $ not= op :states
-              println "\"Dispatch" op op-data
-            case-default op
-              ws-send! $ {} (:kind :op) (:op op) (:data op-data)
-              :states $ reset! *states (update-states @*states op-data)
-              :effect/connect $ connect!
+              and config/dev? $ not= (nth op 0) :states
+              println "\"Dispatch" op
+            tag-match op
+                :states cursor s
+                reset! *states $ update-states @*states cursor s
+              (:effect/connect) (connect!)
+              _ $ ws-send! op
         |main! $ quote
           defn main! ()
             if config/dev? $ load-console-formatter!
@@ -58,8 +59,8 @@
                 .-metaKey event
               case-default (-> @*store :router :name)
                 do $ println "\"no thing to clear in" (-> @*store :router :name)
-                :home $ dispatch! :process/clear nil
-                :history $ dispatch! :process/clear-history nil
+                :home $ dispatch! (:: :process/clear)
+                :history $ dispatch! (:: :process/clear-history)
         |reload! $ quote
           defn reload! () $ if
             or (some? client-errors) (some? server-errors)
@@ -74,10 +75,10 @@
             , dispatch!
         |simulate-login! $ quote
           defn simulate-login! () $ let
-              raw $ .!getItem js/localStorage (:storage-key config/site)
+              raw $ js/localStorage.getItem (:storage-key config/site)
             if (some? raw)
               do (println "\"Found storage.")
-                dispatch! :user/log-in $ parse-cirru-edn raw
+                dispatch! $ :: :user/log-in (parse-cirru-edn raw)
               do $ println "\"Found no storage."
       :ns $ quote
         ns app.client $ :require
@@ -1130,20 +1131,26 @@
                   js-object $ :cwd cwd
                 pid $ .-pid proc
               swap! *registry assoc pid proc
-              dispatch! :process/create
-                {} (:pid pid) (:command command) (:cwd cwd)
+              dispatch!
+                :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
                   :title $ :title op-data
                 , sid
-              .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event) (dispatch! :process/finish pid sid) (swap! *registry dissoc pid)
+              .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event)
+                dispatch! (:: :process/finish pid) sid
+                swap! *registry dissoc pid
               .!on proc "\"error" $ fn (event) (js/console.error event)
-                dispatch! :process/error
-                  [] pid $ str event
+                dispatch!
+                  :: :process/error $ [] pid (str event)
                   , sid
-                dispatch! :process/finish pid sid
+                dispatch! (:: :process/finish pid) sid
               .!on (.-stdout proc) |data $ fn (data)
-                dispatch! :process/stdout ([] pid data) sid
+                dispatch!
+                  :: :process/stdout $ [] pid data
+                  , sid
               .!on (.-stderr proc) |data $ fn (data)
-                dispatch! :process/stderr ([] pid data) sid
+                dispatch!
+                  :: :process/stderr $ [] pid data
+                  , sid
         |kill-process! $ quote
           defn kill-process! (pid dispatch! sid)
             let
@@ -1217,18 +1224,18 @@
                 if (= npm-version version) (println "\"Running latest version" version)
                   println $ .!yellow chalk (str "\"New version " npm-version "\" available, current one is " version "\" . Please upgrade!\n\nyarn global add termina\n")
         |dispatch! $ quote
-          defn dispatch! (op op-data sid)
+          defn dispatch! (op sid)
             let
                 op-id $ id!
                 op-time $ unix-time!
-              if config/dev? $ println |Dispatch! (str op) op-data sid
+              if config/dev? $ println |Dispatch! (str op) sid
               try
-                cond
-                    = op :effect/persist
+                tag-match op
+                    :effect/persist
                     persist-db!
-                  (= op :effect/run) (create-process! op-data dispatch! sid)
-                  (= op :effect/kill) (kill-process! op-data dispatch! sid)
-                  true $ reset! *reel (reel-reducer @*reel updater op op-data sid op-id op-time)
+                  (:effect/run d) (create-process! d dispatch! sid)
+                  (:effect/kill d) (kill-process! d dispatch! sid)
+                  _ $ reset! *reel (reel-reducer @*reel updater op sid op-id op-time)
                 fn (error) (js/console.error error)
         |main! $ quote
           defn main! ()
@@ -1277,11 +1284,12 @@
         |run-server! $ quote
           defn run-server! (port)
             wss-serve! port $ {}
-              :on-open $ fn (sid socket) (@*proxied-dispatch! :session/connect nil sid) (println "\"New client.")
-              :on-data $ fn (sid action)
-                case-default (:kind action) (println "\"unknown action:" action)
-                  :op $ @*proxied-dispatch! (:op action) (:data action) sid
-              :on-close $ fn (sid event) (println "\"Client closed!") (@*proxied-dispatch! :session/disconnect nil sid)
+              :on-open $ fn (sid socket)
+                @*proxied-dispatch! (:: :session/connect) sid
+                println "\"New client."
+              :on-data $ fn (sid action) (@*proxied-dispatch! action sid)
+              :on-close $ fn (sid event) (println "\"Client closed!")
+                @*proxied-dispatch! (:: :session/disconnect) sid
               :on-error $ fn (error) (js/console.error error)
         |storage-file $ quote
           def storage-file $ path/join js/process.env.HOME "\".config" (:storage-file config/site)
@@ -1392,34 +1400,32 @@
     |app.updater $ {}
       :defs $ {}
         |updater $ quote
-          defn updater (db op op-data sid op-id op-time)
-            let
-                f $ case-default op
-                  do (println "|Unknown op:" op)
-                    fn (& args) db
-                  :session/connect session/connect
-                  :session/disconnect session/disconnect
-                  :session/remove-message session/remove-message
-                  :user/log-in user/log-in
-                  :user/sign-up user/sign-up
-                  :user/log-out user/log-out
-                  :router/change router/change
-                  :process/create process/create
-                  :process/stdout process/stdout
-                  :process/stderr process/stderr
-                  :process/error process/error
-                  :process/clear process/clear
-                  :process/finish process/finish
-                  :process/remove-dead process/remove-dead
-                  :process/shorten-content process/shorten-content
-                  :workflow/create workflow/create-workflow
-                  :workflow/remove workflow/remove-workflow
-                  :workflow/add-command workflow/add-command
-                  :workflow/remove-command workflow/remove-command
-                  :workflow/edit-command workflow/edit-command
-                  :workflow/edit workflow/edit-workflow
-                  :process/clear-history process/clear-history
-              f db op-data sid op-id op-time
+          defn updater (db op sid op-id op-time)
+            tag-match op
+                :session/connect
+                session/connect db sid op-id op-time
+              (:session/disconnect) (session/disconnect db sid op-id op-time)
+              (:session/remove-message d) (session/remove-message db d sid op-id op-time)
+              (:user/log-in d) (user/log-in db d sid op-id op-time)
+              (:user/sign-up d) (user/sign-up db d sid op-id op-time)
+              (:user/log-out d) (user/log-out db d sid op-id op-time)
+              (:router/change d) (router/change db d sid op-id op-time)
+              (:process/create d) (process/create db d sid op-id op-time)
+              (:process/stdout d) (process/stdout db d sid op-id op-time)
+              (:process/stderr d) (process/stderr db d sid op-id op-time)
+              (:process/error d) (process/error db d sid op-id op-time)
+              (:process/clear d) (process/clear db d sid op-id op-time)
+              (:process/finish d) (process/finish db d sid op-id op-time)
+              (:process/remove-dead d) (process/remove-dead db d sid op-id op-time)
+              (:process/shorten-content d) (process/shorten-content db d sid op-id op-time)
+              (:workflow/create d) (workflow/create-workflow db d sid op-id op-time)
+              (:workflow/remove d) (workflow/remove-workflow db d sid op-id op-time)
+              (:workflow/add-command d) (workflow/add-command db d sid op-id op-time)
+              (:workflow/remove-command d) (workflow/remove-command db d sid op-id op-time)
+              (:workflow/edit-command d) (workflow/edit-command db d sid op-id op-time)
+              (:workflow/edit d) (workflow/edit-workflow db d sid op-id op-time)
+              (:process/clear-history d) (process/clear-history db d sid op-id op-time)
+              _ $ do (println "|Unknown op:" op) db
       :ns $ quote
         ns app.updater $ :require ([] app.updater.session :as session) ([] app.updater.user :as user) ([] app.updater.router :as router) ([] app.schema :as schema)
           [] respo-message.updater :refer $ [] update-messages
@@ -1502,11 +1508,11 @@
     |app.updater.session $ {}
       :defs $ {}
         |connect $ quote
-          defn connect (db op-data sid op-id op-time)
+          defn connect (db sid op-id op-time)
             assoc-in db ([] :sessions sid)
               merge schema/session $ {} (:id sid)
         |disconnect $ quote
-          defn disconnect (db op-data sid op-id op-time)
+          defn disconnect (db sid op-id op-time)
             update db :sessions $ fn (session) (dissoc session sid)
         |remove-message $ quote
           defn remove-message (db op-data sid op-id op-time)
