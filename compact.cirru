@@ -746,6 +746,10 @@
                         :color $ hsl 0 0 70
                     =< 16 nil
                     <> (:pid process) style/text
+                    comp-icon :arrow-down
+                      {} (:font-size 14) (:class-name css-down-icon)
+                        :color $ hsl 0 0 80
+                      , on-scroll-down!
                     =< 16 nil
                     =< 8 nil
                     if (:alive? process)
@@ -794,7 +798,7 @@
                         <> "\"Clear"
                 =< nil 8
                 div
-                  {} $ :class-name css-logs-list
+                  {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
                   list->
                     {} $ :style
                       {} $ :white-space
@@ -816,6 +820,10 @@
                             :inner-text $ do (:data chunk)
                               ; .!replace (:data chunk) &newline $ str &newline &newline
                   =< nil 200
+        |css-down-icon $ quote
+          defstyle css-down-icon $ {}
+            "\"&" $ {} (:opacity 0.8) (:cursor :pointer)
+            "\"&:hover" $ {} (:opacity 1)
         |css-filter $ quote
           defstyle css-filter $ {}
             "\"&" $ merge ui/input
@@ -844,6 +852,11 @@
           defstyle css-toolbar $ {}
             "\"&" $ merge ui/row-middle
               {} $ :font-family ui/font-code
+        |on-scroll-down! $ quote
+          defn on-scroll-down! (e d!)
+            if-let
+              el $ js/document.querySelector "\".scroll-area"
+              set! (.-scrollTop el) (.-scrollHeight el)
       :ns $ quote
         ns app.comp.process-detail $ :require
           respo-ui.core :refer $ hsl
@@ -853,6 +866,7 @@
           app.util :refer $ map-with-index
           app.style :as style
           respo.css :refer $ defstyle
+          feather.core :refer $ comp-icon
     |app.comp.profile $ {}
       :defs $ {}
         |comp-profile $ quote
