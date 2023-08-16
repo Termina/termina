@@ -49,7 +49,7 @@
             case-default (:kind data) (println "\"unknown server data kind:" data)
               :patch $ let
                   changes $ :data data
-                when config/dev? $ js/console.log "\"Changes" (to-js-data changes)
+                when config/dev? $ js/console.log "\"Changes" changes
                 reset! *store $ patch-twig @*store changes
         |on-window-keydown $ quote
           defn on-window-keydown (event)
@@ -398,17 +398,18 @@
               div
                 {} $ :class-name css-home
                 div
-                  {} $ :style
-                    merge ui/row-parted $ {} (:align-items :center) (:padding "\"0 8px")
+                  {} (:class-name css/row-parted)
+                    :style $ {} (:align-items :center) (:padding "\"0 8px")
                   div
-                    {} $ :style (merge ui/flex ui/row-middle)
+                    {} $ :class-name (str-spaced css/flex css/row-middle)
                     input $ {} (:class-name css-filter) (:placeholder "\"filter...")
                       :value $ :query state
                       :on-input $ fn (e d!)
                         d! cursor $ assoc state :query (:value e)
                     list->
-                      {} $ :style
-                        merge ui/flex ui/row $ {} (:flex-wrap :wrap)
+                      {}
+                        :class-name $ str-spaced css/flex css/row
+                        :style $ {} (:flex-wrap :wrap)
                       -> (:workflows router-data) (.to-list)
                         .filter-pair $ fn (k workflow)
                           :matches? $ parse-by-letter
@@ -419,7 +420,7 @@
                         .map-pair $ fn (k workflow)
                           [] k $ comp-command-button workflow
                   div
-                    {} $ :style ui/row-middle
+                    {} $ :class-name css/row-middle
                     button $ {}
                       :class-name $ str-spaced css/button style/css-button
                       :inner-text "\"Run"
@@ -449,18 +450,19 @@
                           d! :effect/kill pid
                     =< 8 nil
                     a
-                      {} (:style style/link)
+                      {} (:class-name css/link)
                         :on-click $ fn (e d!) (d! :process/clear nil)
                       <> "\"Clear"
                 =< nil 8
                 list->
-                  {} $ :style
-                    merge ui/row-middle ui/flex $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap "\"8px")
+                  {} $ :class-name (str-spaced css/flex css-process-list)
                   -> (:processes router-data) (.to-list)
                     .sort $ fn (x y)
                       -
                         :started-at $ last y
                         :started-at $ last x
+                    .sort-by $ fn (pair)
+                      not $ :alive? (last pair)
                     .map-pair $ fn (pid process)
                       [] pid $ comp-process process
         |css-filter $ quote
@@ -478,7 +480,10 @@
         |css-home $ quote
           defstyle css-home $ {}
             "\"&" $ merge ui/flex ui/column
-              {} (:padding 8) (:overflow :auto)
+              {} (:padding "\"8px 0px") (:overflow :auto)
+        |css-process-list $ quote
+          defstyle css-process-list $ {}
+            "\"&" $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap "\"8px") (:grid-template-columns "\"repeat(auto-fit, minmax(560px, 1fr))") (:grid-auto-flow :dense) (:display :grid) (:padding "\"8px") (:padding-bottom 120)
       :ns $ quote
         ns app.comp.home $ :require
           respo-ui.core :refer $ hsl
@@ -696,7 +701,7 @@
         |css-process $ quote
           defstyle css-process $ {}
             "\"&" $ merge
-              {} (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)") (:max-width "\"calc(50vw - 15px)") (:transition-duration "\"300ms")
+              {} (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top)
         |css-process-log $ quote
           defstyle css-process-log $ {}
             "\"&" $ merge ui/row-middle
@@ -731,13 +736,14 @@
               div
                 {} $ :class-name css-process
                 div
-                  {} $ :style ui/row-parted
+                  {} $ :class-name css/row-parted
                   div
                     {} $ :class-name css-toolbar
                     span $ {}
                       :inner-text $ or (:title process) "\"Task"
+                      :class-name css/font-fancy
                       :style $ merge style/text
-                        {} (:font-family ui/font-fancy) (:padding "\"0 8px")
+                        {} $ :padding "\"0 8px"
                     =< 16 nil
                     <> (:command process) style/text
                     =< 16 nil
@@ -754,13 +760,12 @@
                     =< 8 nil
                     if (:alive? process)
                       a
-                        {}
-                          :style $ merge style/link
-                            {} (:color :red) (:border-color :red)
+                        {} (:class-name css/link)
+                          :style $ {} (:color :red) (:border-color :red)
                           :on-click $ fn (e d!)
                             d! :effect/kill $ :pid process
                         <> "\"Kill"
-                      a $ {} (:style style/link) (:inner-text "\"Redo")
+                      a $ {} (:class-name css/link) (:inner-text "\"Redo")
                         :on-click $ fn (e d!)
                           d! :effect/run $ {}
                             :cwd $ :cwd process
@@ -867,6 +872,7 @@
           app.style :as style
           respo.css :refer $ defstyle
           feather.core :refer $ comp-icon
+          respo-ui.css :as css
     |app.comp.profile $ {}
       :defs $ {}
         |comp-profile $ quote
