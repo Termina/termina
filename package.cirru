@@ -3,8 +3,8 @@
   :dependencies $ {}
     |calcit-lang/lilac |main
     |calcit-lang/memof |main
-    |calcit-lang/recollect |0.0.10-a1
-    |Respo/respo.calcit |0.15.0-a2
+    |calcit-lang/recollect |main
+    |Respo/respo.calcit |main
     |Respo/respo-ui.calcit |main
     |Respo/respo-message.calcit |main
     |Cumulo/cumulo-util.calcit |main

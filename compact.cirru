@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.8)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.10)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -455,7 +455,7 @@
                 =< nil 8
                 list->
                   {} $ :style
-                    merge ui/flex $ {} (:overflow :auto) (:padding-bottom 120)
+                    merge ui/row-middle ui/flex $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap "\"8px")
                   -> (:processes router-data) (.to-list)
                     .sort $ fn (x y)
                       -
@@ -688,7 +688,7 @@
                               :white-space :pre-line
         |css-content-list $ quote
           defstyle css-content-list $ {}
-            "\"&" $ {} (:font-family ui/font-code) (:white-space :pre) (:font-size 12) (:line-height "\"1.5em") (:max-height 240) (:max-width 800) (:overflow :auto) (:border-radius "\"4px")
+            "\"&" $ {} (:font-family ui/font-code) (:white-space :pre) (:font-size 12) (:line-height "\"1.5em") (:max-height 240) (:overflow :auto) (:border-radius "\"4px")
         |css-link-kill $ quote
           defstyle css-link-kill $ {}
             "\"&" $ merge style/link
@@ -696,7 +696,7 @@
         |css-process $ quote
           defstyle css-process $ {}
             "\"&" $ merge
-              {} (:margin 8) (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)") (:transition-duration "\"300ms")
+              {} (:font-family ui/font-code) (:border-radius "\"4px") (:display :inline-block) (:vertical-align :top) (:min-width "\"calc(25% - 10px)") (:max-width "\"calc(50vw - 15px)") (:transition-duration "\"300ms")
         |css-process-log $ quote
           defstyle css-process-log $ {}
             "\"&" $ merge ui/row-middle
