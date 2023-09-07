@@ -12,3 +12,9 @@ yarn.lock
 
 compact.cirru
 .compact-inc.cirru
+
+out-page/
+
+.github/
+dist/
+.calcit-error.cirru

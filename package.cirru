@@ -12,4 +12,4 @@
     |mvc-works/ws-edn.calcit |main
     |Respo/respo-feather.calcit |main
     |Respo/alerts.calcit |main
-    |mvc-works/fuzzy-filter |main
+    |mvc-works/fuzzy-filter |0.0.8
