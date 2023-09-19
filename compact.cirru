@@ -861,7 +861,7 @@
                     list->
                       {} $ :style
                         {} $ :white-space
-                          if (:wrap? state) "\"normal" "\"pre"
+                          if (:wrap? state) "\"pre-wrap" "\"pre"
                       -> (:content process)
                         filter $ fn (chunk)
                           if

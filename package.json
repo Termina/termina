@@ -19,16 +19,16 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.8.0",
+    "@calcit/procs": "^0.8.1",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.9",
     "latest-version": "^7.0.0",
     "md5": "^2.3.0",
-    "nanoid": "^4.0.2",
+    "nanoid": "^5.0.1",
     "randomcolor": "^0.6.2",
     "shortid": "^2.2.16",
     "url-parse": "^1.5.10",
-    "ws": "^8.13.0"
+    "ws": "^8.14.1"
   },
   "devDependencies": {
     "bottom-tip": "^0.1.5",
