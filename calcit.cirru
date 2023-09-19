@@ -5718,7 +5718,7 @@
                                                     :data $ {}
                                                       |T $ %{} :Leaf (:at 1686806022290) (:by |B1y7Rc-Zz) (:text |:wrap?)
                                                       |b $ %{} :Leaf (:at 1686806023223) (:by |B1y7Rc-Zz) (:text |state)
-                                                  |h $ %{} :Leaf (:at 1686806032858) (:by |B1y7Rc-Zz) (:text "|\"normal")
+                                                  |h $ %{} :Leaf (:at 1695106730726) (:by |B1y7Rc-Zz) (:text "|\"pre-wrap")
                                                   |l $ %{} :Leaf (:at 1686806081627) (:by |B1y7Rc-Zz) (:text "|\"pre")
                               |r $ %{} :Expr (:at 1539099152080) (:by |root)
                                 :data $ {}
