@@ -786,31 +786,51 @@
               let
                   cursor $ :cursor states
                   state $ either (:data states)
-                    {} (:filter "\"") (:filter? true) (:wrap? true)
+                    {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false)
                 div
                   {} $ :class-name css-process
                   div
                     {} $ :class-name css/row-parted
                     div
-                      {} $ :class-name css-toolbar
-                      span $ {}
-                        :inner-text $ or (:title process) "\"Task"
-                        :class-name css/font-fancy
-                        :style $ merge style/text
-                          {} $ :padding "\"0 8px"
-                      =< 16 nil
-                      <> (:command process) style/text
-                      =< 16 nil
-                      <> (:cwd process)
-                        merge style/text $ {} (:font-size 12)
-                          :color $ hsl 0 0 70
-                      =< 16 nil
-                      <> (:pid process) style/text
+                      {} $ :style
+                        merge ui/row-middle $ {} (:gap 4)
+                      input $ {} (:type "\"checkbox")
+                        :style $ {} (:cursor :pointer) (:opacity 0.8)
+                        :checked $ :filter? state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :filter?
+                            not $ :filter? state
+                      input $ {} (:class-name css-filter)
+                        :value $ :filter state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :filter (:value e)
+                      input $ {} (:type "\"checkbox")
+                        :style $ {} (:cursor :pointer) (:opacity 0.8)
+                        :checked $ :all-log? state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :all-log?
+                            not $ :all-log? state
+                      <> "\"All log?"
                       comp-icon :arrow-down
                         {} (:font-size 14) (:class-name css-down-icon)
                           :color $ hsl 0 0 80
                         , on-scroll-down!
-                      =< 16 nil
+                      if-not
+                        empty? $ :content process
+                        a
+                          {}
+                            :on-click $ fn (e d!)
+                              d! :process/shorten-content $ :pid process
+                            :style style/link
+                          <> "\"Clear"
+                      =< 8 nil
+                      input $ {} (:type "\"checkbox")
+                        :style $ {} (:cursor :pointer) (:opacity 0.8)
+                        :checked $ :wrap? state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :wrap?
+                            not $ :wrap? state
+                      <> "\"Wrap?"
                       =< 8 nil
                       if (:alive? process)
                         a
@@ -827,34 +847,20 @@
                               :title $ :title process
                             d! :process/remove-dead $ :pid process
                     div
-                      {} $ :style
-                        merge ui/row-middle $ {} (:gap 4)
-                      input $ {} (:type "\"checkbox")
-                        :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :wrap? state
-                        :on-input $ fn (e d!)
-                          d! cursor $ assoc state :wrap?
-                            not $ :wrap? state
-                      <> "\"Wrap?"
-                      =< 8 nil
-                      input $ {} (:type "\"checkbox")
-                        :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :filter? state
-                        :on-input $ fn (e d!)
-                          d! cursor $ assoc state :filter?
-                            not $ :filter? state
-                      input $ {} (:class-name css-filter)
-                        :value $ :filter state
-                        :on-input $ fn (e d!)
-                          d! cursor $ assoc state :filter (:value e)
-                      if-not
-                        empty? $ :content process
-                        a
-                          {}
-                            :on-click $ fn (e d!)
-                              d! :process/shorten-content $ :pid process
-                            :style style/link
-                          <> "\"Clear"
+                      {} $ :class-name css-toolbar
+                      span $ {}
+                        :inner-text $ or (:title process) "\"Task"
+                        :class-name css/font-fancy
+                        :style $ merge style/text
+                          {} $ :padding "\"0 8px"
+                      =< 16 nil
+                      <> (:command process) style/text
+                      =< 16 nil
+                      <> (:cwd process)
+                        merge style/text $ {} (:font-size 12)
+                          :color $ hsl 0 0 70
+                      =< 16 nil
+                      <> (:pid process) style/text
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
@@ -869,6 +875,7 @@
                               not $ :filter? state
                               blank? $ :filter state
                             , true $ .includes? (:data chunk) (:filter state)
+                        take-last $ if (:all-log? state) 2000 60
                         map-indexed $ fn (idx chunk)
                           [] idx $ span
                             {} (:class-name css-log)
