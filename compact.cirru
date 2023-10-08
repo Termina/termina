@@ -49,7 +49,7 @@
               on-page-touch $ \ if (nil? @*store) (connect!)
         |mount-target $ %{} :CodeEntry (:doc |)
           :code $ quote
-            def mount-target $ .querySelector js/document |.app
+            def mount-target $ js/document.querySelector |.app
         |on-server-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-server-data (data)
@@ -69,6 +69,8 @@
                   do $ println "\"no thing to clear in" (-> @*store :router :name)
                   :home $ dispatch! (:: :process/clear)
                   :history $ dispatch! (:: :process/clear-history)
+                  :process $ dispatch!
+                    :: :process/shorten-content $ -> @*store :router :data :pid
         |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if
@@ -578,7 +580,7 @@
             defn on-submit (username password signup?)
               fn (e dispatch!)
                 dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-                .setItem js/localStorage (:storage-key config/site)
+                js/localStorage.setItem (:storage-key config/site)
                   format-cirru-edn $ [] username password
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -984,7 +986,7 @@
                       :style $ merge style/button
                         {} (:color :red) (:border-color :red)
                       :on-click $ fn (e dispatch! mutate!) (dispatch! :user/log-out nil)
-                        .removeItem js/localStorage $ :storage-key config/site
+                        js/localStorage.removeItem $ :storage-key config/site
                     <> "\"Log out"
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -1348,8 +1350,8 @@
           :code $ quote
             defn dispatch! (op sid)
               let
-                  op-id $ id!
-                  op-time $ unix-time!
+                  op-id $ nanoid
+                  op-time $ js/Date.now
                 if config/dev? $ println |Dispatch! (str op) sid
                 try
                   tag-match op
@@ -1374,7 +1376,7 @@
                 println "\"Server started. Open UI on " $ .!blue chalk (.!toString ui-url)
               render-loop! *loop-trigger
               js/process.on "\"SIGINT" on-exit!
-              repeat! 600 $ \ persist-db!
+              flipped js/setInterval 600 $ \ persist-db!
               check-version!
         |on-exit! $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1406,7 +1408,7 @@
                 not $ identical? @*reader-reel @*reel
                 reset! *reader-reel @*reel
                 sync-clients! @*reader-reel
-              reset! *loop $ delay! 0.2
+              reset! *loop $ flipped js/setTimeout 200
                 fn () $ render-loop! *loop
         |run-server! $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1454,13 +1456,13 @@
             "\"node:url" :refer $ fileURLToPath
             [] app.config :as config
             [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
-            [] cumulo-util.core :refer $ [] id! repeat! unix-time! delay!
             [] app.twig.container :refer $ [] twig-container
             [] recollect.diff :refer $ [] diff-twig
             [] recollect.twig :refer $ [] render-twig new-twig-loop! clear-twig-caches!
             [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
             [] app.manager :refer $ [] create-process! kill-process!
             [] "\"url-parse" :default url-parse
+            "\"nanoid" :refer $ nanoid
     |app.style $ %{} :FileEntry
       :defs $ {}
         |button $ %{} :CodeEntry (:doc |)
