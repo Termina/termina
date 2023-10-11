@@ -788,7 +788,7 @@
               let
                   cursor $ :cursor states
                   state $ either (:data states)
-                    {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false)
+                    {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
                 div
                   {} $ :class-name css-process
                   div
@@ -828,26 +828,18 @@
                       =< 8 nil
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
+                        :checked $ :hide-thread-info? state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :hide-thread-info?
+                            not $ :hide-thread-info? state
+                      <> "\"HideThreadInfo?"
+                      input $ {} (:type "\"checkbox")
+                        :style $ {} (:cursor :pointer) (:opacity 0.8)
                         :checked $ :wrap? state
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :wrap?
                             not $ :wrap? state
                       <> "\"Wrap?"
-                      =< 8 nil
-                      if (:alive? process)
-                        a
-                          {} (:class-name css/link)
-                            :style $ {} (:color :red) (:border-color :red)
-                            :on-click $ fn (e d!)
-                              d! :effect/kill $ :pid process
-                          <> "\"Kill"
-                        a $ {} (:class-name css/link) (:inner-text "\"Redo")
-                          :on-click $ fn (e d!)
-                            d! :effect/run $ {}
-                              :cwd $ :cwd process
-                              :command $ :command process
-                              :title $ :title process
-                            d! :process/remove-dead $ :pid process
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
@@ -863,6 +855,21 @@
                           :color $ hsl 0 0 70
                       =< 16 nil
                       <> (:pid process) style/text
+                      =< 8 nil
+                      if (:alive? process)
+                        a
+                          {} (:class-name css/link)
+                            :style $ {} (:color :red) (:border-color :red)
+                            :on-click $ fn (e d!)
+                              d! :effect/kill $ :pid process
+                          <> "\"Kill"
+                        a $ {} (:class-name css/link) (:inner-text "\"Redo")
+                          :on-click $ fn (e d!)
+                            d! :effect/run $ {}
+                              :cwd $ :cwd process
+                              :command $ :command process
+                              :title $ :title process
+                            d! :process/remove-dead $ :pid process
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
@@ -885,7 +892,10 @@
                                 if
                                   = :stderr $ :type chunk
                                   {} $ :color :red
-                              :inner-text $ do (:data chunk)
+                              :inner-text $ do
+                                if (:hide-thread-info? state)
+                                  hide-thread-info $ :data chunk
+                                  :data chunk
                                 ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
         |css-down-icon $ %{} :CodeEntry (:doc |)
@@ -926,12 +936,18 @@
             defstyle css-toolbar $ {}
               "\"&" $ merge ui/row-middle
                 {} $ :font-family ui/font-code
+        |hide-thread-info $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn hide-thread-info (text) (.!replace text thread-info-pattern "\"")
         |on-scroll-down! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-scroll-down! (e d!)
               if-let
                 el $ js/document.querySelector "\".scroll-area"
                 set! (.-scrollTop el) (.-scrollHeight el)
+        |thread-info-pattern $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            def thread-info-pattern $ new js/RegExp "\"^[\\d\\s\\:\\-\\.\\+]+\\s+(\\[([\\w\\d\\s\\:\\,])+\\]\\s?)+"
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.comp.process-detail $ :require
