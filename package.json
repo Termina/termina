@@ -19,19 +19,19 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.8.1",
+    "@calcit/procs": "^0.8.6",
     "chalk": "^5.3.0",
-    "dayjs": "^1.11.9",
+    "dayjs": "^1.11.10",
     "latest-version": "^7.0.0",
     "md5": "^2.3.0",
     "nanoid": "^5.0.1",
     "randomcolor": "^0.6.2",
     "url-parse": "^1.5.10",
-    "ws": "^8.14.1"
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "bottom-tip": "^0.1.5",
     "feather-icons": "^4.29.1",
-    "vite": "^4.4.9"
+    "vite": "^4.4.11"
   }
 }

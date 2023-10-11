@@ -49,7 +49,7 @@
               on-page-touch $ \ if (nil? @*store) (connect!)
         |mount-target $ %{} :CodeEntry (:doc |)
           :code $ quote
-            def mount-target $ .querySelector js/document |.app
+            def mount-target $ js/document.querySelector |.app
         |on-server-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-server-data (data)
@@ -69,6 +69,8 @@
                   do $ println "\"no thing to clear in" (-> @*store :router :name)
                   :home $ dispatch! (:: :process/clear)
                   :history $ dispatch! (:: :process/clear-history)
+                  :process $ dispatch!
+                    :: :process/shorten-content $ -> @*store :router :data :pid
         |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if
@@ -578,7 +580,7 @@
             defn on-submit (username password signup?)
               fn (e dispatch!)
                 dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-                .setItem js/localStorage (:storage-key config/site)
+                js/localStorage.setItem (:storage-key config/site)
                   format-cirru-edn $ [] username password
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -786,7 +788,7 @@
               let
                   cursor $ :cursor states
                   state $ either (:data states)
-                    {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false)
+                    {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
                 div
                   {} $ :class-name css-process
                   div
@@ -826,26 +828,18 @@
                       =< 8 nil
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
+                        :checked $ :hide-thread-info? state
+                        :on-input $ fn (e d!)
+                          d! cursor $ assoc state :hide-thread-info?
+                            not $ :hide-thread-info? state
+                      <> "\"HideThreadInfo?"
+                      input $ {} (:type "\"checkbox")
+                        :style $ {} (:cursor :pointer) (:opacity 0.8)
                         :checked $ :wrap? state
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :wrap?
                             not $ :wrap? state
                       <> "\"Wrap?"
-                      =< 8 nil
-                      if (:alive? process)
-                        a
-                          {} (:class-name css/link)
-                            :style $ {} (:color :red) (:border-color :red)
-                            :on-click $ fn (e d!)
-                              d! :effect/kill $ :pid process
-                          <> "\"Kill"
-                        a $ {} (:class-name css/link) (:inner-text "\"Redo")
-                          :on-click $ fn (e d!)
-                            d! :effect/run $ {}
-                              :cwd $ :cwd process
-                              :command $ :command process
-                              :title $ :title process
-                            d! :process/remove-dead $ :pid process
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
@@ -861,6 +855,21 @@
                           :color $ hsl 0 0 70
                       =< 16 nil
                       <> (:pid process) style/text
+                      =< 8 nil
+                      if (:alive? process)
+                        a
+                          {} (:class-name css/link)
+                            :style $ {} (:color :red) (:border-color :red)
+                            :on-click $ fn (e d!)
+                              d! :effect/kill $ :pid process
+                          <> "\"Kill"
+                        a $ {} (:class-name css/link) (:inner-text "\"Redo")
+                          :on-click $ fn (e d!)
+                            d! :effect/run $ {}
+                              :cwd $ :cwd process
+                              :command $ :command process
+                              :title $ :title process
+                            d! :process/remove-dead $ :pid process
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
@@ -883,7 +892,10 @@
                                 if
                                   = :stderr $ :type chunk
                                   {} $ :color :red
-                              :inner-text $ do (:data chunk)
+                              :inner-text $ do
+                                if (:hide-thread-info? state)
+                                  hide-thread-info $ :data chunk
+                                  :data chunk
                                 ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
         |css-down-icon $ %{} :CodeEntry (:doc |)
@@ -924,12 +936,18 @@
             defstyle css-toolbar $ {}
               "\"&" $ merge ui/row-middle
                 {} $ :font-family ui/font-code
+        |hide-thread-info $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn hide-thread-info (text) (.!replace text thread-info-pattern "\"")
         |on-scroll-down! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-scroll-down! (e d!)
               if-let
                 el $ js/document.querySelector "\".scroll-area"
                 set! (.-scrollTop el) (.-scrollHeight el)
+        |thread-info-pattern $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            def thread-info-pattern $ new js/RegExp "\"^[\\d\\s\\:\\-\\.\\+]+\\s+(\\[([\\w\\d\\s\\:\\,])+\\]\\s?)+"
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.comp.process-detail $ :require
@@ -984,7 +1002,7 @@
                       :style $ merge style/button
                         {} (:color :red) (:border-color :red)
                       :on-click $ fn (e dispatch! mutate!) (dispatch! :user/log-out nil)
-                        .removeItem js/localStorage $ :storage-key config/site
+                        js/localStorage.removeItem $ :storage-key config/site
                     <> "\"Log out"
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -1348,8 +1366,8 @@
           :code $ quote
             defn dispatch! (op sid)
               let
-                  op-id $ id!
-                  op-time $ unix-time!
+                  op-id $ nanoid
+                  op-time $ js/Date.now
                 if config/dev? $ println |Dispatch! (str op) sid
                 try
                   tag-match op
@@ -1374,7 +1392,7 @@
                 println "\"Server started. Open UI on " $ .!blue chalk (.!toString ui-url)
               render-loop! *loop-trigger
               js/process.on "\"SIGINT" on-exit!
-              repeat! 600 $ \ persist-db!
+              flipped js/setInterval 600 $ \ persist-db!
               check-version!
         |on-exit! $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1406,7 +1424,7 @@
                 not $ identical? @*reader-reel @*reel
                 reset! *reader-reel @*reel
                 sync-clients! @*reader-reel
-              reset! *loop $ delay! 0.2
+              reset! *loop $ flipped js/setTimeout 200
                 fn () $ render-loop! *loop
         |run-server! $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1454,13 +1472,13 @@
             "\"node:url" :refer $ fileURLToPath
             [] app.config :as config
             [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
-            [] cumulo-util.core :refer $ [] id! repeat! unix-time! delay!
             [] app.twig.container :refer $ [] twig-container
             [] recollect.diff :refer $ [] diff-twig
             [] recollect.twig :refer $ [] render-twig new-twig-loop! clear-twig-caches!
             [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
             [] app.manager :refer $ [] create-process! kill-process!
             [] "\"url-parse" :default url-parse
+            "\"nanoid" :refer $ nanoid
     |app.style $ %{} :FileEntry
       :defs $ {}
         |button $ %{} :CodeEntry (:doc |)
