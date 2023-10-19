@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@calcit/procs@^0.8.6":
-  version "0.8.6"
-  resolved "https://registry.npmmirror.com/@calcit/procs/-/procs-0.8.6.tgz#4215a2af53052273991653688e2997e7e224ecfe"
-  integrity sha512-jvuWzWehLVD1pH9P5NuNLAWKpquzyY/6u0H1PPjE7nsI1n9Sw5gBa+kOkeh7VqHWWhD6lMvrIugnOOSzifZ23w==
+"@calcit/procs@^0.8.9":
+  version "0.8.9"
+  resolved "https://registry.npmmirror.com/@calcit/procs/-/procs-0.8.9.tgz#090d18aba5a9f3d20fa562d34f5640de764934f1"
+  integrity sha512-xG7gmTZv+FUwNd592n84Lo2jTjvVSY18fJwPy9R55qP3AJFnKQkD+UjqNo9EKffWZKWEF3jAkkOMfuRNQMmeag==
   dependencies:
     "@calcit/ternary-tree" "0.0.23"
     "@cirru/parser.ts" "^0.0.6"
@@ -170,9 +170,9 @@
     defer-to-connect "^2.0.1"
 
 "@types/http-cache-semantics@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.npmmirror.com/@types/http-cache-semantics/-/http-cache-semantics-4.0.2.tgz#abe102d06ccda1efdf0ed98c10ccf7f36a785a41"
-  integrity sha512-FD+nQWA2zJjh4L9+pFXqWOi0Hs1ryBCfI+985NjluQ1p8EYtoLvjLOKidXBtZ4/IcxDX4o8/E8qDS3540tNliw==
+  version "4.0.3"
+  resolved "https://registry.npmmirror.com/@types/http-cache-semantics/-/http-cache-semantics-4.0.3.tgz#a3ff232bf7d5c55f38e4e45693eda2ebb545794d"
+  integrity sha512-V46MYLFp08Wf2mmaBhvgjStM3tPa+2GAdy/iqoX+noX1//zje2x4XmrIU0cAwyClATsTmahbtoQ2EwP7I5WSiA==
 
 bottom-tip@^0.1.5:
   version "0.1.5"
@@ -472,10 +472,10 @@ nanoid@^4.0.1:
   resolved "https://registry.npmmirror.com/nanoid/-/nanoid-4.0.2.tgz#140b3c5003959adbebf521c170f282c5e7f9fb9e"
   integrity sha512-7ZtY5KTCNheRGfEFxnedV5zFiORN1+Y1N6zvPTnHQd8ENUvfaDBeuJDZb2bN/oXwXxu3qkTXDzy57W5vAmDTBw==
 
-nanoid@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.npmmirror.com/nanoid/-/nanoid-5.0.1.tgz#3e95d775a8bc8a98afbf0a237e2bbc6a71b0662e"
-  integrity sha512-vWeVtV5Cw68aML/QaZvqN/3QQXc6fBfIieAlu05m7FZW2Dgb+3f0xc0TTxuJW+7u30t7iSDTV/j3kVI0oJqIfQ==
+nanoid@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.npmmirror.com/nanoid/-/nanoid-5.0.2.tgz#97588ebc70166d0feaf73ccd2799bb4ceaebf692"
+  integrity sha512-2ustYUX1R2rL/Br5B/FMhi8d5/QzvkJ912rBYxskcpu0myTHzSZfTr1LAS2Sm7jxRUObRrSBFoyzwAhL49aVSg==
 
 next-tick@^0.2.2:
   version "0.2.2"
@@ -633,10 +633,10 @@ virtual-dom@^2.1.1:
     x-is-array "0.1.0"
     x-is-string "0.1.0"
 
-vite@^4.4.11:
-  version "4.4.11"
-  resolved "https://registry.npmmirror.com/vite/-/vite-4.4.11.tgz#babdb055b08c69cfc4c468072a2e6c9ca62102b0"
-  integrity sha512-ksNZJlkcU9b0lBwAGZGGaZHCMqHsc8OpgtoYhsQ4/I2v5cnpmmmqe5pM4nv/4Hn6G/2GhTdj0DhZh2e+Er1q5A==
+vite@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.npmmirror.com/vite/-/vite-4.5.0.tgz#ec406295b4167ac3bc23e26f9c8ff559287cff26"
+  integrity sha512-ulr8rNLA6rkyFAlVWw2q5YJ91v098AFQ2R0PRFwPzREXOUJQPtFUG0t+/ZikhaOCDqFoDhN6/v8Sq0o4araFAw==
   dependencies:
     esbuild "^0.18.10"
     postcss "^8.4.27"
