@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.11)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.12)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -869,6 +869,7 @@
                               :cwd $ :cwd process
                               :command $ :command process
                               :title $ :title process
+                              :jump? true
                             d! :process/remove-dead $ :pid process
                   =< nil 8
                   div
@@ -1247,6 +1248,7 @@
               let
                   command $ :command op-data
                   cwd $ :cwd op-data
+                  jump? $ :jump? op-data
                   proc $ cp/exec command
                     js-object $ :cwd cwd
                   pid $ .-pid proc
@@ -1254,6 +1256,10 @@
                 dispatch!
                   :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
                     :title $ :title op-data
+                  , sid
+                if jump? $ dispatch!
+                  :: :router/change $ {} (:name :process)
+                    :params $ {} (:id pid)
                   , sid
                 .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event)
                   dispatch! (:: :process/finish pid) sid
@@ -1359,7 +1365,7 @@
                 version $ .-version pkg
               ->
                 latest-version $ .-name pkg
-                .then $ fn (npm-version)
+                .!then $ fn (npm-version)
                   if (= npm-version version) (println "\"Running latest version" version)
                     println $ .!yellow chalk (str "\"New version " npm-version "\" available, current one is " version "\" . Please upgrade!\n\nyarn global add termina\n")
         |dispatch! $ %{} :CodeEntry (:doc |)
