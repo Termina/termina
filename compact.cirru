@@ -863,14 +863,20 @@
                             :on-click $ fn (e d!)
                               d! :effect/kill $ :pid process
                           <> "\"Kill"
-                        a $ {} (:class-name css/link) (:inner-text "\"Redo")
-                          :on-click $ fn (e d!)
-                            d! :effect/run $ {}
-                              :cwd $ :cwd process
-                              :command $ :command process
-                              :title $ :title process
-                              :jump? true
-                            d! :process/remove-dead $ :pid process
+                        div ({})
+                          a $ {} (:class-name css/link) (:inner-text "\"Redo")
+                            :on-click $ fn (e d!)
+                              d! :effect/run $ {}
+                                :cwd $ :cwd process
+                                :command $ :command process
+                                :title $ :title process
+                                :jump? true
+                              d! :process/remove-dead $ :pid process
+                          =< 8 nil
+                          a $ {} (:class-name css/link) (:inner-text "\"Drop")
+                            :on-click $ fn (e d!)
+                              d! :router/change $ {} (:name :home)
+                              d! :process/remove-dead $ :pid process
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
