@@ -1470,7 +1470,6 @@
                     do
                       wss-send! sid $ {} (:kind :patch) (:data changes)
                       swap! *client-caches assoc sid new-store
-              new-twig-loop!
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.server $ :require ([] app.schema :as schema)
@@ -1486,7 +1485,7 @@
             [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
             [] app.twig.container :refer $ [] twig-container
             [] recollect.diff :refer $ [] diff-twig
-            [] recollect.twig :refer $ [] render-twig new-twig-loop! clear-twig-caches!
+            [] recollect.twig :refer $ [] render-twig clear-twig-caches!
             [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
             [] app.manager :refer $ [] create-process! kill-process!
             [] "\"url-parse" :default url-parse
