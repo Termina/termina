@@ -274,7 +274,7 @@
                   router-data $ :data router
                 if (nil? store) (comp-offline)
                   div
-                    {} $ :class-name css-container
+                    {} $ :class-name (str-spaced css/global css/fullscreen css/column css-container)
                     comp-navigation (:logged-in? store) router $ :count store
                     if (:logged-in? store)
                       let
@@ -322,8 +322,8 @@
         |css-container $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-container $ {}
-              "\"&" $ merge ui/global ui/fullscreen ui/column
-                {} $ :color (hsl 0 0 70)
+              "\"&" $ {}
+                :color $ hsl 0 0 70
         |css-status $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-status $ {}
@@ -337,6 +337,7 @@
         :code $ quote
           ns app.comp.container $ :require
             respo-ui.core :refer $ hsl
+            respo-ui.css :as css
             respo-ui.core :as ui
             respo.core :refer $ defcomp <> >> div span button
             respo.comp.inspect :refer $ comp-inspect
@@ -375,9 +376,9 @@
                       fn (history)
                         [] (:id history)
                           div
-                            {} $ :class-name css-history
+                            {} $ :class-name (str-spaced css/row-middle css-history)
                             <>
-                              -> (:started-at history) dayjs $ .format "\"MM-DD HH:mm:ss"
+                              -> (:started-at history) dayjs $ .!format "\"MM-DD HH:mm:ss"
                               , css-date-text
                             <>
                               or (:title history) "\"Task"
@@ -394,14 +395,15 @@
         |css-history $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-history $ {}
-              "\"&" $ merge ui/row-middle
-                {} (:margin "\"0px")
-                  :background-color $ hsl 200 80 24
-                  :padding "\"4px 8px"
-                  :width 960
-                  :min-width :max-content
-                  :border-bottom $ str "\"1px solid " (hsl 0 0 0 0.2)
-                  :word-break :break-word
+              "\"&" $ {} (:margin "\"0px")
+                :background-color $ hsl 200 40 28
+                :padding "\"4px 8px"
+                :width 960
+                :min-width :max-content
+                :border-bottom $ str "\"1px solid " (hsl 0 0 0 0.2)
+                :word-break :break-word
+              "\"&:hover" $ {}
+                :background-color $ hsl 200 40 32
         |css-history-page $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-history-page $ {}
@@ -410,12 +412,12 @@
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.comp.history $ :require
-            [] respo-ui.core :refer $ [] hsl
-            [] respo-ui.core :as ui
-            [] respo.core :refer $ [] defcomp <> >> list-> span div button
-            [] respo.comp.space :refer $ [] =<
-            [] app.style :as style
-            [] "\"dayjs" :default dayjs
+            respo-ui.core :refer $ hsl
+            respo-ui.core :as ui
+            respo.core :refer $ defcomp <> >> list-> span div button
+            respo.comp.space :refer $ =<
+            app.style :as style
+            "\"dayjs" :default dayjs
             respo.css :refer $ defstyle
             respo-ui.css :as css
     |app.comp.home $ %{} :FileEntry
@@ -675,15 +677,13 @@
                     :style $ if (:alive? process)
                       {} $ :background-color (hsl 50 100 60)
                   div
-                    {} $ :style ui/row-middle
+                    {} $ :class-name css/row-middle
                     <>
                       or (:title process) "\"Task"
                       merge style/text $ {} (:color :black)
                   div
                     {} $ :class-name css/row-middle
-                    button $ {}
-                      :style $ merge style/button
-                        {} (:color :red) (:border-color :red)
+                    button $ {} (:class-name css/button)
                       :on-click $ fn (e d!)
                         d! :router/change $ {} (:name :process)
                           :params $ {}
@@ -733,7 +733,7 @@
                                           :margin "\"0 8px"
                             <> (:data chunk)
                               {}
-                                :color $ case-default (:type chunk) (hsl 60 0 80)
+                                :color $ case-default (:type chunk) (hsl 60 0 72)
                                   :stderr $ hsl 60 80 36
                                   :error $ hsl 0 80 50
                                 :padding 8
@@ -937,7 +937,7 @@
           :code $ quote
             defstyle css-process $ {}
               "\"&" $ merge ui/flex ui/column
-                {} (; :padding "|8px 16px") (:overflow :auto)
+                {} (; :padding "|8px 16px") (:overflow :auto) (:color "\"#aaa")
         |css-toolbar $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-toolbar $ {}
