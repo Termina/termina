@@ -1,6 +1,6 @@
 {
   "name": "termina",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Start process from a Webpage",
   "bin": {
     "termina": "./server.mjs"
