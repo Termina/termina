@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.12)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.13)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -784,11 +784,12 @@
       :defs $ {}
         |comp-process-detail $ %{} :CodeEntry (:doc |)
           :code $ quote
-            defcomp comp-process-detail (states process)
+            defcomp comp-process-detail (states router-data)
               let
                   cursor $ :cursor states
                   state $ either (:data states)
                     {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
+                  process $ get router-data :detail
                 div
                   {} $ :class-name css-process
                   div
@@ -840,6 +841,7 @@
                           d! cursor $ assoc state :wrap?
                             not $ :wrap? state
                       <> "\"Wrap?"
+                    comp-switcher (>> states :switcher) (get router-data :dict)
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
@@ -905,6 +907,28 @@
                                   :data chunk
                                 ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
+        |comp-switcher $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defcomp comp-switcher (states dict)
+              let
+                  menu-plugin $ use-modal-menu (>> states :menu)
+                    {} (:title "\"Switch process")
+                      :items $ -> dict
+                        either $ {}
+                        .map-list $ fn (pair)
+                          let
+                              proc $ nth pair 1
+                            {}
+                              :value $ :pid proc
+                              :display $ :title proc
+                      :on-result $ fn (result d!)
+                        d! :router/change $ {} (:name :process)
+                          :params $ {}
+                            :id $ :value result
+                div ({})
+                  span $ {} (:inner-text "\"Switch")
+                    :on-click $ fn (e d!) (.show menu-plugin d!)
+                  .render menu-plugin
         |css-down-icon $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-down-icon $ {}
@@ -967,6 +991,7 @@
             respo.css :refer $ defstyle
             feather.core :refer $ comp-icon
             respo-ui.css :as css
+            respo-alerts.core :refer $ use-modal-menu
     |app.comp.profile $ %{} :FileEntry
       :defs $ {}
         |comp-profile $ %{} :CodeEntry (:doc |)
@@ -1543,7 +1568,11 @@
                         :home $ {} (:processes processes) (:workflows workflows)
                         :process $ let
                             process-id $ -> router :params :id
-                          get processes process-id
+                          {}
+                            :detail $ get processes process-id
+                            :dict $ -> processes
+                              .map-kv $ fn (k v)
+                                [] k $ dissoc v :content
                         :profile $ twig-members (:sessions db) (:users db)
                     :count $ count (:sessions db)
                     :color $ color/randomColor

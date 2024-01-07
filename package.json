@@ -1,6 +1,6 @@
 {
   "name": "termina",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Start process from a Webpage",
   "bin": {
     "termina": "./server.mjs"
@@ -19,19 +19,19 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.8.11",
+    "@calcit/procs": "^0.8.14",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.10",
     "latest-version": "^7.0.0",
     "md5": "^2.3.0",
-    "nanoid": "^5.0.3",
+    "nanoid": "^5.0.4",
     "randomcolor": "^0.6.2",
     "url-parse": "^1.5.10",
-    "ws": "^8.14.2"
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "bottom-tip": "^0.1.5",
     "feather-icons": "^4.29.1",
-    "vite": "^5.0.2"
+    "vite": "^5.0.10"
   }
 }
