@@ -70,7 +70,7 @@
                   :home $ dispatch! (:: :process/clear)
                   :history $ dispatch! (:: :process/clear-history)
                   :process $ dispatch!
-                    :: :process/shorten-content $ -> @*store :router :data :pid
+                    :: :process/shorten-content $ -> @*store :router :params :id
         |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if

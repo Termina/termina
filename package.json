@@ -32,6 +32,6 @@
   "devDependencies": {
     "bottom-tip": "^0.1.5",
     "feather-icons": "^4.29.1",
-    "vite": "^5.0.10"
+    "vite": "^5.0.11"
   }
 }
