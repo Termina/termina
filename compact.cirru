@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.14)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.15)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -1289,18 +1289,37 @@
                   :: :router/change $ {} (:name :process)
                     :params $ {} (:id pid)
                   , sid
-                .!on proc "\"exit" $ fn (event _) (println "\"[process exit]" event op-data)
+                .!on proc "\"exit" $ fn (event _)
+                  dispatch!
+                    :: :process/error $ [] pid (str &newline "\"exit " event)
+                    , sid
                   dispatch! (:: :process/finish pid) sid
                   swap! *registry dissoc pid
-                .!on proc "\"SIGINT" $ fn (sig) (println "\"[process SIGINT]" sig op-data)
-                .!on proc "\"SIGTERM" $ fn (sig) (println "\"[process TERM]" sig op-data)
-                .!on proc "\"SIGKILL" $ fn (sig) (println "\"[process KILL]" sig op-data)
-                .!on proc "\"SIGSTOP" $ fn (sig) (println "\"[process STOP]" sig op-data)
-                .!on proc "\"error" $ fn (event) (println "\"[process error]" event)
+                .!on proc "\"SIGINT" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGINT" sig)
+                    , sid
+                .!on proc "\"SIGTERM" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGTERM" sig)
+                    , sid
+                .!on proc "\"SIGKILL" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGKILL" sig)
+                    , sid
+                .!on proc "\"error" $ fn (event)
                   dispatch!
                     :: :process/error $ [] pid (str event)
                     , sid
                   dispatch! (:: :process/finish pid) sid
+                .!on proc "\"uncaughtExceptionMonitor" $ fn (err origin)
+                  dispatch!
+                    :: :process/error $ [] pid (str err &newline origin)
+                    , sid
+                .!on proc "\"uncaughtException" $ fn (err origin)
+                  dispatch!
+                    :: :process/error $ [] pid (str err &newline origin)
+                    , sid
                 .!on (.-stdout proc) |data $ fn (data)
                   dispatch!
                     :: :process/stdout $ [] pid data
@@ -1490,7 +1509,7 @@
                     new-store $ twig-container db session records
                     changes $ diff-twig old-store new-store
                       {} $ :key :id
-                  when config/dev? $ println "\"Changes for" sid "\":" changes (count records)
+                  ; when config/dev? $ println "\"Changes for" sid "\":" changes (count records)
                   if
                     not= changes $ []
                     do
