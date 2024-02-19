@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.13)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.14)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -841,7 +841,6 @@
                           d! cursor $ assoc state :wrap?
                             not $ :wrap? state
                       <> "\"Wrap?"
-                    comp-switcher (>> states :switcher) (get router-data :dict)
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
@@ -907,28 +906,25 @@
                                   :data chunk
                                 ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
+                  div
+                    {} (:class-name css/center)
+                      :style $ {} (:padding "\"4px 0")
+                    comp-switcher (>> states :switcher) (get router-data :dict)
         |comp-switcher $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-switcher (states dict)
-              let
-                  menu-plugin $ use-modal-menu (>> states :menu)
-                    {} (:title "\"Switch process")
-                      :items $ -> dict
-                        either $ {}
-                        .map-list $ fn (pair)
-                          let
-                              proc $ nth pair 1
-                            {}
-                              :value $ :pid proc
-                              :display $ :title proc
-                      :on-result $ fn (result d!)
-                        d! :router/change $ {} (:name :process)
-                          :params $ {}
-                            :id $ :value result
-                div ({})
-                  span $ {} (:inner-text "\"Switch")
-                    :on-click $ fn (e d!) (.show menu-plugin d!)
-                  .render menu-plugin
+              comp-tabs
+                {} $ :selected nil
+                -> dict
+                  either $ {}
+                  .map-list $ fn (pair)
+                    let
+                        proc $ nth pair 1
+                      :: :tab (:pid proc) (:title proc)
+                fn (info d!)
+                  d! :router/change $ {} (:name :process)
+                    :params $ {}
+                      :id $ nth info 1
         |css-down-icon $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-down-icon $ {}
@@ -945,7 +941,7 @@
         |css-log $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-log $ {}
-              "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
+              "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code) (:line-height "\"20px")
         |css-logs-list $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-logs-list $ {}
@@ -990,6 +986,7 @@
             app.style :as style
             respo.css :refer $ defstyle
             feather.core :refer $ comp-icon
+            respo-ui.comp :refer $ comp-tabs
             respo-ui.css :as css
             respo-alerts.core :refer $ use-modal-menu
     |app.comp.profile $ %{} :FileEntry
@@ -1292,10 +1289,14 @@
                   :: :router/change $ {} (:name :process)
                     :params $ {} (:id pid)
                   , sid
-                .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event)
+                .!on proc "\"exit" $ fn (event _) (println "\"[process exit]" event op-data)
                   dispatch! (:: :process/finish pid) sid
                   swap! *registry dissoc pid
-                .!on proc "\"error" $ fn (event) (js/console.error event)
+                .!on proc "\"SIGINT" $ fn (sig) (println "\"[process SIGINT]" sig op-data)
+                .!on proc "\"SIGTERM" $ fn (sig) (println "\"[process TERM]" sig op-data)
+                .!on proc "\"SIGKILL" $ fn (sig) (println "\"[process KILL]" sig op-data)
+                .!on proc "\"SIGSTOP" $ fn (sig) (println "\"[process STOP]" sig op-data)
+                .!on proc "\"error" $ fn (event) (println "\"[process error]" event)
                   dispatch!
                     :: :process/error $ [] pid (str event)
                     , sid
