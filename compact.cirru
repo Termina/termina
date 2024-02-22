@@ -894,8 +894,8 @@
                             , true $ .includes? (:data chunk) (:filter state)
                         take-last $ if (:all-log? state) 2000 60
                         map-indexed $ fn (idx chunk)
-                          [] idx $ span
-                            {} (:class-name css-log)
+                          [] (:data chunk)
+                            span $ {} (:class-name css-log)
                               :style $ merge
                                 if
                                   = :stderr $ :type chunk
