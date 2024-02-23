@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.13)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.15)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -841,7 +841,6 @@
                           d! cursor $ assoc state :wrap?
                             not $ :wrap? state
                       <> "\"Wrap?"
-                    comp-switcher (>> states :switcher) (get router-data :dict)
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
@@ -895,8 +894,8 @@
                             , true $ .includes? (:data chunk) (:filter state)
                         take-last $ if (:all-log? state) 2000 60
                         map-indexed $ fn (idx chunk)
-                          [] idx $ span
-                            {} (:class-name css-log)
+                          [] (:data chunk)
+                            span $ {} (:class-name css-log)
                               :style $ merge
                                 if
                                   = :stderr $ :type chunk
@@ -907,28 +906,25 @@
                                   :data chunk
                                 ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
+                  div
+                    {} (:class-name css/center)
+                      :style $ {} (:padding "\"4px 0")
+                    comp-switcher (>> states :switcher) (get router-data :dict)
         |comp-switcher $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-switcher (states dict)
-              let
-                  menu-plugin $ use-modal-menu (>> states :menu)
-                    {} (:title "\"Switch process")
-                      :items $ -> dict
-                        either $ {}
-                        .map-list $ fn (pair)
-                          let
-                              proc $ nth pair 1
-                            {}
-                              :value $ :pid proc
-                              :display $ :title proc
-                      :on-result $ fn (result d!)
-                        d! :router/change $ {} (:name :process)
-                          :params $ {}
-                            :id $ :value result
-                div ({})
-                  span $ {} (:inner-text "\"Switch")
-                    :on-click $ fn (e d!) (.show menu-plugin d!)
-                  .render menu-plugin
+              comp-tabs
+                {} $ :selected nil
+                -> dict
+                  either $ {}
+                  .map-list $ fn (pair)
+                    let
+                        proc $ nth pair 1
+                      :: :tab (:pid proc) (:title proc)
+                fn (info d!)
+                  d! :router/change $ {} (:name :process)
+                    :params $ {}
+                      :id $ nth info 1
         |css-down-icon $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-down-icon $ {}
@@ -945,7 +941,7 @@
         |css-log $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-log $ {}
-              "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code)
+              "\"&" $ {} (:font-size 12) (:margin "\"0") (:font-family ui/font-code) (:line-height "\"20px")
         |css-logs-list $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-logs-list $ {}
@@ -990,6 +986,7 @@
             app.style :as style
             respo.css :refer $ defstyle
             feather.core :refer $ comp-icon
+            respo-ui.comp :refer $ comp-tabs
             respo-ui.css :as css
             respo-alerts.core :refer $ use-modal-menu
     |app.comp.profile $ %{} :FileEntry
@@ -1292,14 +1289,37 @@
                   :: :router/change $ {} (:name :process)
                     :params $ {} (:id pid)
                   , sid
-                .!on proc "\"exit" $ fn (event _) (; js/console.debug "\"[process killed]" event)
+                .!on proc "\"exit" $ fn (event _)
+                  dispatch!
+                    :: :process/error $ [] pid (str &newline "\"exit " event)
+                    , sid
                   dispatch! (:: :process/finish pid) sid
                   swap! *registry dissoc pid
-                .!on proc "\"error" $ fn (event) (js/console.error event)
+                .!on proc "\"SIGINT" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGINT" sig)
+                    , sid
+                .!on proc "\"SIGTERM" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGTERM" sig)
+                    , sid
+                .!on proc "\"SIGKILL" $ fn (sig)
+                  dispatch!
+                    :: :process/error $ [] pid (str-spaced "\"SIGKILL" sig)
+                    , sid
+                .!on proc "\"error" $ fn (event)
                   dispatch!
                     :: :process/error $ [] pid (str event)
                     , sid
                   dispatch! (:: :process/finish pid) sid
+                .!on proc "\"uncaughtExceptionMonitor" $ fn (err origin)
+                  dispatch!
+                    :: :process/error $ [] pid (str err &newline origin)
+                    , sid
+                .!on proc "\"uncaughtException" $ fn (err origin)
+                  dispatch!
+                    :: :process/error $ [] pid (str err &newline origin)
+                    , sid
                 .!on (.-stdout proc) |data $ fn (data)
                   dispatch!
                     :: :process/stdout $ [] pid data
@@ -1489,7 +1509,7 @@
                     new-store $ twig-container db session records
                     changes $ diff-twig old-store new-store
                       {} $ :key :id
-                  when config/dev? $ println "\"Changes for" sid "\":" changes (count records)
+                  ; when config/dev? $ println "\"Changes for" sid "\":" changes (count records)
                   if
                     not= changes $ []
                     do
