@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.15)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.16)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -285,7 +285,7 @@
                           :home $ comp-home (>> states :home) router-data
                           :workflows $ comp-workflow-container (>> states :workflows) (:workflows router-data)
                           :history $ comp-history (:histories router-data)
-                          :process $ comp-process-detail (>> states :detail) router-data
+                          :process $ comp-process-detail (>> states :detail) (:detail router-data)
                       comp-login states
                     comp-status-color $ :color store
                     when dev? $ comp-inspect |Store store
@@ -430,7 +430,7 @@
                   state $ or (:data states)
                     {} (:query "\"") (:pop? false)
                 div
-                  {} $ :class-name css-home
+                  {} $ :class-name (str-spaced css/expand css/column css-home)
                   div
                     {} (:class-name css/row-parted)
                       :style $ {} (:align-items :center) (:padding "\"0 8px")
@@ -488,17 +488,26 @@
                           :on-click $ fn (e d!) (d! :process/clear nil)
                         <> "\"Clear"
                   =< nil 8
-                  list->
-                    {} $ :class-name (str-spaced css/flex css-process-list)
-                    -> (:processes router-data) (.to-list)
-                      .sort $ fn (x y)
-                        -
-                          :started-at $ last y
-                          :started-at $ last x
-                      .sort-by $ fn (pair)
-                        not $ :alive? (last pair)
-                      .map-pair $ fn (pid process)
-                        [] pid $ comp-process process
+                  div
+                    {} $ :class-name (str-spaced css/expand css/row)
+                    if-let
+                      enlarge-view $ get router-data :enlarge-view
+                      if-let
+                        large-process $ get (:processes router-data) enlarge-view
+                        comp-process-detail (>> states :enlarge) large-process
+                    list->
+                      {} $ :class-name (str-spaced css/flex css-process-list)
+                      -> (:processes router-data) (.to-list)
+                        filter $ fn (x)
+                          not= (first x) (get router-data :enlarge-view)
+                        .sort $ fn (x y)
+                          -
+                            :started-at $ last y
+                            :started-at $ last x
+                        .sort-by $ fn (pair)
+                          not $ :alive? (last pair)
+                        .map-pair $ fn (pid process)
+                          [] pid $ comp-process process
         |css-filter $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-filter $ {}
@@ -520,7 +529,7 @@
         |css-process-list $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-process-list $ {}
-              "\"&" $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap "\"8px") (:grid-template-columns "\"repeat(auto-fit, minmax(560px, 1fr))") (:grid-auto-flow :dense) (:display :grid) (:padding "\"8px") (:padding-bottom 120)
+              "\"&" $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap "\"8px") (:grid-template-columns "\"repeat(auto-fit, minmax(560px, 1fr))") (:grid-auto-flow :dense) (:display :grid) (:padding-bottom 120) (:margin "\"0 8px") (:overflow :auto)
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.comp.home $ :require
@@ -529,6 +538,7 @@
             respo.comp.space :refer $ =<
             respo.core :refer $ defcomp >> list-> button <> span div a input
             app.comp.process :refer $ comp-process
+            app.comp.process-detail :refer $ comp-process-detail
             app.util :refer $ join-path map-val
             app.style :as style
             app.comp.command :refer $ comp-command-button comp-command-editor
@@ -685,6 +695,11 @@
                     {} $ :class-name css/row-middle
                     button $ {} (:class-name css/button)
                       :on-click $ fn (e d!)
+                        d! $ :: :session/enlarge (:pid process)
+                      :inner-text "\"Enlarge"
+                    =< 8 nil
+                    a $ {} (:class-name css/link)
+                      :on-click $ fn (e d!)
                         d! :router/change $ {} (:name :process)
                           :params $ {}
                             :id $ :pid process
@@ -764,7 +779,11 @@
           :code $ quote
             defstyle css-title-bar $ {}
               "\"&" $ merge ui/row-parted
-                {} (:background-color "\"rgb(213,214,209)") (:color :black) (:padding "\"4px 4px") (:border-radius "\"4px")
+                {}
+                  :background-color $ hsl 0 0 100 0.4
+                  :color :black
+                  :padding "\"4px 4px"
+                  :border-radius "\"4px"
         |url-pattern $ %{} :CodeEntry (:doc |)
           :code $ quote
             def url-pattern $ new js/RegExp "\"https?://\\S+" "\"g"
@@ -784,14 +803,14 @@
       :defs $ {}
         |comp-process-detail $ %{} :CodeEntry (:doc |)
           :code $ quote
-            defcomp comp-process-detail (states router-data)
+            defcomp comp-process-detail (states process)
               let
                   cursor $ :cursor states
                   state $ either (:data states)
                     {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
-                  process $ get router-data :detail
                 div
-                  {} $ :class-name css-process
+                  {} (:class-name css-process)
+                    :style $ {} (:flex 2)
                   div
                     {} $ :class-name css/row-parted
                     div
@@ -881,32 +900,33 @@
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
-                    list->
-                      {} $ :style
-                        {} $ :white-space
-                          if (:wrap? state) "\"pre-wrap" "\"pre"
-                      -> (:content process)
-                        filter $ fn (chunk)
-                          if
-                            or
-                              not $ :filter? state
-                              blank? $ :filter state
-                            , true $ .includes? (:data chunk) (:filter state)
-                        take-last $ if (:all-log? state) 2000 60
-                        map-indexed $ fn (idx chunk)
-                          [] (:data chunk)
-                            span $ {} (:class-name css-log)
-                              :style $ merge
-                                if
-                                  = :stderr $ :type chunk
-                                  {} $ :color :red
-                              :inner-text $ do
-                                if (:hide-thread-info? state)
-                                  hide-thread-info $ :data chunk
-                                  :data chunk
-                                ; .!replace (:data chunk) &newline $ str &newline &newline
+                    if (some? process)
+                      list->
+                        {} $ :style
+                          {} $ :white-space
+                            if (:wrap? state) "\"pre-wrap" "\"pre"
+                        -> (:content process)
+                          filter $ fn (chunk)
+                            if
+                              or
+                                not $ :filter? state
+                                blank? $ :filter state
+                              , true $ .includes? (:data chunk) (:filter state)
+                          take-last $ if (:all-log? state) 2000 60
+                          map-indexed $ fn (idx chunk)
+                            [] (:data chunk)
+                              span $ {} (:class-name css-log)
+                                :style $ merge
+                                  if
+                                    = :stderr $ :type chunk
+                                    {} $ :color :red
+                                :inner-text $ do
+                                  if (:hide-thread-info? state)
+                                    hide-thread-info $ :data chunk
+                                    :data chunk
+                                  ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
-                  div
+                  ; div
                     {} (:class-name css/center)
                       :style $ {} (:padding "\"4px 0")
                     comp-switcher (>> states :switcher) (get router-data :dict)
@@ -1377,6 +1397,7 @@
               :router $ do router
                 {} (:name :home) (:data nil) (:router nil)
               :messages $ {}
+              :enlarge-view nil
         |user $ %{} :CodeEntry (:doc |)
           :code $ quote
             def user $ {} (:name nil) (:id nil) (:nickname nil) (:avatar nil) (:password nil)
@@ -1586,6 +1607,7 @@
                         :history $ {} (:histories histories)
                         :workflows $ {} (:workflows workflows)
                         :home $ {} (:processes processes) (:workflows workflows)
+                          :enlarge-view $ :enlarge-view session
                         :process $ let
                             process-id $ -> router :params :id
                           {}
@@ -1627,6 +1649,7 @@
                   session/connect db sid op-id op-time
                 (:session/disconnect) (session/disconnect db sid op-id op-time)
                 (:session/remove-message d) (session/remove-message db d sid op-id op-time)
+                (:session/enlarge d) (session/enlarge db d sid op-id op-time)
                 (:user/log-in d) (user/log-in db d sid op-id op-time)
                 (:user/sign-up d) (user/sign-up db d sid op-id op-time)
                 (:user/log-out d) (user/log-out db d sid op-id op-time)
@@ -1750,6 +1773,10 @@
           :code $ quote
             defn disconnect (db sid op-id op-time)
               update db :sessions $ fn (session) (dissoc session sid)
+        |enlarge $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn enlarge (db d sid op-id op-time)
+              assoc-in db ([] :sessions sid :enlarge-view) d
         |remove-message $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn remove-message (db op-data sid op-id op-time)
