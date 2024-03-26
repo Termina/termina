@@ -431,62 +431,6 @@
                     {} (:query "\"") (:pop? false)
                 div
                   {} $ :class-name (str-spaced css/expand css/column css-home)
-                  div
-                    {} (:class-name css/row-parted)
-                      :style $ {} (:align-items :center) (:padding "\"0 8px")
-                    div
-                      {} $ :class-name (str-spaced css/flex css/row-middle)
-                      input $ {} (:class-name css-filter) (:placeholder "\"filter...")
-                        :value $ :query state
-                        :on-input $ fn (e d!)
-                          d! cursor $ assoc state :query (:value e)
-                      list->
-                        {}
-                          :class-name $ str-spaced css/flex css/row
-                          :style $ {} (:flex-wrap :wrap)
-                        -> (:workflows router-data) (.to-list)
-                          .filter-pair $ fn (k workflow)
-                            :matches? $ parse-by-letter
-                              .!toLowerCase $ :name workflow
-                              .!toLowerCase $ :query state
-                          .sort-by $ fn (pair)
-                            :name $ last pair
-                          .map-pair $ fn (k workflow)
-                            [] k $ comp-command-button workflow
-                    div
-                      {} $ :class-name css/row-middle
-                      button $ {}
-                        :class-name $ str-spaced css/button style/css-button
-                        :inner-text "\"Run"
-                        :on-click $ fn (e d!)
-                          d! cursor $ assoc state :pop? true
-                      comp-modal
-                        {} (:title |Demo)
-                          :style $ {} (:width 400)
-                          :container-style $ {}
-                          :render $ fn (on-close)
-                            comp-command-editor (>> states :quick-run) nil $ fn (draft d!)
-                              d! :effect/run $ {}
-                                :command $ :code draft
-                                :cwd $ :path draft
-                                :title $ :title draft
-                              on-close d!
-                        :pop? state
-                        fn (d!)
-                          d! cursor $ assoc state :pop? false
-                      =< 8 nil
-                      button $ {}
-                        :class-name $ str-spaced css/button style/css-button
-                        :inner-text "\"Kill all"
-                        :on-click $ fn (e d!)
-                          &doseq
-                            pid $ keys (:processes router-data)
-                            d! :effect/kill pid
-                      =< 8 nil
-                      a
-                        {} (:class-name css/link)
-                          :on-click $ fn (e d!) (d! :process/clear nil)
-                        <> "\"Clear"
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced css/expand css/row)
@@ -495,19 +439,77 @@
                       if-let
                         large-process $ get (:processes router-data) enlarge-view
                         comp-process-detail (>> states :enlarge) large-process
-                    list->
-                      {} $ :class-name (str-spaced css/flex css-process-list)
-                      -> (:processes router-data) (.to-list)
-                        filter $ fn (x)
-                          not= (first x) (get router-data :enlarge-view)
-                        .sort $ fn (x y)
-                          -
-                            :started-at $ last y
-                            :started-at $ last x
-                        .sort-by $ fn (pair)
-                          not $ :alive? (last pair)
-                        .map-pair $ fn (pid process)
-                          [] pid $ comp-process process
+                    div
+                      {} $ :class-name (str-spaced css/expand css/column)
+                      div
+                        {} (:class-name css/row-parted)
+                          :style $ {} (:align-items :center) (:padding "\"0 8px")
+                        div
+                          {} $ :class-name (str-spaced css/flex css/row-middle)
+                          input $ {} (:class-name css-filter) (:placeholder "\"filter...")
+                            :value $ :query state
+                            :on-input $ fn (e d!)
+                              d! cursor $ assoc state :query (:value e)
+                          list->
+                            {}
+                              :class-name $ str-spaced css/flex css/row
+                              :style $ {} (:flex-wrap :wrap)
+                            -> (:workflows router-data) (.to-list)
+                              .filter-pair $ fn (k workflow)
+                                :matches? $ parse-by-letter
+                                  .!toLowerCase $ :name workflow
+                                  .!toLowerCase $ :query state
+                              .sort-by $ fn (pair)
+                                :name $ last pair
+                              .map-pair $ fn (k workflow)
+                                [] k $ comp-command-button workflow
+                        div
+                          {} $ :class-name css/row-middle
+                          button $ {}
+                            :class-name $ str-spaced css/button style/css-button
+                            :inner-text "\"Run"
+                            :on-click $ fn (e d!)
+                              d! cursor $ assoc state :pop? true
+                          comp-modal
+                            {} (:title |Demo)
+                              :style $ {} (:width 400)
+                              :container-style $ {}
+                              :render $ fn (on-close)
+                                comp-command-editor (>> states :quick-run) nil $ fn (draft d!)
+                                  d! :effect/run $ {}
+                                    :command $ :code draft
+                                    :cwd $ :path draft
+                                    :title $ :title draft
+                                  on-close d!
+                            :pop? state
+                            fn (d!)
+                              d! cursor $ assoc state :pop? false
+                          =< 8 nil
+                          button $ {}
+                            :class-name $ str-spaced css/button style/css-button
+                            :inner-text "\"Kill all"
+                            :on-click $ fn (e d!)
+                              &doseq
+                                pid $ keys (:processes router-data)
+                                d! :effect/kill pid
+                          =< 8 nil
+                          a
+                            {} (:class-name css/link)
+                              :on-click $ fn (e d!) (d! :process/clear nil)
+                            <> "\"Clear"
+                      list->
+                        {} $ :class-name (str-spaced css/flex css-process-list)
+                        -> (:processes router-data) (.to-list)
+                          filter $ fn (x)
+                            not= (first x) (get router-data :enlarge-view)
+                          .sort $ fn (x y)
+                            -
+                              :started-at $ last y
+                              :started-at $ last x
+                          .sort-by $ fn (pair)
+                            not $ :alive? (last pair)
+                          .map-pair $ fn (pid process)
+                            [] pid $ comp-process process
         |css-filter $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-filter $ {}
@@ -718,7 +720,7 @@
                             :title $ :title process
                           d! :process/remove-dead $ :pid process
                 div
-                  {} $ :class-name css-process-log
+                  {} $ :class-name (str-spaced css/expand css-process-log)
                   <> (:command process) (merge style/text)
                   =< 8 nil
                   <> (:cwd process)
@@ -867,14 +869,14 @@
                         :class-name css/font-fancy
                         :style $ merge style/text
                           {} $ :padding "\"0 8px"
-                      =< 16 nil
+                      ; =< 16 nil
                       <> (:command process) style/text
-                      =< 16 nil
-                      <> (:cwd process)
+                      ; =< 16 nil
+                      ; <> (:cwd process)
                         merge style/text $ {} (:font-size 12)
                           :color $ hsl 0 0 70
-                      =< 16 nil
-                      <> (:pid process) style/text
+                      ; =< 16 nil
+                      ; <> (:pid process) style/text
                       =< 8 nil
                       if (:alive? process)
                         a
