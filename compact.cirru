@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.16)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.17)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -696,11 +696,14 @@
                   div
                     {} $ :class-name css/row-middle
                     button $ {} (:class-name css/button)
+                      :style $ {}
+                        :background $ hsl 0 0 0 0.1
+                        :color :white
                       :on-click $ fn (e d!)
                         d! $ :: :session/enlarge (:pid process)
                       :inner-text "\"Enlarge"
-                    =< 8 nil
-                    a $ {} (:class-name css/link)
+                    ; =< 8 nil
+                    ; a $ {} (:class-name css/link)
                       :on-click $ fn (e d!)
                         d! :router/change $ {} (:name :process)
                           :params $ {}
@@ -869,8 +872,11 @@
                         :class-name css/font-fancy
                         :style $ merge style/text
                           {} $ :padding "\"0 8px"
+                          if (:alive? process)
+                            {} (:color :black) (:border-radius "\"4px")
+                              :background-color $ hsl 60 100 60
                       ; =< 16 nil
-                      <> (:command process) style/text
+                      ; <> (:command process) style/text
                       ; =< 16 nil
                       ; <> (:cwd process)
                         merge style/text $ {} (:font-size 12)
@@ -892,7 +898,7 @@
                                 :cwd $ :cwd process
                                 :command $ :command process
                                 :title $ :title process
-                                :jump? true
+                                :enlarge? true
                               d! :process/remove-dead $ :pid process
                           =< 8 nil
                           a $ {} (:class-name css/link) (:inner-text "\"Drop")
@@ -1299,6 +1305,7 @@
                   command $ :command op-data
                   cwd $ :cwd op-data
                   jump? $ :jump? op-data
+                  enlarge? $ :enlarge? op-data
                   proc $ cp/exec command
                     js-object $ :cwd cwd
                   pid $ .-pid proc
@@ -1311,6 +1318,8 @@
                   :: :router/change $ {} (:name :process)
                     :params $ {} (:id pid)
                   , sid
+                if (w-js-log enlarge?)
+                  dispatch! (:: :session/enlarge pid) sid
                 .!on proc "\"exit" $ fn (event _)
                   dispatch!
                     :: :process/error $ [] pid (str &newline "\"exit " event)
