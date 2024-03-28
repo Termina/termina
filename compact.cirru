@@ -503,9 +503,16 @@
                           filter $ fn (x)
                             not= (first x) (get router-data :enlarge-view)
                           .sort $ fn (x y)
-                            -
-                              :started-at $ last y
-                              :started-at $ last x
+                            if
+                              and
+                                :alive? $ last y
+                                :alive? $ last x
+                              -
+                                :started-at $ last x
+                                :started-at $ last y
+                              -
+                                :started-at $ last y
+                                :started-at $ last x
                           .sort-by $ fn (pair)
                             not $ :alive? (last pair)
                           .map-pair $ fn (pid process)
