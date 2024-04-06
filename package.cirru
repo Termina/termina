@@ -4,7 +4,7 @@
     |calcit-lang/lilac |main
     |calcit-lang/memof |main
     |calcit-lang/recollect |main
-    |Respo/respo.calcit |0.16.9
+    |Respo/respo.calcit |0.16.10
     |Respo/respo-ui.calcit |main
     |Respo/respo-message.calcit |main
     |Cumulo/cumulo-util.calcit |main
