@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.17)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.18)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -820,6 +820,9 @@
                   cursor $ :cursor states
                   state $ either (:data states)
                     {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
+                  command-plugin $ use-prompt (>> states :command)
+                    {} (:text "\"change command")
+                      :initial $ :command process
                 div
                   {} (:class-name css-process)
                     :style $ {} (:flex 2)
@@ -834,10 +837,13 @@
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :filter?
                             not $ :filter? state
-                      input $ {} (:class-name css-filter)
-                        :value $ :filter state
-                        :on-input $ fn (e d!)
-                          d! cursor $ assoc state :filter (:value e)
+                      if (:filter? state)
+                        input $ {} (:class-name css-filter)
+                          :value $ :filter state
+                          :on-input $ fn (e d!)
+                            d! cursor $ assoc state :filter (:value e)
+                          :placeholder "\"filter..."
+                        <> "\"Filter..."
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
                         :checked $ :all-log? state
@@ -864,7 +870,7 @@
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :hide-thread-info?
                             not $ :hide-thread-info? state
-                      <> "\"HideThreadInfo?"
+                      <> "\"HideThread?"
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
                         :checked $ :wrap? state
@@ -882,11 +888,15 @@
                           if (:alive? process)
                             {} (:color :black) (:border-radius "\"4px")
                               :background-color $ hsl 60 100 60
+                        :title $ str (:cwd process) &newline (:command process)
+                        :on-click $ fn (e d!)
+                          .show command-plugin d! $ fn (text)
+                            d! $ :: :process/change-command (:pid process) text
                       ; =< 16 nil
                       ; <> (:command process) style/text
                       ; =< 16 nil
-                      ; <> (:cwd process)
-                        merge style/text $ {} (:font-size 12)
+                      ; <> $ merge style/text
+                        {} (:font-size 12)
                           :color $ hsl 0 0 70
                       ; =< 16 nil
                       ; <> (:pid process) style/text
@@ -897,9 +907,11 @@
                             :style $ {} (:color :red) (:border-color :red)
                             :on-click $ fn (e d!)
                               d! :effect/kill $ :pid process
+                            :title $ :command process
                           <> "\"Kill"
                         div ({})
                           a $ {} (:class-name css/link) (:inner-text "\"Redo")
+                            :title $ :command process
                             :on-click $ fn (e d!)
                               d! :effect/run $ {}
                                 :cwd $ :cwd process
@@ -941,25 +953,7 @@
                                     :data chunk
                                   ; .!replace (:data chunk) &newline $ str &newline &newline
                     =< nil 200
-                  ; div
-                    {} (:class-name css/center)
-                      :style $ {} (:padding "\"4px 0")
-                    comp-switcher (>> states :switcher) (get router-data :dict)
-        |comp-switcher $ %{} :CodeEntry (:doc |)
-          :code $ quote
-            defcomp comp-switcher (states dict)
-              comp-tabs
-                {} $ :selected nil
-                -> dict
-                  either $ {}
-                  .map-list $ fn (pair)
-                    let
-                        proc $ nth pair 1
-                      :: :tab (:pid proc) (:title proc)
-                fn (info d!)
-                  d! :router/change $ {} (:name :process)
-                    :params $ {}
-                      :id $ nth info 1
+                  .render command-plugin
         |css-down-icon $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-down-icon $ {}
@@ -1023,7 +1017,7 @@
             feather.core :refer $ comp-icon
             respo-ui.comp :refer $ comp-tabs
             respo-ui.css :as css
-            respo-alerts.core :refer $ use-modal-menu
+            respo-alerts.core :refer $ use-modal-menu use-prompt
     |app.comp.profile $ %{} :FileEntry
       :defs $ {}
         |comp-profile $ %{} :CodeEntry (:doc |)
@@ -1678,6 +1672,7 @@
                 (:process/error d) (process/error db d sid op-id op-time)
                 (:process/clear d) (process/clear db d sid op-id op-time)
                 (:process/finish d) (process/finish db d sid op-id op-time)
+                (:process/change-command pid next) (process/change-command db pid next sid op-id op-time)
                 (:process/remove-dead d) (process/remove-dead db d sid op-id op-time)
                 (:process/shorten-content d) (process/shorten-content db d sid op-id op-time)
                 (:workflow/create d) (workflow/create-workflow db d sid op-id op-time)
@@ -1696,6 +1691,10 @@
             [] app.updater.workflow :as workflow
     |app.updater.process $ %{} :FileEntry
       :defs $ {}
+        |change-command $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn change-command (db pid next sid op-id op-time)
+              assoc-in db ([] :processes pid :command) next
         |clear $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn clear (db op-data sid op-id op-time)
