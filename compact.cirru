@@ -67,7 +67,11 @@
                   .-metaKey event
                 case-default (-> @*store :router :name)
                   do $ println "\"no thing to clear in" (-> @*store :router :name)
-                  :home $ dispatch! (:: :process/clear)
+                  :home $ do
+                    dispatch! $ :: :process/clear
+                    if-let
+                      enlarge-view $ -> @*store :session w-js-log :enlarge-view
+                      dispatch! $ :: :process/shorten-content enlarge-view
                   :history $ dispatch! (:: :process/clear-history)
                   :process $ dispatch!
                     :: :process/shorten-content $ -> @*store :router :params :id
