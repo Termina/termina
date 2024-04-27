@@ -1,6 +1,6 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.18)
+  :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.19)
     :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
@@ -1347,7 +1347,8 @@
                   dispatch!
                     :: :process/error $ [] pid (str event)
                     , sid
-                  dispatch! (:: :process/finish pid) sid
+                  ; dispatch! (:: :process/finish pid) sid
+                  js/console.error "\"[TERMINA] process error" event
                 .!on proc "\"uncaughtExceptionMonitor" $ fn (err origin)
                   dispatch!
                     :: :process/error $ [] pid (str err &newline origin)
