@@ -290,7 +290,7 @@
                           :workflows $ comp-workflow-container (>> states :workflows) (:workflows router-data)
                           :history $ comp-history (:histories router-data)
                           :process $ comp-process-detail (>> states :detail) (:detail router-data)
-                      comp-login states
+                      comp-login $ >> states :login
                     comp-status-color $ :color store
                     when dev? $ comp-inspect |Store store
                       {} (:bottom 0) (:left 0) (:max-width |100%)
@@ -1055,7 +1055,7 @@
                   button
                     {}
                       :style $ merge style/button
-                      :on-click $ fn (e d! m!)
+                      :on-click $ fn (e d!)
                         .replace js/location $ str js/location.origin "\"?time=" (.now js/Date)
                     <> "\"Refresh"
                   =< 8 nil
@@ -1063,7 +1063,7 @@
                     {}
                       :style $ merge style/button
                         {} (:color :red) (:border-color :red)
-                      :on-click $ fn (e dispatch! mutate!) (dispatch! :user/log-out nil)
+                      :on-click $ fn (e dispatch!) (dispatch! :user/log-out nil)
                         js/localStorage.removeItem $ :storage-key config/site
                     <> "\"Log out"
       :ns $ %{} :CodeEntry (:doc |)
@@ -1323,11 +1323,10 @@
                   :: :router/change $ {} (:name :process)
                     :params $ {} (:id pid)
                   , sid
-                if (w-js-log enlarge?)
-                  dispatch! (:: :session/enlarge pid) sid
-                .!on proc "\"exit" $ fn (event _)
+                if enlarge? $ dispatch! (:: :session/enlarge pid) sid
+                .!on proc "\"exit" $ fn (code _e) (js/console.warn "\"[EXIT]" code _e)
                   dispatch!
-                    :: :process/error $ [] pid (str &newline "\"exit " event)
+                    :: :process/error $ [] pid (str &newline "\"exit " code)
                     , sid
                   dispatch! (:: :process/finish pid) sid
                   swap! *registry dissoc pid
@@ -1487,12 +1486,12 @@
                 println "\"Server started. Open UI on " $ .!blue chalk (.!toString ui-url)
               render-loop! *loop-trigger
               js/process.on "\"SIGINT" on-exit!
-              flipped js/setInterval 600 $ \ persist-db!
+              flipped js/setInterval 60000 $ \ persist-db!
               check-version!
         |on-exit! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-exit! (code _) (persist-db!)
-              ; println "|exit code is:" $ pr-str code
+              println "|termina exit code is:" $ to-lispy-string code
               js/process.exit
         |persist-db! $ %{} :CodeEntry (:doc |)
           :code $ quote
