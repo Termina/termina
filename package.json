@@ -7,11 +7,11 @@
     "termina": "./server.mjs"
   },
   "scripts": {
-    "watch-server": "cr --emit-js",
-    "compile-server": "cr --emit-js --once",
-    "compile-page": "cr --emit-js --once --emit-path out-page --entry page",
+    "watch-server": "cr js",
+    "compile-server": "cr -1 js",
+    "compile-page": "cr  --entry page --emit-path out-page -1 js",
     "release-page": "vite build --base=./",
-    "watch-page": "cr --emit-js --emit-path out-page/ --entry page"
+    "watch-page": "cr --entry page --emit-path out-page/ js"
   },
   "repository": {
     "type": "git",

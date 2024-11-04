@@ -1344,7 +1344,15 @@
                     , sid
                 .!on proc "\"error" $ fn (event)
                   dispatch!
-                    :: :process/error $ [] pid (str event)
+                    :: :process/error $ str-spaced "\"error:"
+                      [] pid $ str event
+                    , sid
+                  ; dispatch! (:: :process/finish pid) sid
+                  js/console.error "\"[TERMINA] process error" event
+                .!on proc "\"disconnect" $ fn (event)
+                  dispatch!
+                    :: :process/error $ [] pid
+                      str-spaced "\"disconntect:" $ str event
                     , sid
                   ; dispatch! (:: :process/finish pid) sid
                   js/console.error "\"[TERMINA] process error" event
@@ -1353,6 +1361,10 @@
                     :: :process/error $ [] pid (str err &newline origin)
                     , sid
                 .!on proc "\"uncaughtException" $ fn (err origin)
+                  dispatch!
+                    :: :process/error $ [] pid (str "\"uncaughtException:" err &newline origin)
+                    , sid
+                .!on proc "\"unhandledRejection" $ fn (err origin)
                   dispatch!
                     :: :process/error $ [] pid (str err &newline origin)
                     , sid
