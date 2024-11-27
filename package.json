@@ -20,13 +20,14 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.8.56",
+    "@calcit/procs": "^0.9.6",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.11",
     "latest-version": "^9.0.0",
     "md5": "^2.3.0",
     "nanoid": "^5.0.7",
     "randomcolor": "^0.6.2",
+    "string-argv": "^0.3.2",
     "url-parse": "^1.5.10",
     "ws": "^8.17.0"
   },

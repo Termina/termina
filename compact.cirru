@@ -1311,8 +1311,19 @@
                   cwd $ :cwd op-data
                   jump? $ :jump? op-data
                   enlarge? $ :enlarge? op-data
-                  proc $ cp/exec command
-                    js-object $ :cwd cwd
+                  ; spawn? $ or true (:spawn? op-data)
+                  proc $ if (.includes? command "\" | ")
+                    let
+                        parsed $ parse-command command
+                      tag-match parsed $ 
+                        :command proc-name args envs
+                        do (js/console.log "\"Parsed command:" proc-name args envs)
+                          let
+                              p $ cp/spawn proc-name args
+                                js-object (:cwd cwd) (:env envs) (:detached true)
+                            .!unref p
+                            , p
+                    cp/exec command $ js-object (:cwd cwd)
                   pid $ .-pid proc
                 swap! *registry assoc pid proc
                 dispatch!
@@ -1326,7 +1337,7 @@
                 if enlarge? $ dispatch! (:: :session/enlarge pid) sid
                 .!on proc "\"exit" $ fn (code _e) (js/console.warn "\"[EXIT]" code _e)
                   dispatch!
-                    :: :process/error $ [] pid (str &newline "\"exit " code)
+                    :: :process/error $ [] pid (str &newline "\"exit: " code)
                     , sid
                   dispatch! (:: :process/finish pid) sid
                   swap! *registry dissoc pid
@@ -1344,8 +1355,8 @@
                     , sid
                 .!on proc "\"error" $ fn (event)
                   dispatch!
-                    :: :process/error $ str-spaced "\"error:"
-                      [] pid $ str event
+                    :: :process/error $ [] pid
+                      str-spaced "\"error:" $ str event
                     , sid
                   ; dispatch! (:: :process/finish pid) sid
                   js/console.error "\"[TERMINA] process error" event
@@ -1370,11 +1381,13 @@
                     , sid
                 .!on (.-stdout proc) |data $ fn (data)
                   dispatch!
-                    :: :process/stdout $ [] pid data
+                    :: :process/stdout $ [] pid
+                      if (js/Buffer.isBuffer data) (.!toString data) data
                     , sid
                 .!on (.-stderr proc) |data $ fn (data)
                   dispatch!
-                    :: :process/stderr $ [] pid data
+                    :: :process/stderr $ [] pid
+                      if (js/Buffer.isBuffer data) (.!toString data) data
                     , sid
         |kill-process! $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1382,11 +1395,30 @@
               let
                   proc $ get @*registry pid
                 if (some? proc)
-                  do $ .!kill proc "\"SIGTERM"
+                  do (eprintln "\"[kill] process" proc) (.!kill proc "\"SIGTERM")
                   do (eprintln "\"[warn] process not found in registry:" pid @*registry) (dispatch! :process/finish pid sid)
+        |parse-command $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn parse-command (command)
+              let
+                  js-command $ string-argv command
+                  env-chunks $ .!filter js-command
+                    fn (chunk & _a) (.!test pattern-env chunk)
+                  comands-chunks $ .!slice js-command (.-length env-chunks)
+                  envs $ let
+                      *obj $ js-object
+                    .!forEach env-chunks $ fn (chunk & _a)
+                      let
+                          pair $ .!split chunk "\"="
+                        js-set *obj (.-0 pair) (.-1 pair)
+                    , *obj
+                :: :command (.-0 comands-chunks) (.!slice comands-chunks 1) envs
+        |pattern-env $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            def pattern-env $ do (new js/RegExp "\"^\\w+=")
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
-          ns app.manager $ :require ([] |child_process :as cp)
+          ns app.manager $ :require ([] |child_process :as cp) ("\"string-argv" :default string-argv)
     |app.schema $ %{} :FileEntry
       :defs $ {}
         |command $ %{} :CodeEntry (:doc |)
