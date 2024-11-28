@@ -1313,17 +1313,16 @@
                   enlarge? $ :enlarge? op-data
                   ; spawn? $ or true (:spawn? op-data)
                   proc $ if (.includes? command "\" | ")
+                    cp/exec command $ js-object (:cwd cwd)
                     let
                         parsed $ parse-command command
                       tag-match parsed $ 
                         :command proc-name args envs
-                        do (js/console.log "\"Parsed command:" proc-name args envs)
-                          let
-                              p $ cp/spawn proc-name args
-                                js-object (:cwd cwd) (:env envs) (:detached true)
-                            .!unref p
-                            , p
-                    cp/exec command $ js-object (:cwd cwd)
+                        let
+                            p $ cp/spawn (w-js-log proc-name) (w-js-log args)
+                              w-js-log $ js-object (:cwd cwd) (:env envs) (:detached true)
+                          .!unref p
+                          , p
                   pid $ .-pid proc
                 swap! *registry assoc pid proc
                 dispatch!
@@ -1406,7 +1405,7 @@
                     fn (chunk & _a) (.!test pattern-env chunk)
                   comands-chunks $ .!slice js-command (.-length env-chunks)
                   envs $ let
-                      *obj $ js-object
+                      *obj $ js-object (:PATH js/process.env.PATH) (:HOME js/process.env.HOME)
                     .!forEach env-chunks $ fn (chunk & _a)
                       let
                           pair $ .!split chunk "\"="
