@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@calcit/procs@^0.8.56":
-  version "0.8.56"
-  resolved "https://registry.npmmirror.com/@calcit/procs/-/procs-0.8.56.tgz#01fbf13631458a20d6e2e45bcd78eccb7b128f17"
-  integrity sha512-vrmTL/anRm7gfYdvGOkDQ/72DYx2EKl0CTH0ZL5AX8XOHrxRtsc1vKwaIUsLb4ATEKBFjKYX/e177MjinNn3lg==
+"@calcit/procs@^0.9.6":
+  version "0.9.6"
+  resolved "https://registry.npmmirror.com/@calcit/procs/-/procs-0.9.6.tgz#fc03deb657bcb365b8db8ed4e7a765149726fc45"
+  integrity sha512-zHnyI6dkhNuNBQtA22QsnbQboYCBErtHZAY2WHlMOjC4KmT5SxkFYFYbSJpzm7IZs8TBE7dx1mQfXhrUwXYexA==
   dependencies:
     "@calcit/ternary-tree" "0.0.24"
     "@cirru/parser.ts" "^0.0.6"
@@ -564,6 +564,11 @@ source-map-js@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmmirror.com/source-map-js/-/source-map-js-1.2.0.tgz#16b809c162517b5b8c3e7dcd315a2a5c2612b2af"
   integrity sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==
+
+string-argv@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.npmmirror.com/string-argv/-/string-argv-0.3.2.tgz#2b6d0ef24b656274d957d54e0a4bbf6153dc02b6"
+  integrity sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==
 
 string-template@~0.2.0:
   version "0.2.1"
