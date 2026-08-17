@@ -3,9 +3,7 @@
   "version": "0.1.19",
   "description": "Start process from a Webpage",
   "main": "./server.mjs",
-  "bin": {
-    "termina": "./server.mjs"
-  },
+  "bin": "./server.mjs",
   "scripts": {
     "watch-server": "cr js",
     "compile-server": "cr -1 js",
@@ -20,7 +18,7 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.9.6",
+    "@calcit/procs": "^0.13.19",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.11",
     "latest-version": "^9.0.0",
