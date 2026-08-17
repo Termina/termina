@@ -6,8 +6,8 @@
   "bin": "./server.mjs",
   "scripts": {
     "watch-server": "cr js",
-    "compile-server": "cr -1 js",
-    "compile-page": "cr  --entry page --emit-path out-page -1 js",
+    "compile-server": "cr js",
+    "compile-page": "cr --entry page --emit-path out-page js",
     "release-page": "vite build --base=./",
     "watch-page": "cr --entry page --emit-path out-page/ js"
   },
