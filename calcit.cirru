@@ -1,11 +1,13 @@
 
-{} (:about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `cr query` to inspect and `cr edit`/`cr tree` to modify. Run `cr docs agents --full` first. Manual edits must follow format and schema conventions, then run `cr edit format`.") (:package |app) (:version |0.1.19)
+{} (:about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `cr query` to inspect and `cr edit`/`cr tree` to modify. Run `cr docs agents --full` first. Manual edits must follow format and schema conventions, then run `cr edit format`.") (:package |app)
   :entries $ {}
     :default $ {} (:description |) (:init-fn 'app.server/main!) (:mode :native) (:reload-fn 'app.server/reload!)
-      :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
+      :feature-policy $ {}
+      :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |js-ffi/
       :type-slots $ {}
     :page $ {} (:description |) (:init-fn 'app.client/main!) (:mode :native) (:reload-fn 'app.client/reload!)
-      :modules $ [] |respo.calcit/ |lilac/ |recollect/ |memof/ |respo-ui.calcit/ |ws-edn.calcit/ |cumulo-util.calcit/ |respo-message.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |alerts.calcit/ |respo-feather.calcit/
+      :feature-policy $ {}
+      :modules $ [] |respo.calcit/ |lilac/ |recollect/ |memof/ |respo-ui.calcit/ |ws-edn.calcit/ |cumulo-util.calcit/ |respo-message.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |alerts.calcit/ |respo-feather.calcit/ |js-ffi/
       :type-slots $ {}
   :files $ {}
     |app.client $ %{} 'FileEntry
@@ -24,8 +26,13 @@
           :code $ quote
             defn connect! () $ let
                 url-obj $ url-parse js/location.href true
-                host $ either (-> url-obj .-query .-host) js/location.hostname
-                port $ either (-> url-obj .-query .-port) (:port config/site)
+                query $ .?-query url-obj
+                host $ if (js-present? query)
+                  unsafe-coerce (.?-host query) String
+                  , js/location.hostname
+                port $ if (js-present? query)
+                  unsafe-coerce (.?-port query) Number
+                  option:unwrap-or (get config/site :port) 0
               ws-connect! (str |ws:// host |: port)
                 {}
                   :on-open $ fn (event) (simulate-login!)
@@ -67,9 +74,11 @@
         |on-server-data $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn on-server-data (data)
-              case-default (:kind data) (println "|unknown server data kind:" data)
+              case-default
+                option:unwrap-or (get data :kind) nil
+                println "|unknown server data kind:" data
                 :patch $ let
-                    changes $ :data data
+                    changes $ option:unwrap-or (get data :data) nil
                   when config/dev? $ js/console.log |Changes changes
                   reset! *store $ patch-twig @*store changes
           :examples $ []
@@ -81,22 +90,28 @@
                 and
                   = |k $ .-key event
                   .-metaKey event
-                case-default (-> @*store :router :name)
-                  do $ println "|no thing to clear in" (-> @*store :router :name)
-                  :home $ do
-                    dispatch! $ :: :process/clear
-                    if-let
-                      enlarge-view $ -> @*store :session w-js-log :enlarge-view
+                let
+                    router $ option:unwrap-or (get @*store :router) {}
+                    router-name $ option:unwrap-or (get router :name) nil
+                    session $ option:unwrap-or (get @*store :session) {}
+                    process-id $ option:unwrap-or
+                      get-in router $ [] :params :id
+                      , nil
+                    enlarge-view $ option:unwrap-or (get session :enlarge-view) nil
+                  case-default router-name
+                    do $ println "|no thing to clear in" router-name
+                    :home $ do
+                      dispatch! $ option:unwrap-or (get :process/clear ::) nil
                       dispatch! $ :: :process/shorten-content enlarge-view
-                  :history $ dispatch! (:: :process/clear-history)
-                  :process $ dispatch!
-                    :: :process/shorten-content $ -> @*store :router :params :id
+                    :history $ dispatch!
+                      option:unwrap-or (get :process/clear-history ::) nil
+                    :process $ dispatch! (:: :process/shorten-content process-id)
           :examples $ []
           :schema $ :: 'Dynamic
         |reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if
-              or (some? client-errors) (some? server-errors)
+              or (js-present? client-errors) (js-present? server-errors)
               hud! |error $ str client-errors &newline server-errors
               do (hud! |inactive nil) (remove-watch *store :changes) (remove-watch *states :changes) (clear-cache!) (render-app!)
                 add-watch *store :changes $ fn (store prev) (render-app!)
@@ -107,17 +122,21 @@
         |render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn render-app! () $ render! mount-target
-              comp-container (:states @*states) @*store
+              comp-container
+                option:unwrap-or (get @*states :states) nil
+                , @*store
               , dispatch!
           :examples $ []
           :schema $ :: 'Dynamic
         |simulate-login! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn simulate-login! () $ let
-                raw $ js/localStorage.getItem (:storage-key config/site)
-              if (some? raw)
+                raw $ js/localStorage.getItem
+                  option:unwrap-or (get config/site :storage-key) nil
+              if (js-present? raw)
                 do (println "|Found storage.")
-                  dispatch! $ :: :user/log-in (parse-cirru-edn raw)
+                  dispatch! $ :: :user/log-in
+                    parse-cirru-edn $ unsafe-coerce raw String
                 do $ println "|Found no storage."
           :examples $ []
           :schema $ :: 'Dynamic
@@ -152,21 +171,25 @@
                     :color $ hsl 0 0 40
                   :on-click $ fn (e d!)
                     &doseq
-                      command $ vals (:commands workflow)
+                      command $ vals
+                        option:unwrap-or (get workflow :commands) nil
                       d! :effect/run $ {}
-                        :command $ :code command
-                        :cwd $ join-path (:base-dir workflow) (:path command)
-                        :title $ :title command
-                <> $ :name workflow
+                        :command $ option:unwrap-or (get command :code) nil
+                        :cwd $ join-path
+                          option:unwrap-or (get workflow :base-dir) nil
+                          option:unwrap-or (get command :path) nil
+                        :title $ option:unwrap-or (get command :title) nil
+                <> $ option:unwrap-or (get workflow :name) nil
           :examples $ []
           :schema $ :: 'Dynamic
         |comp-command-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-command-editor (states base-command on-submit)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
-                    if (some? base-command)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ or
+                    option:unwrap-or (get states :data) nil
+                    if (option:some? base-command)
                       select-keys base-command $ [] :code :path :title
                       {} (:title |) (:code |) (:path |./)
                 div
@@ -178,30 +201,33 @@
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :title state
+                    :value $ option:unwrap-or (get state :title) nil
                     :placeholder |title...
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :title (:value e)
+                      d! cursor $ assoc state :title
+                        option:unwrap-or (get e :value) nil
                   =< nil 8
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :code state
+                    :value $ option:unwrap-or (get state :code) nil
                     :placeholder "|Command code"
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :code (:value e)
+                      d! cursor $ assoc state :code
+                        option:unwrap-or (get e :value) nil
                   =< nil 8
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :path state
+                    :value $ option:unwrap-or (get state :path) nil
                     :placeholder "|Command path"
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :path (:value e)
+                      d! cursor $ assoc state :path
+                        option:unwrap-or (get e :value) nil
                   =< nil 16
                   div
                     {} $ :style ui/row-parted
-                    span nil
+                    span $ {}
                     button
                       {} (:style style/button)
                         :on-click $ fn (e d!) (on-submit state d!) (d! cursor nil)
@@ -212,8 +238,9 @@
           :code $ quote
             defcomp comp-command-row (states command workflow-id)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ either
+                    option:unwrap-or (get states :data) nil
                     {} $ :pop? false
                   remove-plugin $ use-confirm (>> states :remove) ({})
                 div
@@ -223,7 +250,9 @@
                     div
                       {} $ :style ui/row-middle
                       <>
-                        or (:title command) |Task
+                        or
+                          option:unwrap-or (get command :title) nil
+                          , |Task
                         {} $ :font-size 20
                       =< 8 nil
                       comp-icon :play
@@ -231,9 +260,9 @@
                           :color $ hsl 200 80 70
                         fn (e d! m!)
                           d! :effect/run $ {}
-                            :cwd $ :path command
-                            :command $ :code command
-                            :title $ :title command
+                            :cwd $ option:unwrap-or (get command :path) nil
+                            :command $ option:unwrap-or (get command :code) nil
+                            :title $ option:unwrap-or (get command :title) nil
                     div
                       {} $ :style ui/row-parted
                       comp-icon :edit-2
@@ -246,9 +275,11 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-command-editor (>> states :edit-command) command $ fn (command-draft d! m!)
-                              d! :workflow/edit-command $ [] workflow-id (:id command) command-draft
+                              d! :workflow/edit-command $ [] workflow-id
+                                option:unwrap-or (get command :id) nil
+                                , command-draft
                               on-close
-                        :pop? state
+                        option:unwrap-or (get state :pop?) nil
                         fn (d!)
                           d! cursor $ assoc state :pop? false
                       =< 8 nil
@@ -256,16 +287,19 @@
                         &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                         fn (e d!)
                           .show remove-plugin d! $ fn ()
-                            d! :workflow/remove-command $ [] workflow-id (:id command)
+                            d! :workflow/remove-command $ [] workflow-id
+                              option:unwrap-or (get command :id) nil
                   div
                     {} $ :style
                       merge ui/row-middle $ {} (:font-family ui/font-code)
-                    <> (:path command)
+                    <>
+                      option:unwrap-or (get command :path) nil
                       {} (:display :inline-block)
                         :background-color $ hsl 0 0 100 0.2
                         :padding "|0 8px"
                     =< 24 nil
-                    <> (:code command)
+                    <>
+                      option:unwrap-or (get command :code) nil
                       {}
                         :background-color $ hsl 0 0 100 0.2
                         :padding "|0 8px"
@@ -304,33 +338,45 @@
           :code $ quote
             defcomp comp-container (states store)
               let
-                  state $ :data states
-                  session $ :session store
-                  router $ :router store
-                  router-data $ :data router
+                  state $ option:unwrap-or (get states :data) nil
+                  session $ option:unwrap-or (get store :session) nil
+                  router $ option:unwrap-or (get store :router) nil
+                  router-data $ option:unwrap-or (get router :data) nil
                 if (nil? store) (comp-offline)
                   div
                     {} $ :class-name (str-spaced css/global css/fullscreen css/column css-container)
-                    comp-navigation (:logged-in? store) router $ :count store
-                    if (:logged-in? store)
+                    comp-navigation
+                      option:unwrap-or (get store :logged-in?) nil
+                      , router $ option:unwrap-or (get store :count) nil
+                    if
+                      option:unwrap-or (get store :logged-in?) nil
                       let
-                          router $ :router store
-                          router-data $ :data router
-                        case-default (:name router) (comp-missing router)
-                          :profile $ comp-profile (:user store) router-data
+                          router $ option:unwrap-or (get store :router) nil
+                          router-data $ option:unwrap-or (get router :data) nil
+                        case-default
+                          option:unwrap-or (get router :name) nil
+                          comp-missing router
+                          :profile $ comp-profile
+                            option:unwrap-or (get store :user) nil
+                            , router-data
                           :home $ comp-home (>> states :home) router-data
-                          :workflows $ comp-workflow-container (>> states :workflows) (:workflows router-data)
-                          :history $ comp-history (:histories router-data)
-                          :process $ comp-process-detail (>> states :detail) (:detail router-data)
+                          :workflows $ comp-workflow-container (>> states :workflows)
+                            option:unwrap-or (get router-data :workflows) nil
+                          :history $ comp-history
+                            option:unwrap-or (get router-data :histories) nil
+                          :process $ comp-process-detail (>> states :detail)
+                            option:unwrap-or (get router-data :detail) nil
                       comp-login $ >> states :login
-                    comp-status-color $ :color store
+                    comp-status-color $ option:unwrap-or (get store :color) nil
                     when dev? $ comp-inspect |Store store
                       {} (:bottom 0) (:left 0) (:max-width |100%)
                     comp-messages
                       get-in store $ [] :session :messages
                       {}
                       fn (info d!) (d! :session/remove-message info)
-                    when dev? $ comp-reel (:reel-length store) ({})
+                    when dev? $ comp-reel
+                      option:unwrap-or (get store :reel-length) nil
+                      {}
           :examples $ []
           :schema $ :: 'Dynamic
         |comp-offline $ %{} 'CodeEntry (:doc |)
@@ -338,12 +384,14 @@
             defcomp comp-offline () $ div
               {} $ :style
                 merge ui/global ui/fullscreen ui/column-dispersive $ {}
-                  :background-color $ :theme config/site
+                  :background-color $ option:unwrap-or (get config/site :theme) nil
               div $ {}
                 :style $ {} (:height 0)
               div $ {}
                 :style $ {}
-                  :background-image $ str "|url(" (:icon config/site) "|)"
+                  :background-image $ str "|url("
+                    option:unwrap-or (get config/site :icon) nil
+                    , "|)"
                   :width 128
                   :height 128
                   :background-size :contain
@@ -371,9 +419,7 @@
         |css-status $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-status $ {}
-              |& $ let
-                  size 24
-                {} (:width size) (:height size) (:position :absolute) (:bottom 60) (:left 8) (:border-radius |50%) (:opacity 0.6) (:pointer-events :none)
+              |& $ {} (:width 24) (:height 24) (:position :absolute) (:bottom 60) (:left 8) (:border-radius |50%) (:opacity 0.6) (:pointer-events :none)
           :examples $ []
           :schema $ :: 'Dynamic
         |style-body $ %{} 'CodeEntry (:doc |)
@@ -422,18 +468,28 @@
                       merge ui/flex $ {} (:overflow :auto) (:padding "|16px 0 120px 0")
                     -> histories $ map
                       fn (history)
-                        [] (:id history)
+                        []
+                          option:unwrap-or (get history :id) nil
                           div
                             {} $ :class-name (str-spaced css/row-middle css-history)
                             <>
-                              -> (:started-at history) dayjs $ .!format "|MM-DD HH:mm:ss"
+                              unsafe-coerce
+                                .!format
+                                  dayjs $ option:unwrap-or (get history :started-at) |
+                                  , "|MM-DD HH:mm:ss"
+                                , String
                               , css-date-text
                             <>
-                              or (:title history) |Task
+                              or
+                                option:unwrap-or (get history :title) nil
+                                , |Task
                               merge style/text $ {} (:min-width 160)
-                            <> (:command history)
+                            <>
+                              option:unwrap-or (get history :command) nil
                               merge style/text $ {} (:min-width 160)
-                            <> (:cwd history) (merge style/text)
+                            <>
+                              option:unwrap-or (get history :cwd) nil
+                              merge style/text
           :examples $ []
           :schema $ :: 'Dynamic
         |css-date-text $ %{} 'CodeEntry (:doc |)
@@ -482,8 +538,9 @@
           :code $ quote
             defcomp comp-home (states router-data)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ or
+                    option:unwrap-or (get states :data) nil
                     {} (:query |) (:pop? false)
                 div
                   {} $ :class-name (str-spaced css/expand css/column css-home)
@@ -493,7 +550,9 @@
                     if-let
                       enlarge-view $ get router-data :enlarge-view
                       if-let
-                        large-process $ get (:processes router-data) enlarge-view
+                        large-process $ get
+                          option:unwrap-or (get router-data :processes) nil
+                          , enlarge-view
                         comp-process-detail (>> states :enlarge) large-process
                     div
                       {} $ :class-name (str-spaced css/expand css/column)
@@ -503,20 +562,31 @@
                         div
                           {} $ :class-name (str-spaced css/flex css/row-middle)
                           input $ {} (:class-name css-filter) (:placeholder |filter...)
-                            :value $ :query state
+                            :value $ option:unwrap-or (get state :query) nil
                             :on-input $ fn (e d!)
-                              d! cursor $ assoc state :query (:value e)
+                              d! cursor $ assoc state :query
+                                option:unwrap-or (get e :value) nil
                           list->
                             {}
                               :class-name $ str-spaced css/flex css/row
                               :style $ {} (:flex-wrap :wrap)
-                            -> (:workflows router-data) (.to-list)
+                            ->
+                              option:unwrap-or (get router-data :workflows) nil
+                              .to-list
                               .filter-pair $ fn (k workflow)
-                                :matches? $ parse-by-letter
-                                  .!toLowerCase $ :name workflow
-                                  .!toLowerCase $ :query state
+                                option:unwrap-or
+                                  get
+                                    parse-by-letter
+                                      .!toLowerCase $ option:unwrap-or (get workflow :name) nil
+                                      .!toLowerCase $ option:unwrap-or (get state :query) nil
+                                    , :matches?
+                                  , nil
                               .sort-by $ fn (pair)
-                                :name $ last pair
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last pair) {}
+                                    , :name
+                                  , nil
                               .map-pair $ fn (k workflow)
                                 [] k $ comp-command-button workflow
                         div
@@ -533,11 +603,11 @@
                               :render $ fn (on-close)
                                 comp-command-editor (>> states :quick-run) nil $ fn (draft d!)
                                   d! :effect/run $ {}
-                                    :command $ :code draft
-                                    :cwd $ :path draft
-                                    :title $ :title draft
+                                    :command $ option:unwrap-or (get draft :code) nil
+                                    :cwd $ option:unwrap-or (get draft :path) nil
+                                    :title $ option:unwrap-or (get draft :title) nil
                                   on-close d!
-                            :pop? state
+                            option:unwrap-or (get state :pop?) nil
                             fn (d!)
                               d! cursor $ assoc state :pop? false
                           =< 8 nil
@@ -546,7 +616,8 @@
                             :inner-text "|Kill all"
                             :on-click $ fn (e d!)
                               &doseq
-                                pid $ keys (:processes router-data)
+                                pid $ keys
+                                  option:unwrap-or (get router-data :processes) nil
                                 d! :effect/kill pid
                           =< 8 nil
                           a
@@ -555,22 +626,52 @@
                             <> |Clear
                       list->
                         {} $ :class-name (str-spaced css/flex css-process-list)
-                        -> (:processes router-data) (.to-list)
+                        ->
+                          option:unwrap-or (get router-data :processes) nil
+                          .to-list
                           filter $ fn (x)
                             not= (first x) (get router-data :enlarge-view)
                           .sort $ fn (x y)
                             if
                               and
-                                :alive? $ last y
-                                :alive? $ last x
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last y) {}
+                                    , :alive?
+                                  , nil
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last x) {}
+                                    , :alive?
+                                  , nil
                               -
-                                :started-at $ last x
-                                :started-at $ last y
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last x) {}
+                                    , :started-at
+                                  , nil
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last y) {}
+                                    , :started-at
+                                  , nil
                               -
-                                :started-at $ last y
-                                :started-at $ last x
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last y) {}
+                                    , :started-at
+                                  , nil
+                                option:unwrap-or
+                                  get
+                                    option:unwrap-or (last x) {}
+                                    , :started-at
+                                  , nil
                           .sort-by $ fn (pair)
-                            not $ :alive? (last pair)
+                            not $ option:unwrap-or
+                              get
+                                option:unwrap-or (last pair) {}
+                                , :alive?
+                              , nil
                           .map-pair $ fn (pid process)
                             [] pid $ comp-process process
           :examples $ []
@@ -626,8 +727,10 @@
           :code $ quote
             defcomp comp-login (states)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states) initial-state
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ or
+                    option:unwrap-or (get states :data) nil
+                    , initial-state
                 div
                   {} $ :style (merge ui/flex ui/center)
                   div ({})
@@ -635,28 +738,36 @@
                       {} $ :style ({})
                       div ({})
                         input $ {} (:placeholder |Username)
-                          :value $ :username state
+                          :value $ option:unwrap-or (get state :username) nil
                           :style ui/input
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :username (:value e)
+                            d! cursor $ assoc state :username
+                              option:unwrap-or (get e :value) nil
                       =< nil 8
                       div ({})
                         input $ {} (:placeholder |Password)
-                          :value $ :password state
+                          :value $ option:unwrap-or (get state :password) nil
                           :style ui/input
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :password (:value e)
+                            d! cursor $ assoc state :password
+                              option:unwrap-or (get e :value) nil
                     =< nil 8
                     div
                       {} $ :style
                         {} $ :text-align :right
                       span $ {} (:inner-text "|Sign up")
                         :style $ merge style/link
-                        :on-click $ on-submit (:username state) (:password state) true
+                        :on-click $ on-submit
+                          option:unwrap-or (get state :username) nil
+                          option:unwrap-or (get state :password) nil
+                          , true
                       =< 8 nil
                       span $ {} (:inner-text "|Log in")
                         :style $ merge style/link
-                        :on-click $ on-submit (:username state) (:password state) false
+                        :on-click $ on-submit
+                          option:unwrap-or (get state :username) nil
+                          option:unwrap-or (get state :password) nil
+                          , false
           :examples $ []
           :schema $ :: 'Dynamic
         |initial-state $ %{} 'CodeEntry (:doc |)
@@ -669,7 +780,8 @@
             defn on-submit (username password signup?)
               fn (e dispatch!)
                 dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-                js/localStorage.setItem (:storage-key config/site)
+                js/localStorage.setItem
+                  option:unwrap-or (get config/site :storage-key) nil
                   format-cirru-edn $ [] username password
           :examples $ []
           :schema $ :: 'Dynamic
@@ -742,7 +854,7 @@
                 {}
                   :style $ merge style-logo
                     if
-                      = router-name $ :name router
+                      = router-name $ option:unwrap-or (get router :name) nil
                       {} $ :color :white
                   :on-click $ fn (e d!)
                     d! :router/change $ {} (:name router-name)
@@ -773,12 +885,15 @@
                 {} $ :class-name css-process
                 div
                   {} (:class-name css-title-bar)
-                    :style $ if (:alive? process)
+                    :style $ if
+                      option:unwrap-or (get process :alive?) nil
                       {} $ :background-color (hsl 50 100 60)
                   div
                     {} $ :class-name css/row-middle
                     <>
-                      or (:title process) |Task
+                      or
+                        option:unwrap-or (get process :title) nil
+                        , |Task
                       merge style/text $ {} (:color :black)
                   div
                     {} $ :class-name css/row-middle
@@ -787,44 +902,54 @@
                         :background $ hsl 0 0 0 0.1
                         :color :white
                       :on-click $ fn (e d!)
-                        d! $ :: :session/enlarge (:pid process)
+                        d! $ :: :session/enlarge
+                          option:unwrap-or (get process :pid) nil
                       :inner-text |Enlarge
                     ; =< 8 nil
                     ; a $ {} (:class-name css/link)
                       :on-click $ fn (e d!)
                         d! :router/change $ {} (:name :process)
                           :params $ {}
-                            :id $ :pid process
+                            :id $ option:unwrap-or (get process :pid) nil
                       :inner-text |View
-                    if (:alive? process)
+                    if
+                      option:unwrap-or (get process :alive?) nil
                       a
                         {} (:class-name css-link-kill)
                           :on-click $ fn (e d!)
-                            d! :effect/kill $ :pid process
+                            d! :effect/kill $ option:unwrap-or (get process :pid) nil
                         <> |Kill
                       a $ {} (:style style/link) (:inner-text |Redo)
                         :on-click $ fn (e d!)
                           d! :effect/run $ {}
-                            :cwd $ :cwd process
-                            :command $ :command process
-                            :title $ :title process
-                          d! :process/remove-dead $ :pid process
+                            :cwd $ option:unwrap-or (get process :cwd) nil
+                            :command $ option:unwrap-or (get process :command) nil
+                            :title $ option:unwrap-or (get process :title) nil
+                          d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
                 div
                   {} $ :class-name (str-spaced css/expand css-process-log)
-                  <> (:command process) (merge style/text)
+                  <>
+                    option:unwrap-or (get process :command) nil
+                    merge style/text
                   =< 8 nil
-                  <> (:cwd process)
+                  <>
+                    option:unwrap-or (get process :cwd) nil
                     merge style/text $ {}
                       :color $ hsl 0 0 60
                 if-not
-                  empty? $ :content process
+                  empty? $ option:unwrap-or (get process :content) nil
                   list->
                     {} $ :class-name css-content-list
-                    -> (:content process) (.to-list) (take-last 4)
+                    ->
+                      option:unwrap-or (get process :content) nil
+                      .to-list
+                      take-last 4
                       .map-indexed $ fn (idx chunk)
                         [] idx $ let
                             urls $ to-calcit-data
-                              .!match (:data chunk) url-pattern
+                              .!match
+                                option:unwrap-or (get chunk :data) nil
+                                , url-pattern
                           div
                             {} $ :style
                               {} (:margin-top 2) (:display :block)
@@ -838,9 +963,12 @@
                                         :style $ {}
                                           :color $ hsl 200 80 70
                                           :margin "|0 8px"
-                            <> (:data chunk)
+                            <>
+                              option:unwrap-or (get chunk :data) nil
                               {}
-                                :color $ case-default (:type chunk) (hsl 60 0 72)
+                                :color $ case-default
+                                  option:unwrap-or (get chunk :type) nil
+                                  hsl 60 0 72
                                   :stderr $ hsl 60 80 36
                                   :error $ hsl 0 80 50
                                 :padding 8
@@ -911,12 +1039,13 @@
           :code $ quote
             defcomp comp-process-detail (states process)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ either
+                    option:unwrap-or (get states :data) nil
                     {} (:filter |) (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
                   command-plugin $ use-prompt (>> states :command)
                     {} (:text "|change command")
-                      :initial $ :command process
+                      :initial $ option:unwrap-or (get process :command) nil
                 div
                   {} (:class-name css-process)
                     :style $ {} (:flex 2)
@@ -927,125 +1056,151 @@
                         merge ui/row-middle $ {} (:gap 4)
                       input $ {} (:type |checkbox)
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :filter? state
+                        :checked $ option:unwrap-or (get state :filter?) nil
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :filter?
-                            not $ :filter? state
-                      if (:filter? state)
+                            not $ option:unwrap-or (get state :filter?) nil
+                      if
+                        option:unwrap-or (get state :filter?) nil
                         input $ {} (:class-name css-filter)
-                          :value $ :filter state
+                          :value $ option:unwrap-or (get state :filter) nil
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :filter (:value e)
+                            d! cursor $ assoc state :filter
+                              option:unwrap-or (get e :value) nil
                           :placeholder |filter...
                         <> |Filter...
                       input $ {} (:type |checkbox)
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :all-log? state
+                        :checked $ option:unwrap-or (get state :all-log?) nil
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :all-log?
-                            not $ :all-log? state
+                            not $ option:unwrap-or (get state :all-log?) nil
                       <> "|All log?"
                       comp-icon :arrow-down
                         {} (:font-size 14) (:class-name css-down-icon)
                           :color $ hsl 0 0 80
                         , on-scroll-down!
                       if-not
-                        empty? $ :content process
+                        empty? $ option:unwrap-or (get process :content) nil
                         a
                           {}
                             :on-click $ fn (e d!)
-                              d! :process/shorten-content $ :pid process
+                              d! :process/shorten-content $ option:unwrap-or (get process :pid) nil
                             :style style/link
                           <> |Clear
                       =< 8 nil
                       input $ {} (:type |checkbox)
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :hide-thread-info? state
+                        :checked $ option:unwrap-or (get state :hide-thread-info?) nil
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :hide-thread-info?
-                            not $ :hide-thread-info? state
+                            not $ option:unwrap-or (get state :hide-thread-info?) nil
                       <> |HideThread?
                       input $ {} (:type |checkbox)
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :wrap? state
+                        :checked $ option:unwrap-or (get state :wrap?) nil
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :wrap?
-                            not $ :wrap? state
+                            not $ option:unwrap-or (get state :wrap?) nil
                       <> |Wrap?
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
-                        :inner-text $ or (:title process) |Task
+                        :inner-text $ or
+                          option:unwrap-or (get process :title) nil
+                          , |Task
                         :class-name css/font-fancy
                         :style $ merge style/text
                           {} $ :padding "|0 8px"
-                          if (:alive? process)
+                          if
+                            option:unwrap-or (get process :alive?) nil
                             {} (:color :black) (:border-radius |4px)
                               :background-color $ hsl 60 100 60
-                        :title $ str (:cwd process) &newline (:command process)
+                        :title $ str
+                          option:unwrap-or (get process :cwd) nil
+                          , &newline
+                            option:unwrap-or (get process :command) nil
                         :on-click $ fn (e d!)
                           .show command-plugin d! $ fn (text)
-                            d! $ :: :process/change-command (:pid process) text
+                            d! $ :: :process/change-command
+                              option:unwrap-or (get process :pid) nil
+                              , text
                       ; =< 16 nil
-                      ; <> (:command process) style/text
+                      ; <>
+                        option:unwrap-or (get process :command) nil
+                        , style/text
                       ; =< 16 nil
                       ; <> $ merge style/text
                         {} (:font-size 12)
                           :color $ hsl 0 0 70
                       ; =< 16 nil
-                      ; <> (:pid process) style/text
+                      ; <>
+                        option:unwrap-or (get process :pid) nil
+                        , style/text
                       =< 8 nil
-                      if (:alive? process)
+                      if
+                        option:unwrap-or (get process :alive?) nil
                         a
                           {} (:class-name css/link)
                             :style $ {} (:color :red) (:border-color :red)
                             :on-click $ fn (e d!)
-                              d! :effect/kill $ :pid process
-                            :title $ :command process
+                              d! :effect/kill $ option:unwrap-or (get process :pid) nil
+                            :title $ option:unwrap-or (get process :command) nil
                           <> |Kill
                         div ({})
                           a $ {} (:class-name css/link) (:inner-text |Redo)
-                            :title $ :command process
+                            :title $ option:unwrap-or (get process :command) nil
                             :on-click $ fn (e d!)
                               d! :effect/run $ {}
-                                :cwd $ :cwd process
-                                :command $ :command process
-                                :title $ :title process
+                                :cwd $ option:unwrap-or (get process :cwd) nil
+                                :command $ option:unwrap-or (get process :command) nil
+                                :title $ option:unwrap-or (get process :title) nil
                                 :enlarge? true
-                              d! :process/remove-dead $ :pid process
+                              d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
                           =< 8 nil
                           a $ {} (:class-name css/link) (:inner-text |Drop)
                             :on-click $ fn (e d!)
                               d! :router/change $ {} (:name :home)
-                              d! :process/remove-dead $ :pid process
+                              d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced |scroll-area css-logs-list)
-                    if (some? process)
+                    if (option:some? process)
                       list->
                         {} $ :style
                           {} $ :white-space
-                            if (:wrap? state) |pre-wrap |pre
-                        -> (:content process)
+                            if
+                              option:unwrap-or (get state :wrap?) nil
+                              , |pre-wrap |pre
+                        ->
+                          option:unwrap-or (get process :content) nil
                           filter $ fn (chunk)
                             if
                               or
-                                not $ :filter? state
-                                blank? $ :filter state
-                              , true $ .includes? (:data chunk) (:filter state)
-                          take-last $ if (:all-log? state) 2000 60
+                                not $ option:unwrap-or (get state :filter?) nil
+                                blank? $ option:unwrap-or (get state :filter) nil
+                              , true $ .includes?
+                                option:unwrap-or (get chunk :data) nil
+                                option:unwrap-or (get state :filter) nil
+                          take-last $ if
+                            option:unwrap-or (get state :all-log?) nil
+                            , 2000 60
                           map-indexed $ fn (idx chunk)
-                            [] (:data chunk)
+                            []
+                              option:unwrap-or (get chunk :data) nil
                               span $ {} (:class-name css-log)
                                 :style $ merge
                                   if
-                                    = :stderr $ :type chunk
+                                    = :stderr $ option:unwrap-or (get chunk :type) nil
                                     {} $ :color :red
                                 :inner-text $ do
-                                  if (:hide-thread-info? state)
-                                    hide-thread-info $ :data chunk
-                                    :data chunk
-                                  ; .!replace (:data chunk) &newline $ str &newline &newline
+                                  if
+                                    option:unwrap-or (get state :hide-thread-info?) nil
+                                    hide-thread-info $ option:unwrap-or (get chunk :data) nil
+                                    option:unwrap-or (get chunk :data) nil
+                                  ; .!replace
+                                    option:unwrap-or (get chunk :data) nil
+                                    , &newline $ str &newline &newline
                     =< nil 200
                   .render command-plugin
           :examples $ []
@@ -1108,9 +1263,10 @@
         |on-scroll-down! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn on-scroll-down! (e d!)
-              if-let
-                el $ js/document.querySelector |.scroll-area
-                set! (.-scrollTop el) (.-scrollHeight el)
+              let
+                  el $ .?!querySelector js/document |.scroll-area
+                when (js-present? el)
+                  set! (.-scrollTop el) (.-scrollHeight el)
           :examples $ []
           :schema $ :: 'Dynamic
         |thread-info-pattern $ %{} 'CodeEntry (:doc |)
@@ -1143,7 +1299,8 @@
                 div
                   {} $ :style
                     {} (:font-family ui/font-fancy) (:font-size 32) (:font-weight 100)
-                  <> $ str "|Hello! " (:name user)
+                  <> $ str "|Hello! "
+                    option:unwrap-or (get user :name) nil
                 =< nil 16
                 div
                   {} $ :style ui/row
@@ -1174,7 +1331,7 @@
                       :style $ merge style/button
                         {} (:color :red) (:border-color :red)
                       :on-click $ fn (e dispatch!) (dispatch! :user/log-out nil)
-                        js/localStorage.removeItem $ :storage-key config/site
+                        js/localStorage.removeItem $ option:unwrap-or (get config/site :storage-key) nil
                     <> "|Log out"
           :examples $ []
           :schema $ :: 'Dynamic
@@ -1194,8 +1351,9 @@
           :code $ quote
             defcomp comp-workflow-container (states workflows)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ or
+                    option:unwrap-or (get states :data) nil
                     {} (:focused-id nil) (:base-workflow nil) (:pop? false)
                 div
                   {} $ :style
@@ -1218,26 +1376,33 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-workflow-editor (>> states :editor) nil on-close
-                        :pop? state
+                        option:unwrap-or (get state :pop?) nil
                         fn (d!)
                           d! cursor $ assoc state :pop? false
                     =< nil 8
                     list-> ({})
                       -> workflows (.to-list)
                         .sort-by $ fn (pair)
-                          :name $ last pair
+                          option:unwrap-or
+                            get
+                              option:unwrap-or (last pair) {}
+                              , :name
+                            , nil
                         .map-pair $ fn (k workflow)
                           [] k $ div
                             {}
                               :style $ merge style-workflow-entry
                                 {} $ :background-color
                                   if
-                                    = (:id workflow) (:focused-id state)
+                                    =
+                                      option:unwrap-or (get workflow :id) nil
+                                      option:unwrap-or (get state :focused-id) nil
                                     hsl 0 0 100 0.2
                                     hsl 0 0 100 0
                               :on-click $ fn (e d!)
-                                d! cursor $ assoc state :focused-id (:id workflow)
-                            <> $ :name workflow
+                                d! cursor $ assoc state :focused-id
+                                  option:unwrap-or (get workflow :id) nil
+                            <> $ option:unwrap-or (get workflow :name) nil
                   div $ {}
                     :style $ {} (:width 1)
                       :background-color $ hsl 0 0 100 0.2
@@ -1246,10 +1411,10 @@
                     {} $ :style
                       merge ui/flex $ {} (:padding 8)
                     let
-                        focused-id $ :focused-id state
+                        focused-id $ option:unwrap-or (get state :focused-id) nil
                       if
-                        and (some? focused-id)
-                          some? $ get workflows focused-id
+                        and (option:some? focused-id)
+                          option:some? $ get workflows focused-id
                         let
                             workflow $ get workflows focused-id
                           comp-workflow-detail (>> states :detail) workflow
@@ -1264,8 +1429,9 @@
           :code $ quote
             defcomp comp-workflow-detail (states workflow)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ either
+                    option:unwrap-or (get states :data) nil
                     {} (:pop? false) (:edit? false)
                   remove-plugin $ use-confirm (>> states :remove) ({})
                 div ({})
@@ -1277,7 +1443,8 @@
                         :color $ hsl 0 0 70
                         :font-weight 100
                       =< 8 nil
-                      <> (:base-dir workflow)
+                      <>
+                        option:unwrap-or (get workflow :base-dir) nil
                         {} (:font-family ui/font-code)
                           :color $ hsl 0 0 70
                       =< 40 nil
@@ -1295,10 +1462,10 @@
                             :render $ fn (on-close)
                               comp-command-editor (>> states :add-command) nil $ fn (command-draft d! m!)
                                 d! :workflow/add-command $ {}
-                                  :workflow-id $ :id workflow
+                                  :workflow-id $ option:unwrap-or (get workflow :id) nil
                                   :draft command-draft
                                 on-close
-                          :pop? state
+                          option:unwrap-or (get state :pop?) nil
                           , on-close
                     div
                       {} $ :style ui/row-parted
@@ -1312,7 +1479,7 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-workflow-editor (>> states :editor) workflow on-close
-                        :edit? state
+                        option:unwrap-or (get state :edit?) nil
                         fn (d!)
                           d! cursor $ assoc state :edit? false
                       =< 8 nil
@@ -1320,14 +1487,17 @@
                         &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                         fn (e d!)
                           .show remove-plugin d! $ fn ()
-                            d! :workflow/remove $ :id workflow
+                            d! :workflow/remove $ option:unwrap-or (get workflow :id) nil
                   list-> ({})
-                    -> (:commands workflow) (.to-list)
+                    ->
+                      option:unwrap-or (get workflow :commands) nil
+                      .to-list
                       map $ fn (entry)
                         let-sugar
                               [] k command
                               , entry
-                          [] k $ comp-command-row (>> states k) command (:id workflow)
+                          [] k $ comp-command-row (>> states k) command
+                            option:unwrap-or (get workflow :id) nil
                   .render remove-plugin
           :examples $ []
           :schema $ :: 'Dynamic
@@ -1335,9 +1505,10 @@
           :code $ quote
             defcomp comp-workflow-editor (states base-workflow on-toggle)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
-                    if (some? base-workflow)
+                  cursor $ option:unwrap-or (get states :cursor) nil
+                  state $ or
+                    option:unwrap-or (get states :data) nil
+                    if (option:some? base-workflow)
                       select-keys base-workflow $ [] :name :base-dir
                       {} (:name |) (:base-dir |./)
                 div
@@ -1351,18 +1522,20 @@
                       :style $ merge ui/input
                         {} $ :width 240
                       :placeholder "|Workflow name"
-                      :value $ :name state
+                      :value $ option:unwrap-or (get state :name) nil
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :name (:value e)
+                        d! cursor $ assoc state :name
+                          option:unwrap-or (get e :value) nil
                   =< nil 8
                   div ({})
                     input $ {}
                       :style $ merge ui/input
                         {} $ :width 240
                       :placeholder "|Base directory"
-                      :value $ :base-dir state
+                      :value $ option:unwrap-or (get state :base-dir) nil
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :base-dir (:value e)
+                        d! cursor $ assoc state :base-dir
+                          option:unwrap-or (get e :value) nil
                   =< nil 16
                   div
                     {} $ :style ui/row-parted
@@ -1372,8 +1545,9 @@
                         :on-click $ fn (e d!)
                           let
                               data $ select-keys state ([] :name :base-dir)
-                            if (some? base-workflow)
-                              d! :workflow/edit $ assoc data :id (:id base-workflow)
+                            if (option:some? base-workflow)
+                              d! :workflow/edit $ assoc data :id
+                                option:unwrap-or (get base-workflow :id) nil
                               d! :workflow/create data
                             d! cursor nil
                             on-toggle d!
@@ -1414,7 +1588,9 @@
           :schema $ :: 'Dynamic
         |dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            def dev? $ = |dev (get-env |mode)
+            def dev? $ let
+                mode $ option:unwrap-or (get-env |mode) |release
+              = mode |dev
           :examples $ []
           :schema $ :: 'Dynamic
         |site $ %{} 'CodeEntry (:doc |)
@@ -1435,10 +1611,10 @@
           :code $ quote
             defn create-process! (op-data dispatch! sid)
               let
-                  command $ :command op-data
-                  cwd $ :cwd op-data
-                  jump? $ :jump? op-data
-                  enlarge? $ :enlarge? op-data
+                  command $ option:unwrap-or (get op-data :command) nil
+                  cwd $ option:unwrap-or (get op-data :cwd) nil
+                  jump? $ option:unwrap-or (get op-data :jump?) nil
+                  enlarge? $ option:unwrap-or (get op-data :enlarge?) nil
                   ; spawn? $ or true (:spawn? op-data)
                   proc $ if (.includes? command "| | ")
                     cp/exec command $ js-object (:cwd cwd)
@@ -1455,7 +1631,7 @@
                 swap! *registry assoc pid proc
                 dispatch!
                   :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
-                    :title $ :title op-data
+                    :title $ option:unwrap-or (get op-data :title) nil
                   , sid
                 if jump? $ dispatch!
                   :: :router/change $ {} (:name :process)
@@ -1506,16 +1682,20 @@
                   dispatch!
                     :: :process/error $ [] pid (str err &newline origin)
                     , sid
-                .!on (.-stdout proc) |data $ fn (data)
-                  dispatch!
-                    :: :process/stdout $ [] pid
-                      if (js/Buffer.isBuffer data) (.!toString data) data
-                    , sid
-                .!on (.-stderr proc) |data $ fn (data)
-                  dispatch!
-                    :: :process/stderr $ [] pid
-                      if (js/Buffer.isBuffer data) (.!toString data) data
-                    , sid
+                .!on
+                  unsafe-coerce (.-stdout proc) 'JsObject
+                  , |data $ fn (data)
+                    dispatch!
+                      :: :process/stdout $ [] pid
+                        if (js/Buffer.isBuffer data) (.!toString data) data
+                      , sid
+                .!on
+                  unsafe-coerce (.-stderr proc) 'JsObject
+                  , |data $ fn (data)
+                    dispatch!
+                      :: :process/stderr $ [] pid
+                        if (js/Buffer.isBuffer data) (.!toString data) data
+                      , sid
           :examples $ []
           :schema $ :: 'Dynamic
         |kill-process! $ %{} 'CodeEntry (:doc |)
@@ -1533,24 +1713,33 @@
             defn parse-command (command)
               let
                   js-command $ string-argv command
-                  env-chunks $ .!filter js-command
-                    fn (chunk & _a) (.!test pattern-env chunk)
-                  comands-chunks $ .!slice js-command (.-length env-chunks)
+                  env-chunks $ unsafe-coerce
+                    .!filter js-command $ fn (chunk & _a) (.!test pattern-env chunk)
+                    , 'JsObject
+                  comands-chunks $ unsafe-coerce
+                    .!slice js-command $ .-length env-chunks
+                    , 'JsObject
                   envs $ let
                       *obj $ js-object (:PATH js/process.env.PATH) (:HOME js/process.env.HOME)
                     .!forEach env-chunks $ fn (chunk & _a)
                       let
-                          pair $ .!split chunk |=
+                          pair $ unsafe-coerce (.!split chunk |=) 'JsObject
                         js-set *obj (.-0 pair) (.-1 pair)
                     , *obj
                 :: :command (.-0 comands-chunks) (.!slice comands-chunks 1) envs
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Dynamic)
+              :args $ [] 'String
+              :features $ #{} :js-ffi
         |pattern-env $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def pattern-env $ do (new js/RegExp |^\w+=)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'JsObject)
+              :args $ []
+              :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns app.manager $ :require ([] |child_process :as cp) (|string-argv :default string-argv)
@@ -1629,9 +1818,13 @@
           :schema $ :: 'Dynamic
         |*initial-db $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            defatom *initial-db $ merge-local-edn! schema/database storage-file
-              fn (found?)
-                if found? (println "|Found local EDN data") (println "|Found no data")
+            defatom *initial-db $ let
+                found? $ fs/existsSync storage-file
+                loaded $ if found?
+                  parse-cirru-edn $ fs/readFileSync storage-file |utf8
+                  , nil
+              if found? (println "|Found local EDN data") (println "|Found no data")
+              merge schema/database loaded
           :examples $ []
           :schema $ :: 'Dynamic
         |*loop-trigger $ %{} 'CodeEntry (:doc |)
@@ -1655,10 +1848,12 @@
         |check-version! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn check-version! () $ let
-                pkg $ js/JSON.parse
-                  fs/readFileSync $ path/join
-                    fileURLToPath $ new js/URL |. js/import.meta.url
-                    , |../package.json
+                pkg $ unsafe-coerce
+                  js/JSON.parse $ fs/readFileSync
+                    path/join
+                      fileURLToPath $ new js/URL |. js/import.meta.url
+                      , |../package.json
+                  , 'JsObject
                 version $ .-version pkg
               ->
                 latest-version $ .-name pkg
@@ -1666,7 +1861,10 @@
                   if (= npm-version version) (println "|Running latest version" version)
                     println $ .!yellow chalk (str "|New version " npm-version "| available, current one is " version "| . Please upgrade!\n\nyarn global add termina\n")
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Dynamic)
+              :args $ []
+              :features $ #{} :js-ffi
         |dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn dispatch! (op sid)
@@ -1688,20 +1886,26 @@
             defn main! ()
               println "|Running mode:" $ if config/dev? |dev |release
               let
+                  proc-env $ unsafe-coerce js/process.env 'JsObject
                   user-port $ if
-                    some? $ .-port js/process.env
-                    js/parseInt $ .-port js/process.env
+                    js-present? $ .-port proc-env
+                    js/parseInt $ .-port proc-env
                   port $ or user-port (:port config/site)
                   ui-url $ url-parse |http://termina.mvc-works.org/ true
                 run-server! port
-                set! (-> ui-url .-query .-port) port
+                set!
+                  .-port $ unsafe-coerce (.-query ui-url) 'JsObject
+                  , port
                 println "|Server started. Open UI on " $ .!blue chalk (.!toString ui-url)
               render-loop! *loop-trigger
               js/process.on |SIGINT on-exit!
               flipped js/setInterval 60000 $ \ persist-db!
               check-version!
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Unit)
+              :args $ []
+              :features $ #{} :js-ffi
         |on-exit! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn on-exit! (code _) (persist-db!)
@@ -1713,7 +1917,8 @@
           :code $ quote
             defn persist-db! () $ let
                 file-content $ format-cirru-edn
-                  -> (:db @*reel)
+                  ->
+                    option:unwrap-or (:db @*reel) {}
                     assoc :sessions $ {}
                     update :processes $ fn (processes)
                       -> processes $ map-kv
@@ -1765,9 +1970,11 @@
             defn sync-clients! (reel)
               wss-each! $ fn (sid socket)
                 let
-                    db $ :db reel
-                    records $ :records reel
-                    session $ get-in db ([] :sessions sid)
+                    db $ option:unwrap-or (get reel :db) {}
+                    records $ option:unwrap-or (get reel :records) []
+                    session $ option:unwrap-or
+                      get-in db $ [] :sessions sid
+                      , nil
                     old-store $ or (get @*client-caches sid) nil
                     new-store $ twig-container db session records
                     changes $ diff-twig old-store new-store
@@ -1792,7 +1999,7 @@
             [] |chalk :default chalk
             |node:url :refer $ fileURLToPath
             [] app.config :as config
-            [] cumulo-util.file :refer $ [] write-mildly! merge-local-edn!
+            [] cumulo-util.file :refer $ [] write-mildly!
             [] app.twig.container :refer $ [] twig-container
             [] recollect.diff :refer $ [] diff-twig
             [] recollect.twig :refer $ [] render-twig clear-twig-caches!
@@ -1846,33 +2053,45 @@
         |twig-container $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn twig-container (db session records)
-              let-sugar
-                  logged-in? $ some? (:user-id session)
-                  router $ :router session
+              let
+                  user-id $ option:unwrap-or (get session :user-id) nil
+                  logged-in? $ option:some? (get session :user-id)
+                  router $ option:unwrap-or (get session :router) {}
                   base-data $ {} (:logged-in? logged-in?) (:session session)
                     :reel-length $ count records
-                  ({} workflows processes histories) db
+                  workflows $ option:unwrap-or (get db :workflows) {}
+                  processes $ option:unwrap-or (get db :processes) {}
+                  histories $ option:unwrap-or (get db :histories) {}
                 merge base-data $ if logged-in?
                   {}
                     :user $ twig-user
-                      get-in db $ [] :users (:user-id session)
+                      option:unwrap-or
+                        get-in db $ [] :users user-id
+                        , {}
                     :router $ assoc router :data
-                      case-default (:name router) ({})
+                      case-default
+                        option:unwrap-or (get router :name) nil
+                        {}
                         :history $ {} (:histories histories)
                         :workflows $ {} (:workflows workflows)
                         :home $ {} (:processes processes) (:workflows workflows)
-                          :enlarge-view $ :enlarge-view session
+                          :enlarge-view $ option:unwrap-or (get session :enlarge-view) false
                         :process $ let
-                            process-id $ -> router :params :id
+                            process-id $ option:unwrap-or
+                              get-in router $ [] :params :id
+                              , nil
                           {}
-                            :detail $ get processes process-id
+                            :detail $ option:unwrap-or (get processes process-id) {}
                             :dict $ -> processes
                               .map-kv $ fn (k v)
                                 [] k $ dissoc v :content
-                        :profile $ twig-members (:sessions db) (:users db)
-                    :count $ count (:sessions db)
+                        :profile $ twig-members
+                          option:unwrap-or (get db :sessions) {}
+                          option:unwrap-or (get db :users) {}
+                    :count $ count
+                      option:unwrap-or (get db :sessions) {}
                     :color $ color/randomColor
-                  , nil
+                  {}
           :examples $ []
           :schema $ :: 'Dynamic
         |twig-members $ %{} 'CodeEntry (:doc |)
@@ -1880,8 +2099,11 @@
             defn twig-members (sessions users)
               -> sessions $ map-kv
                 fn (k session)
-                  [] k $ get-in users
-                    [] (:user-id session) :name
+                  [] k $ option:unwrap-or
+                    get-in users $ []
+                      option:unwrap-or (get session :user-id) nil
+                      , :name
+                    , |unknown
           :examples $ []
           :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
@@ -1952,7 +2174,9 @@
               update db :processes $ fn (processes)
                 -> processes $ filter
                   fn (pair)
-                    :alive? $ last pair
+                    let
+                        proc $ option:unwrap-or (last pair) nil
+                      option:unwrap-or (get proc :alive?) false
           :examples $ []
           :schema $ :: 'Dynamic
         |clear-history $ %{} 'CodeEntry (:doc |)
@@ -1967,14 +2191,14 @@
               let
                   new-history $ merge schema/history
                     {}
-                      :command $ :command op-data
-                      :cwd $ :cwd op-data
+                      :command $ option:unwrap-or (get op-data :command) nil
+                      :cwd $ option:unwrap-or (get op-data :cwd) nil
                       :started-at op-time
                       :id op-id
-                      :title $ :title op-data
+                      :title $ option:unwrap-or (get op-data :title) nil
                 -> db
                   assoc-in
-                    [] :processes $ :pid op-data
+                    [] :processes $ option:unwrap-or (get op-data :pid) nil
                     merge schema/process op-data $ {} (:started-at op-time) (:alive? true)
                   update :histories $ fn (histories)
                     if (list? histories) (conj histories new-history) ([] new-history)
@@ -1988,7 +2212,8 @@
                     , op-data
                 update-in db ([] :processes pid :content)
                   fn (content)
-                    conj content $ {} (:type :error) (:data data)
+                    conj (option:unwrap-or content [])
+                      {} (:type :error) (:data data)
           :examples $ []
           :schema $ :: 'Dynamic
         |finish $ %{} 'CodeEntry (:doc |)
@@ -2001,7 +2226,9 @@
           :code $ quote
             defn remove-dead (db op-data sid op-id op-time)
               if
-                = false $ get-in db ([] :processes op-data :alive?)
+                not $ option:unwrap-or
+                  get-in db $ [] :processes op-data :alive?
+                  , false
                 dissoc-in db $ [] :processes op-data
                 , db
           :examples $ []
@@ -2011,7 +2238,7 @@
             defn shorten-content (db op-data sid op-id op-time)
               update-in db ([] :processes op-data)
                 fn (process)
-                  assoc process :content $ []
+                  assoc (option:unwrap-or process {}) :content $ []
           :examples $ []
           :schema $ :: 'Dynamic
         |stderr $ %{} 'CodeEntry (:doc |)
@@ -2022,7 +2249,8 @@
                     , op-data
                 update-in db ([] :processes pid :content)
                   fn (content)
-                    conj content $ {} (:type :stderr) (:data data)
+                    conj (option:unwrap-or content [])
+                      {} (:type :stderr) (:data data)
           :examples $ []
           :schema $ :: 'Dynamic
         |stdout $ %{} 'CodeEntry (:doc |)
@@ -2033,7 +2261,8 @@
                     , op-data
                 update-in db ([] :processes pid :content)
                   fn (content)
-                    conj content $ {} (:type :stdout) (:data data)
+                    conj (option:unwrap-or content [])
+                      {} (:type :stdout) (:data data)
           :examples $ []
           :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
@@ -2076,7 +2305,8 @@
             defn remove-message (db op-data sid op-id op-time)
               update-in db ([] :sessions sid :messages)
                 fn (messages)
-                  dissoc messages $ :id op-data
+                  dissoc (option:unwrap-or messages {})
+                    option:unwrap-or (get op-data :id) nil
           :examples $ []
           :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
@@ -2090,21 +2320,29 @@
               let-sugar
                     [] username password
                     , op-data
-                  maybe-user $ -> (:users db) (vals) (.to-list)
+                  maybe-user $ ->
+                    option:unwrap-or (get db :users) {}
+                    vals
+                    .to-list
                     find $ fn (user)
-                      and $ = username (:name user)
+                      and $ = username
+                        option:unwrap-or (get user :name) nil
+                  user $ option:unwrap-or maybe-user nil
                 update-in db ([] :sessions sid)
                   fn (session)
-                    if (some? maybe-user)
-                      if
-                        = (md5 password) (:password maybe-user)
-                        assoc session :user-id $ :id maybe-user
-                        update session :messages $ fn (messages)
+                    let
+                        session' $ option:unwrap-or session {}
+                      if (option:some? maybe-user)
+                        if
+                          = (md5 password)
+                            option:unwrap-or (get user :password) nil
+                          assoc session' :user-id $ option:unwrap-or (get user :id) nil
+                          update session' :messages $ fn (messages)
+                            assoc messages op-id $ {} (:id op-id)
+                              :text $ str "|Wrong password for " username
+                        update session' :messages $ fn (messages)
                           assoc messages op-id $ {} (:id op-id)
-                            :text $ str "|Wrong password for " username
-                      update session :messages $ fn (messages)
-                        assoc messages op-id $ {} (:id op-id)
-                          :text $ str "|No user named: " username
+                            :text $ str "|No user named: " username
           :examples $ []
           :schema $ :: 'Dynamic
         |log-out $ %{} 'CodeEntry (:doc |)
@@ -2120,13 +2358,13 @@
                     [] username password
                     , op-data
                   maybe-user $ find
-                    vals $ :users db
+                    vals $ option:unwrap-or (get db :users) {}
                     fn (user)
-                      = username $ :name user
-                if (some? maybe-user)
+                      = username $ option:unwrap-or (get user :name) nil
+                if (option:some? maybe-user)
                   update-in db ([] :sessions sid :messages)
                     fn (messages)
-                      assoc messages op-id $ {} (:id op-id)
+                      assoc (option:unwrap-or messages {}) op-id $ {} (:id op-id)
                         :text $ str "|Name is taken: " username
                   -> db
                     assoc-in ([] :sessions sid :user-id) op-id
@@ -2157,8 +2395,8 @@
           :code $ quote
             defn create-workflow (db op-data sid op-id op-time)
               let
-                  workflow-name $ :name op-data
-                  base-dir $ :base-dir op-data
+                  workflow-name $ option:unwrap-or (get op-data :name) |
+                  base-dir $ option:unwrap-or (get op-data :base-dir) |~/
                 assoc-in db ([] :workflows op-id)
                   merge schema/workflow $ {} (:id op-id) (:name workflow-name) (:base-dir base-dir)
                     :commands $ {}
@@ -2173,7 +2411,8 @@
                     [] workflow-id command-id changes
                     , op-data
                 update-in db ([] :workflows workflow-id :commands command-id)
-                  fn (command) (merge command changes)
+                  fn (command)
+                    merge (option:unwrap-or command {}) changes
           :examples $ []
           :schema $ :: 'Dynamic
         |edit-workflow $ %{} 'CodeEntry (:doc |)
@@ -2182,8 +2421,9 @@
               let
                   new-workflow op-data
                 update-in db
-                  [] :workflows $ :id new-workflow
-                  fn (workflow) (merge workflow new-workflow)
+                  [] :workflows $ option:unwrap-or (get new-workflow :id) nil
+                  fn (workflow)
+                    merge (option:unwrap-or workflow {}) new-workflow
           :examples $ []
           :schema $ :: 'Dynamic
         |remove-command $ %{} 'CodeEntry (:doc |)
@@ -2193,7 +2433,8 @@
                     [] workflow-id command-id
                     , op-data
                 update-in db ([] :workflows workflow-id :commands)
-                  fn (commands) (dissoc commands command-id)
+                  fn (commands)
+                    dissoc (option:unwrap-or commands {}) command-id
           :examples $ []
           :schema $ :: 'Dynamic
         |remove-workflow $ %{} 'CodeEntry (:doc |)
@@ -2222,9 +2463,13 @@
           :code $ quote
             defn join-path (xs ys)
               if
-                = (first ys) |/
+                =
+                  option:unwrap-or (first ys) nil
+                  , |/
                 , ys $ let
-                    absolute? $ = (first xs) |/
+                    absolute? $ =
+                      option:unwrap-or (first xs) nil
+                      , |/
                     new-path $ join-segments ([])
                       concat (.split xs |/) (.split ys |/)
                   if absolute? (str |/ new-path) new-path

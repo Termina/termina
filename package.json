@@ -18,7 +18,7 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.13.19",
+    "@calcit/procs": "^0.13.27",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.11",
     "latest-version": "^9.0.0",
