@@ -9,17 +9,23 @@ jobs:
   publish-npm:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v6
       with:
-        node-version: 20
+        node-version: 24
         registry-url: https://registry.npmjs.org/
         cache: yarn
 
     - uses: calcit-lang/setup-cr@0.0.9
 
-    - run: caps --ci && yarn && yarn compile-server && yarn compile-page && yarn release-page
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        corepack prepare yarn@4.12.0 --activate
+        yarn --version
+
+    - run: caps --ci && yarn install --immutable && yarn compile-page && yarn release-page
 
     # - run: mkdir -p dist-server && mv js-out/bundle.js dist-server
     #   name: Copy server scripts

@@ -1,10 +1,10 @@
 
 {} (:package |app)
   :configs $ {} (:init-fn |app.server/main!) (:reload-fn |app.server/reload!) (:version |0.1.19)
-    :modules $ [] |lilac/ |recollect/ |memof/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/
+    :modules $ [] |recollect/ |ws-edn.calcit/ |cumulo-util.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |js-ffi/
   :entries $ {}
     :page $ {} (:init-fn |app.client/main!) (:reload-fn |app.client/reload!)
-      :modules $ [] |respo.calcit/ |lilac/ |recollect/ |memof/ |respo-ui.calcit/ |ws-edn.calcit/ |cumulo-util.calcit/ |respo-message.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |alerts.calcit/ |respo-feather.calcit/
+      :modules $ [] |respo.calcit/ |recollect/ |respo-ui.calcit/ |ws-edn.calcit/ |cumulo-util.calcit/ |respo-message.calcit/ |cumulo-reel.calcit/ |fuzzy-filter/ |alerts.calcit/ |respo-feather.calcit/ |js-ffi/
   :files $ {}
     |app.client $ %{} :FileEntry
       :defs $ {}
@@ -18,8 +18,13 @@
           :code $ quote
             defn connect! () $ let
                 url-obj $ url-parse js/location.href true
-                host $ either (-> url-obj .-query .-host) js/location.hostname
-                port $ either (-> url-obj .-query .-port) (:port config/site)
+                query $ unsafe-coerce (.-query url-obj) JsObject
+                host $ if (js-present? (.-host query))
+                  unsafe-coerce (.-host query) 'String
+                  unsafe-coerce js/location.hostname 'String
+                port $ if (js-present? (.-port query))
+                  unsafe-coerce (.-port query) 'String
+                  (&map:get config/site :port)
               ws-connect! (str "\"ws://" host "\":" port)
                 {}
                   :on-open $ fn (event) (simulate-login!)
@@ -53,9 +58,9 @@
         |on-server-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-server-data (data)
-              case-default (:kind data) (println "\"unknown server data kind:" data)
+              case-default (&map:get data :kind) (println "\"unknown server data kind:" data)
                 :patch $ let
-                    changes $ :data data
+                    changes $ (&map:get data :data)
                   when config/dev? $ js/console.log "\"Changes" changes
                   reset! *store $ patch-twig @*store changes
         |on-window-keydown $ %{} :CodeEntry (:doc |)
@@ -65,16 +70,16 @@
                 and
                   = "\"k" $ .-key event
                   .-metaKey event
-                case-default (-> @*store :router :name)
-                  do $ println "\"no thing to clear in" (-> @*store :router :name)
+                case-default (&map:get (option:unwrap-or (&map:get @*store :router) {}) :name)
+                  do $ println "\"no thing to clear in" (&map:get (option:unwrap-or (&map:get @*store :router) {}) :name)
                   :home $ do
                     dispatch! $ :: :process/clear
                     if-let
-                      enlarge-view $ -> @*store :session w-js-log :enlarge-view
+                      enlarge-view $ &map:get (option:unwrap-or (&map:get @*store :session) {}) :enlarge-view
                       dispatch! $ :: :process/shorten-content enlarge-view
                   :history $ dispatch! (:: :process/clear-history)
                   :process $ dispatch!
-                    :: :process/shorten-content $ -> @*store :router :params :id
+                    :: :process/shorten-content $ (&map:get (option:unwrap-or (&map:get (option:unwrap-or (&map:get @*store :router) {}) :params) {}) :id)
         |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if
@@ -87,15 +92,15 @@
         |render-app! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn render-app! () $ render! mount-target
-              comp-container (:states @*states) @*store
+              comp-container (&map:get @*states :states) @*store
               , dispatch!
         |simulate-login! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn simulate-login! () $ let
-                raw $ js/localStorage.getItem (:storage-key config/site)
-              if (some? raw)
+                raw $ js/localStorage.getItem (&map:get config/site :storage-key)
+              if (js-present? raw)
                 do (println "\"Found storage.")
-                  dispatch! $ :: :user/log-in (parse-cirru-edn raw)
+                  dispatch! $ :: :user/log-in (parse-cirru-edn (unsafe-coerce raw 'String))
                 do $ println "\"Found no storage."
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -128,18 +133,18 @@
                     :color $ hsl 0 0 40
                   :on-click $ fn (e d!)
                     &doseq
-                      command $ vals (:commands workflow)
+                      command $ vals (&map:get workflow :commands)
                       d! :effect/run $ {}
-                        :command $ :code command
-                        :cwd $ join-path (:base-dir workflow) (:path command)
-                        :title $ :title command
-                <> $ :name workflow
+                        :command $ (&map:get command :code)
+                        :cwd $ join-path (&map:get workflow :base-dir) (&map:get command :path)
+                        :title $ (&map:get command :title)
+                <> $ (&map:get workflow :name)
         |comp-command-editor $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-command-editor (states base-command on-submit)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ or (&map:get states :data)
                     if (some? base-command)
                       select-keys base-command $ [] :code :path :title
                       {} (:title "\"") (:code "\"") (:path "\"./")
@@ -152,30 +157,30 @@
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :title state
+                    :value $ (&map:get state :title)
                     :placeholder "\"title..."
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :title (:value e)
+                      d! cursor $ assoc state :title (&map:get e :value)
                   =< nil 8
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :code state
+                    :value $ (&map:get state :code)
                     :placeholder "\"Command code"
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :code (:value e)
+                      d! cursor $ assoc state :code (&map:get e :value)
                   =< nil 8
                   input $ {}
                     :style $ merge ui/input
                       {} (:width 320) (:font-family ui/font-code)
-                    :value $ :path state
+                    :value $ (&map:get state :path)
                     :placeholder "|Command path"
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :path (:value e)
+                      d! cursor $ assoc state :path (&map:get e :value)
                   =< nil 16
                   div
                     {} $ :style ui/row-parted
-                    span nil
+                    span ({})
                     button
                       {} (:style style/button)
                         :on-click $ fn (e d!) (on-submit state d!) (d! cursor nil)
@@ -184,8 +189,8 @@
           :code $ quote
             defcomp comp-command-row (states command workflow-id)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ either (&map:get states :data)
                     {} $ :pop? false
                   remove-plugin $ use-confirm (>> states :remove) ({})
                 div
@@ -195,7 +200,7 @@
                     div
                       {} $ :style ui/row-middle
                       <>
-                        or (:title command) "\"Task"
+                        or (&map:get command :title) "\"Task"
                         {} $ :font-size 20
                       =< 8 nil
                       comp-icon :play
@@ -203,9 +208,9 @@
                           :color $ hsl 200 80 70
                         fn (e d! m!)
                           d! :effect/run $ {}
-                            :cwd $ :path command
-                            :command $ :code command
-                            :title $ :title command
+                            :cwd $ (&map:get command :path)
+                            :command $ (&map:get command :code)
+                            :title $ (&map:get command :title)
                     div
                       {} $ :style ui/row-parted
                       comp-icon :edit-2
@@ -218,9 +223,9 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-command-editor (>> states :edit-command) command $ fn (command-draft d! m!)
-                              d! :workflow/edit-command $ [] workflow-id (:id command) command-draft
+                              d! :workflow/edit-command $ [] workflow-id (&map:get command :id) command-draft
                               on-close
-                        :pop? state
+                        (&map:get state :pop?)
                         fn (d!)
                           d! cursor $ assoc state :pop? false
                       =< 8 nil
@@ -228,16 +233,16 @@
                         &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                         fn (e d!)
                           .show remove-plugin d! $ fn ()
-                            d! :workflow/remove-command $ [] workflow-id (:id command)
+                            d! :workflow/remove-command $ [] workflow-id (&map:get command :id)
                   div
                     {} $ :style
                       merge ui/row-middle $ {} (:font-family ui/font-code)
-                    <> (:path command)
+                    <> (&map:get command :path)
                       {} (:display :inline-block)
                         :background-color $ hsl 0 0 100 0.2
                         :padding "|0 8px"
                     =< 24 nil
-                    <> (:code command)
+                    <> (&map:get command :code)
                       {}
                         :background-color $ hsl 0 0 100 0.2
                         :padding "|0 8px"
@@ -272,44 +277,44 @@
           :code $ quote
             defcomp comp-container (states store)
               let
-                  state $ :data states
-                  session $ :session store
-                  router $ :router store
-                  router-data $ :data router
+                  state $ (&map:get states :data)
+                  session $ (&map:get store :session)
+                  router $ (&map:get store :router)
+                  router-data $ (&map:get router :data)
                 if (nil? store) (comp-offline)
                   div
                     {} $ :class-name (str-spaced css/global css/fullscreen css/column css-container)
-                    comp-navigation (:logged-in? store) router $ :count store
-                    if (:logged-in? store)
+                    comp-navigation (&map:get store :logged-in?) router $ (&map:get store :count)
+                    if (&map:get store :logged-in?)
                       let
-                          router $ :router store
-                          router-data $ :data router
-                        case-default (:name router) (comp-missing router)
-                          :profile $ comp-profile (:user store) router-data
+                          router $ (&map:get store :router)
+                          router-data $ (&map:get router :data)
+                        case-default (&map:get router :name) (comp-missing router)
+                          :profile $ comp-profile (&map:get store :user) router-data
                           :home $ comp-home (>> states :home) router-data
-                          :workflows $ comp-workflow-container (>> states :workflows) (:workflows router-data)
-                          :history $ comp-history (:histories router-data)
-                          :process $ comp-process-detail (>> states :detail) (:detail router-data)
+                          :workflows $ comp-workflow-container (>> states :workflows) (&map:get router-data :workflows)
+                          :history $ comp-history (&map:get router-data :histories)
+                          :process $ comp-process-detail (>> states :detail) (&map:get router-data :detail)
                       comp-login $ >> states :login
-                    comp-status-color $ :color store
+                    comp-status-color $ (&map:get store :color)
                     when dev? $ comp-inspect |Store store
                       {} (:bottom 0) (:left 0) (:max-width |100%)
                     comp-messages
                       get-in store $ [] :session :messages
                       {}
                       fn (info d!) (d! :session/remove-message info)
-                    when dev? $ comp-reel (:reel-length store) ({})
+                    when dev? $ comp-reel (&map:get store :reel-length) ({})
         |comp-offline $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-offline () $ div
               {} $ :style
                 merge ui/global ui/fullscreen ui/column-dispersive $ {}
-                  :background-color $ :theme config/site
+                  :background-color $ (&map:get config/site :theme)
               div $ {}
                 :style $ {} (:height 0)
               div $ {}
                 :style $ {}
-                  :background-image $ str "\"url(" (:icon config/site) "\")"
+                  :background-image $ str "\"url(" (&map:get config/site :icon) "\")"
                   :width 128
                   :height 128
                   :background-size :contain
@@ -331,9 +336,15 @@
         |css-status $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-status $ {}
-              "\"&" $ let
-                  size 24
-                {} (:width size) (:height size) (:position :absolute) (:bottom 60) (:left 8) (:border-radius "\"50%") (:opacity 0.6) (:pointer-events :none)
+              "\"&" $ {}
+                :width 24
+                :height 24
+                :position :absolute
+                :bottom 60
+                :left 8
+                :border-radius "\"50%"
+                :opacity 0.6
+                :pointer-events :none
         |style-body $ %{} :CodeEntry (:doc |)
           :code $ quote
             def style-body $ {} (:padding "|8px 16px")
@@ -378,18 +389,18 @@
                       merge ui/flex $ {} (:overflow :auto) (:padding "\"16px 0 120px 0")
                     -> histories $ map
                       fn (history)
-                        [] (:id history)
+                        [] (&map:get history :id)
                           div
                             {} $ :class-name (str-spaced css/row-middle css-history)
                             <>
-                              -> (:started-at history) dayjs $ .!format "\"MM-DD HH:mm:ss"
+                              str $ -> (&map:get history :started-at) dayjs $ .!format "\"MM-DD HH:mm:ss"
                               , css-date-text
                             <>
-                              or (:title history) "\"Task"
+                              or (&map:get history :title) "\"Task"
                               merge style/text $ {} (:min-width 160)
-                            <> (:command history)
+                            <> (&map:get history :command)
                               merge style/text $ {} (:min-width 160)
-                            <> (:cwd history) (merge style/text)
+                            <> (&map:get history :cwd) (merge style/text)
         |css-date-text $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-date-text $ {}
@@ -430,8 +441,8 @@
           :code $ quote
             defcomp comp-home (states router-data)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ or (&map:get states :data)
                     {} (:query "\"") (:pop? false)
                 div
                   {} $ :class-name (str-spaced css/expand css/column css-home)
@@ -441,7 +452,7 @@
                     if-let
                       enlarge-view $ get router-data :enlarge-view
                       if-let
-                        large-process $ get (:processes router-data) enlarge-view
+                        large-process $ get (&map:get router-data :processes) enlarge-view
                         comp-process-detail (>> states :enlarge) large-process
                     div
                       {} $ :class-name (str-spaced css/expand css/column)
@@ -451,20 +462,22 @@
                         div
                           {} $ :class-name (str-spaced css/flex css/row-middle)
                           input $ {} (:class-name css-filter) (:placeholder "\"filter...")
-                            :value $ :query state
+                            :value $ (&map:get state :query)
                             :on-input $ fn (e d!)
-                              d! cursor $ assoc state :query (:value e)
+                              d! cursor $ assoc state :query (&map:get e :value)
                           list->
                             {}
                               :class-name $ str-spaced css/flex css/row
                               :style $ {} (:flex-wrap :wrap)
-                            -> (:workflows router-data) (.to-list)
+                            -> (&map:get router-data :workflows) (.to-list)
                               .filter-pair $ fn (k workflow)
-                                :matches? $ parse-by-letter
-                                  .!toLowerCase $ :name workflow
-                                  .!toLowerCase $ :query state
+                                let
+                                    result $ parse-by-letter
+                                      .!toLowerCase $ (&map:get workflow :name)
+                                      .!toLowerCase $ (&map:get state :query)
+                                  (&map:get result :matches?)
                               .sort-by $ fn (pair)
-                                :name $ last pair
+                                (&map:get (option:unwrap-or (last pair) {}) :name)
                               .map-pair $ fn (k workflow)
                                 [] k $ comp-command-button workflow
                         div
@@ -481,11 +494,11 @@
                               :render $ fn (on-close)
                                 comp-command-editor (>> states :quick-run) nil $ fn (draft d!)
                                   d! :effect/run $ {}
-                                    :command $ :code draft
-                                    :cwd $ :path draft
-                                    :title $ :title draft
+                                    :command $ (&map:get draft :code)
+                                    :cwd $ (&map:get draft :path)
+                                    :title $ (&map:get draft :title)
                                   on-close d!
-                            :pop? state
+                            (&map:get state :pop?)
                             fn (d!)
                               d! cursor $ assoc state :pop? false
                           =< 8 nil
@@ -494,7 +507,7 @@
                             :inner-text "\"Kill all"
                             :on-click $ fn (e d!)
                               &doseq
-                                pid $ keys (:processes router-data)
+                                pid $ keys (&map:get router-data :processes)
                                 d! :effect/kill pid
                           =< 8 nil
                           a
@@ -503,22 +516,22 @@
                             <> "\"Clear"
                       list->
                         {} $ :class-name (str-spaced css/flex css-process-list)
-                        -> (:processes router-data) (.to-list)
+                        -> (&map:get router-data :processes) (.to-list)
                           filter $ fn (x)
                             not= (first x) (get router-data :enlarge-view)
                           .sort $ fn (x y)
                             if
                               and
-                                :alive? $ last y
-                                :alive? $ last x
+                                (&map:get (option:unwrap-or (last y) {}) :alive?)
+                                (&map:get (option:unwrap-or (last x) {}) :alive?)
                               -
-                                :started-at $ last x
-                                :started-at $ last y
+                                (&map:get (option:unwrap-or (last x) {}) :started-at)
+                                (&map:get (option:unwrap-or (last y) {}) :started-at)
                               -
-                                :started-at $ last y
-                                :started-at $ last x
+                                (&map:get (option:unwrap-or (last y) {}) :started-at)
+                                (&map:get (option:unwrap-or (last x) {}) :started-at)
                           .sort-by $ fn (pair)
-                            not $ :alive? (last pair)
+                            not $ (&map:get (option:unwrap-or (last pair) {}) :alive?)
                           .map-pair $ fn (pid process)
                             [] pid $ comp-process process
         |css-filter $ %{} :CodeEntry (:doc |)
@@ -566,8 +579,8 @@
           :code $ quote
             defcomp comp-login (states)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states) initial-state
+                  cursor $ (&map:get states :cursor)
+                  state $ or (&map:get states :data) initial-state
                 div
                   {} $ :style (merge ui/flex ui/center)
                   div ({})
@@ -575,28 +588,28 @@
                       {} $ :style ({})
                       div ({})
                         input $ {} (:placeholder |Username)
-                          :value $ :username state
+                          :value $ (&map:get state :username)
                           :style ui/input
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :username (:value e)
+                            d! cursor $ assoc state :username (&map:get e :value)
                       =< nil 8
                       div ({})
                         input $ {} (:placeholder |Password)
-                          :value $ :password state
+                          :value $ (&map:get state :password)
                           :style ui/input
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :password (:value e)
+                            d! cursor $ assoc state :password (&map:get e :value)
                     =< nil 8
                     div
                       {} $ :style
                         {} $ :text-align :right
                       span $ {} (:inner-text "|Sign up")
                         :style $ merge style/link
-                        :on-click $ on-submit (:username state) (:password state) true
+                        :on-click $ on-submit (&map:get state :username) (&map:get state :password) true
                       =< 8 nil
                       span $ {} (:inner-text "|Log in")
                         :style $ merge style/link
-                        :on-click $ on-submit (:username state) (:password state) false
+                        :on-click $ on-submit (&map:get state :username) (&map:get state :password) false
         |initial-state $ %{} :CodeEntry (:doc |)
           :code $ quote
             def initial-state $ {} (:username |) (:password |)
@@ -605,7 +618,7 @@
             defn on-submit (username password signup?)
               fn (e dispatch!)
                 dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-                js/localStorage.setItem (:storage-key config/site)
+                js/localStorage.setItem (&map:get config/site :storage-key)
                   format-cirru-edn $ [] username password
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -670,7 +683,7 @@
                 {}
                   :style $ merge style-logo
                     if
-                      = router-name $ :name router
+                      = router-name $ (&map:get router :name)
                       {} $ :color :white
                   :on-click $ fn (e d!)
                     d! :router/change $ {} (:name router-name)
@@ -697,12 +710,12 @@
                 {} $ :class-name css-process
                 div
                   {} (:class-name css-title-bar)
-                    :style $ if (:alive? process)
+                    :style $ if (&map:get process :alive?)
                       {} $ :background-color (hsl 50 100 60)
                   div
                     {} $ :class-name css/row-middle
                     <>
-                      or (:title process) "\"Task"
+                      or (&map:get process :title) "\"Task"
                       merge style/text $ {} (:color :black)
                   div
                     {} $ :class-name css/row-middle
@@ -711,44 +724,44 @@
                         :background $ hsl 0 0 0 0.1
                         :color :white
                       :on-click $ fn (e d!)
-                        d! $ :: :session/enlarge (:pid process)
+                        d! $ :: :session/enlarge (&map:get process :pid)
                       :inner-text "\"Enlarge"
                     ; =< 8 nil
                     ; a $ {} (:class-name css/link)
                       :on-click $ fn (e d!)
                         d! :router/change $ {} (:name :process)
                           :params $ {}
-                            :id $ :pid process
+                            :id $ (&map:get process :pid)
                       :inner-text "\"View"
-                    if (:alive? process)
+                    if (&map:get process :alive?)
                       a
                         {} (:class-name css-link-kill)
                           :on-click $ fn (e d!)
-                            d! :effect/kill $ :pid process
+                            d! :effect/kill $ (&map:get process :pid)
                         <> "\"Kill"
                       a $ {} (:style style/link) (:inner-text "\"Redo")
                         :on-click $ fn (e d!)
                           d! :effect/run $ {}
-                            :cwd $ :cwd process
-                            :command $ :command process
-                            :title $ :title process
-                          d! :process/remove-dead $ :pid process
+                            :cwd $ (&map:get process :cwd)
+                            :command $ (&map:get process :command)
+                            :title $ (&map:get process :title)
+                          d! :process/remove-dead $ (&map:get process :pid)
                 div
                   {} $ :class-name (str-spaced css/expand css-process-log)
-                  <> (:command process) (merge style/text)
+                  <> (&map:get process :command) (merge style/text)
                   =< 8 nil
-                  <> (:cwd process)
+                  <> (&map:get process :cwd)
                     merge style/text $ {}
                       :color $ hsl 0 0 60
                 if-not
-                  empty? $ :content process
+                  empty? $ (&map:get process :content)
                   list->
                     {} $ :class-name css-content-list
-                    -> (:content process) (.to-list) (take-last 4)
+                    -> (&map:get process :content) (.to-list) (take-last 4)
                       .map-indexed $ fn (idx chunk)
                         [] idx $ let
                             urls $ to-calcit-data
-                              .!match (:data chunk) url-pattern
+                              .!match (&map:get chunk :data) url-pattern
                           div
                             {} $ :style
                               {} (:margin-top 2) (:display :block)
@@ -762,9 +775,9 @@
                                         :style $ {}
                                           :color $ hsl 200 80 70
                                           :margin "\"0 8px"
-                            <> (:data chunk)
+                            <> (&map:get chunk :data)
                               {}
-                                :color $ case-default (:type chunk) (hsl 60 0 72)
+                                :color $ case-default (&map:get chunk :type) (hsl 60 0 72)
                                   :stderr $ hsl 60 80 36
                                   :error $ hsl 0 80 50
                                 :padding 8
@@ -821,12 +834,12 @@
           :code $ quote
             defcomp comp-process-detail (states process)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ either (&map:get states :data)
                     {} (:filter "\"") (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
                   command-plugin $ use-prompt (>> states :command)
                     {} (:text "\"change command")
-                      :initial $ :command process
+                      :initial $ (&map:get process :command)
                 div
                   {} (:class-name css-process)
                     :style $ {} (:flex 2)
@@ -837,97 +850,97 @@
                         merge ui/row-middle $ {} (:gap 4)
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :filter? state
+                        :checked $ (&map:get state :filter?)
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :filter?
-                            not $ :filter? state
-                      if (:filter? state)
+                            not $ (&map:get state :filter?)
+                      if (&map:get state :filter?)
                         input $ {} (:class-name css-filter)
-                          :value $ :filter state
+                          :value $ (&map:get state :filter)
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :filter (:value e)
+                            d! cursor $ assoc state :filter (&map:get e :value)
                           :placeholder "\"filter..."
                         <> "\"Filter..."
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :all-log? state
+                        :checked $ (&map:get state :all-log?)
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :all-log?
-                            not $ :all-log? state
+                            not $ (&map:get state :all-log?)
                       <> "\"All log?"
                       comp-icon :arrow-down
                         {} (:font-size 14) (:class-name css-down-icon)
                           :color $ hsl 0 0 80
                         , on-scroll-down!
                       if-not
-                        empty? $ :content process
+                        empty? $ (&map:get process :content)
                         a
                           {}
                             :on-click $ fn (e d!)
-                              d! :process/shorten-content $ :pid process
+                              d! :process/shorten-content $ (&map:get process :pid)
                             :style style/link
                           <> "\"Clear"
                       =< 8 nil
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :hide-thread-info? state
+                        :checked $ (&map:get state :hide-thread-info?)
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :hide-thread-info?
-                            not $ :hide-thread-info? state
+                            not $ (&map:get state :hide-thread-info?)
                       <> "\"HideThread?"
                       input $ {} (:type "\"checkbox")
                         :style $ {} (:cursor :pointer) (:opacity 0.8)
-                        :checked $ :wrap? state
+                        :checked $ (&map:get state :wrap?)
                         :on-input $ fn (e d!)
                           d! cursor $ assoc state :wrap?
-                            not $ :wrap? state
+                            not $ (&map:get state :wrap?)
                       <> "\"Wrap?"
                     div
                       {} $ :class-name css-toolbar
                       span $ {}
-                        :inner-text $ or (:title process) "\"Task"
+                        :inner-text $ or (&map:get process :title) "\"Task"
                         :class-name css/font-fancy
                         :style $ merge style/text
                           {} $ :padding "\"0 8px"
-                          if (:alive? process)
+                          if (&map:get process :alive?)
                             {} (:color :black) (:border-radius "\"4px")
                               :background-color $ hsl 60 100 60
-                        :title $ str (:cwd process) &newline (:command process)
+                        :title $ str (&map:get process :cwd) &newline (&map:get process :command)
                         :on-click $ fn (e d!)
                           .show command-plugin d! $ fn (text)
-                            d! $ :: :process/change-command (:pid process) text
+                            d! $ :: :process/change-command (&map:get process :pid) text
                       ; =< 16 nil
-                      ; <> (:command process) style/text
+                      ; <> (&map:get process :command) style/text
                       ; =< 16 nil
                       ; <> $ merge style/text
                         {} (:font-size 12)
                           :color $ hsl 0 0 70
                       ; =< 16 nil
-                      ; <> (:pid process) style/text
+                      ; <> (&map:get process :pid) style/text
                       =< 8 nil
-                      if (:alive? process)
+                      if (&map:get process :alive?)
                         a
                           {} (:class-name css/link)
                             :style $ {} (:color :red) (:border-color :red)
                             :on-click $ fn (e d!)
-                              d! :effect/kill $ :pid process
-                            :title $ :command process
+                              d! :effect/kill $ (&map:get process :pid)
+                            :title $ (&map:get process :command)
                           <> "\"Kill"
                         div ({})
                           a $ {} (:class-name css/link) (:inner-text "\"Redo")
-                            :title $ :command process
+                            :title $ (&map:get process :command)
                             :on-click $ fn (e d!)
                               d! :effect/run $ {}
-                                :cwd $ :cwd process
-                                :command $ :command process
-                                :title $ :title process
+                                :cwd $ (&map:get process :cwd)
+                                :command $ (&map:get process :command)
+                                :title $ (&map:get process :title)
                                 :enlarge? true
-                              d! :process/remove-dead $ :pid process
+                              d! :process/remove-dead $ (&map:get process :pid)
                           =< 8 nil
                           a $ {} (:class-name css/link) (:inner-text "\"Drop")
                             :on-click $ fn (e d!)
                               d! :router/change $ {} (:name :home)
-                              d! :process/remove-dead $ :pid process
+                              d! :process/remove-dead $ (&map:get process :pid)
                   =< nil 8
                   div
                     {} $ :class-name (str-spaced "\"scroll-area" css-logs-list)
@@ -935,27 +948,27 @@
                       list->
                         {} $ :style
                           {} $ :white-space
-                            if (:wrap? state) "\"pre-wrap" "\"pre"
-                        -> (:content process)
+                            if (&map:get state :wrap?) "\"pre-wrap" "\"pre"
+                        -> (&map:get process :content)
                           filter $ fn (chunk)
                             if
                               or
-                                not $ :filter? state
-                                blank? $ :filter state
-                              , true $ .includes? (:data chunk) (:filter state)
-                          take-last $ if (:all-log? state) 2000 60
+                                not $ (&map:get state :filter?)
+                                blank? $ (&map:get state :filter)
+                              , true $ .includes? (&map:get chunk :data) (&map:get state :filter)
+                          take-last $ if (&map:get state :all-log?) 2000 60
                           map-indexed $ fn (idx chunk)
-                            [] (:data chunk)
+                            [] (&map:get chunk :data)
                               span $ {} (:class-name css-log)
                                 :style $ merge
                                   if
-                                    = :stderr $ :type chunk
+                                    = :stderr $ (&map:get chunk :type)
                                     {} $ :color :red
                                 :inner-text $ do
-                                  if (:hide-thread-info? state)
-                                    hide-thread-info $ :data chunk
-                                    :data chunk
-                                  ; .!replace (:data chunk) &newline $ str &newline &newline
+                                  if (&map:get state :hide-thread-info?)
+                                    hide-thread-info $ (&map:get chunk :data)
+                                    (&map:get chunk :data)
+                                  ; .!replace (&map:get chunk :data) &newline $ str &newline &newline
                     =< nil 200
                   .render command-plugin
         |css-down-icon $ %{} :CodeEntry (:doc |)
@@ -1002,9 +1015,10 @@
         |on-scroll-down! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-scroll-down! (e d!)
-              if-let
-                el $ js/document.querySelector "\".scroll-area"
-                set! (.-scrollTop el) (.-scrollHeight el)
+              let
+                  el $ js/document.querySelector "\".scroll-area"
+                when (js-present? el)
+                  set! (.-scrollTop el) (.-scrollHeight el)
         |thread-info-pattern $ %{} :CodeEntry (:doc |)
           :code $ quote
             def thread-info-pattern $ new js/RegExp "\"^[\\d\\s\\:\\-\\.\\+]+\\s+(\\[([\\w\\d\\s\\:\\,])+\\]\\s?)+"
@@ -1033,7 +1047,7 @@
                 div
                   {} $ :style
                     {} (:font-family ui/font-fancy) (:font-size 32) (:font-weight 100)
-                  <> $ str "|Hello! " (:name user)
+                  <> $ str "|Hello! " (&map:get user :name)
                 =< nil 16
                 div
                   {} $ :style ui/row
@@ -1064,7 +1078,7 @@
                       :style $ merge style/button
                         {} (:color :red) (:border-color :red)
                       :on-click $ fn (e dispatch!) (dispatch! :user/log-out nil)
-                        js/localStorage.removeItem $ :storage-key config/site
+                        js/localStorage.removeItem $ (&map:get config/site :storage-key)
                     <> "\"Log out"
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
@@ -1082,8 +1096,8 @@
           :code $ quote
             defcomp comp-workflow-container (states workflows)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ or (&map:get states :data)
                     {} (:focused-id nil) (:base-workflow nil) (:pop? false)
                 div
                   {} $ :style
@@ -1106,26 +1120,26 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-workflow-editor (>> states :editor) nil on-close
-                        :pop? state
+                        (&map:get state :pop?)
                         fn (d!)
                           d! cursor $ assoc state :pop? false
                     =< nil 8
                     list-> ({})
                       -> workflows (.to-list)
                         .sort-by $ fn (pair)
-                          :name $ last pair
+                          (&map:get (option:unwrap-or (last pair) {}) :name)
                         .map-pair $ fn (k workflow)
                           [] k $ div
                             {}
                               :style $ merge style-workflow-entry
                                 {} $ :background-color
                                   if
-                                    = (:id workflow) (:focused-id state)
+                                    = (&map:get workflow :id) (&map:get state :focused-id)
                                     hsl 0 0 100 0.2
                                     hsl 0 0 100 0
                               :on-click $ fn (e d!)
-                                d! cursor $ assoc state :focused-id (:id workflow)
-                            <> $ :name workflow
+                                d! cursor $ assoc state :focused-id (&map:get workflow :id)
+                            <> $ (&map:get workflow :name)
                   div $ {}
                     :style $ {} (:width 1)
                       :background-color $ hsl 0 0 100 0.2
@@ -1134,10 +1148,10 @@
                     {} $ :style
                       merge ui/flex $ {} (:padding 8)
                     let
-                        focused-id $ :focused-id state
+                        focused-id $ (&map:get state :focused-id)
                       if
-                        and (some? focused-id)
-                          some? $ get workflows focused-id
+                        and (option:some? focused-id)
+                          option:some? $ get workflows focused-id
                         let
                             workflow $ get workflows focused-id
                           comp-workflow-detail (>> states :detail) workflow
@@ -1150,8 +1164,8 @@
           :code $ quote
             defcomp comp-workflow-detail (states workflow)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ either (&map:get states :data)
                     {} (:pop? false) (:edit? false)
                   remove-plugin $ use-confirm (>> states :remove) ({})
                 div ({})
@@ -1163,7 +1177,7 @@
                         :color $ hsl 0 0 70
                         :font-weight 100
                       =< 8 nil
-                      <> (:base-dir workflow)
+                      <> (&map:get workflow :base-dir)
                         {} (:font-family ui/font-code)
                           :color $ hsl 0 0 70
                       =< 40 nil
@@ -1181,10 +1195,10 @@
                             :render $ fn (on-close)
                               comp-command-editor (>> states :add-command) nil $ fn (command-draft d! m!)
                                 d! :workflow/add-command $ {}
-                                  :workflow-id $ :id workflow
+                                  :workflow-id $ (&map:get workflow :id)
                                   :draft command-draft
                                 on-close
-                          :pop? state
+                          (&map:get state :pop?)
                           , on-close
                     div
                       {} $ :style ui/row-parted
@@ -1198,7 +1212,7 @@
                           :container-style $ {}
                           :render $ fn (on-close)
                             comp-workflow-editor (>> states :editor) workflow on-close
-                        :edit? state
+                        (&map:get state :edit?)
                         fn (d!)
                           d! cursor $ assoc state :edit? false
                       =< 8 nil
@@ -1206,21 +1220,21 @@
                         &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                         fn (e d!)
                           .show remove-plugin d! $ fn ()
-                            d! :workflow/remove $ :id workflow
+                            d! :workflow/remove $ (&map:get workflow :id)
                   list-> ({})
-                    -> (:commands workflow) (.to-list)
+                    -> (&map:get workflow :commands) (.to-list)
                       map $ fn (entry)
                         let-sugar
                               [] k command
                               , entry
-                          [] k $ comp-command-row (>> states k) command (:id workflow)
+                          [] k $ comp-command-row (>> states k) command (&map:get workflow :id)
                   .render remove-plugin
         |comp-workflow-editor $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-workflow-editor (states base-workflow on-toggle)
               let
-                  cursor $ :cursor states
-                  state $ or (:data states)
+                  cursor $ (&map:get states :cursor)
+                  state $ or (&map:get states :data)
                     if (some? base-workflow)
                       select-keys base-workflow $ [] :name :base-dir
                       {} (:name |) (:base-dir |./)
@@ -1235,18 +1249,18 @@
                       :style $ merge ui/input
                         {} $ :width 240
                       :placeholder "|Workflow name"
-                      :value $ :name state
+                      :value $ (&map:get state :name)
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :name (:value e)
+                        d! cursor $ assoc state :name (&map:get e :value)
                   =< nil 8
                   div ({})
                     input $ {}
                       :style $ merge ui/input
                         {} $ :width 240
                       :placeholder "|Base directory"
-                      :value $ :base-dir state
+                      :value $ (&map:get state :base-dir)
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :base-dir (:value e)
+                        d! cursor $ assoc state :base-dir (&map:get e :value)
                   =< nil 16
                   div
                     {} $ :style ui/row-parted
@@ -1257,7 +1271,7 @@
                           let
                               data $ select-keys state ([] :name :base-dir)
                             if (some? base-workflow)
-                              d! :workflow/edit $ assoc data :id (:id base-workflow)
+                              d! :workflow/edit $ assoc data :id (&map:get base-workflow :id)
                               d! :workflow/create data
                             d! cursor nil
                             on-toggle d!
@@ -1292,7 +1306,7 @@
               :else false
         |dev? $ %{} :CodeEntry (:doc |)
           :code $ quote
-            def dev? $ = "\"dev" (get-env "\"mode")
+            def dev? $ = "\"dev" $ option:unwrap-or (get-env "\"mode") "\"release"
         |site $ %{} :CodeEntry (:doc |)
           :code $ quote
             def site $ {} (:port 11014) (:title "\"Termina") (:icon "\"http://cdn.tiye.me/logo/termina.png") (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/termina/") (:cdn-folder "\"tiye.me:cdn/termina") (:upload-folder "\"tiye.me:repo/mvc-works/termina/") (:server-folder "\"tiye.me:servers/termina") (:theme "\"#eeeeff") (:storage-key "\"termina") (:storage-file "\"termina.cirru")
@@ -1307,11 +1321,11 @@
           :code $ quote
             defn create-process! (op-data dispatch! sid)
               let
-                  command $ :command op-data
-                  cwd $ :cwd op-data
-                  jump? $ :jump? op-data
-                  enlarge? $ :enlarge? op-data
-                  ; spawn? $ or true (:spawn? op-data)
+                  command $ (&map:get op-data :command)
+                  cwd $ (&map:get op-data :cwd)
+                  jump? $ (&map:get op-data :jump?)
+                  enlarge? $ (&map:get op-data :enlarge?)
+                  ; spawn? $ or true (&map:get op-data :spawn?)
                   proc $ if (.includes? command "\" | ")
                     cp/exec command $ js-object (:cwd cwd)
                     let
@@ -1327,7 +1341,7 @@
                 swap! *registry assoc pid proc
                 dispatch!
                   :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
-                    :title $ :title op-data
+                    :title $ (&map:get op-data :title)
                   , sid
                 if jump? $ dispatch!
                   :: :router/change $ {} (:name :process)
@@ -1522,7 +1536,7 @@
                   user-port $ if
                     some? $ .-port js/process.env
                     js/parseInt $ .-port js/process.env
-                  port $ or user-port (:port config/site)
+                  port $ or user-port (&map:get config/site :port)
                   ui-url $ url-parse "\"http://termina.mvc-works.org/" true
                 run-server! port
                 set! (-> ui-url .-query .-port) port
@@ -1540,7 +1554,7 @@
           :code $ quote
             defn persist-db! () $ let
                 file-content $ format-cirru-edn
-                  -> (:db @*reel)
+                  -> (&map:get @*reel :db)
                     assoc :sessions $ {}
                     update :processes $ fn (processes)
                       -> processes $ map-kv
@@ -1576,14 +1590,14 @@
                 :on-error $ fn (error) (js/console.error error)
         |storage-file $ %{} :CodeEntry (:doc |)
           :code $ quote
-            def storage-file $ path/join js/process.env.HOME "\".config" (:storage-file config/site)
+            def storage-file $ path/join js/process.env.HOME "\".config" (&map:get config/site :storage-file)
         |sync-clients! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn sync-clients! (reel)
               wss-each! $ fn (sid socket)
                 let
-                    db $ :db reel
-                    records $ :records reel
+                    db $ (&map:get reel :db)
+                    records $ (&map:get reel :records)
                     session $ get-in db ([] :sessions sid)
                     old-store $ or (get @*client-caches sid) nil
                     new-store $ twig-container db session records
@@ -1652,21 +1666,21 @@
           :code $ quote
             defn twig-container (db session records)
               let-sugar
-                  logged-in? $ some? (:user-id session)
-                  router $ :router session
+                  logged-in? $ some? (&map:get session :user-id)
+                  router $ (&map:get session :router)
                   base-data $ {} (:logged-in? logged-in?) (:session session)
                     :reel-length $ count records
                   ({} workflows processes histories) db
                 merge base-data $ if logged-in?
                   {}
                     :user $ twig-user
-                      get-in db $ [] :users (:user-id session)
+                      get-in db $ [] :users (&map:get session :user-id)
                     :router $ assoc router :data
-                      case-default (:name router) ({})
+                      case-default (&map:get router :name) ({})
                         :history $ {} (:histories histories)
                         :workflows $ {} (:workflows workflows)
                         :home $ {} (:processes processes) (:workflows workflows)
-                          :enlarge-view $ :enlarge-view session
+                          :enlarge-view $ (&map:get session :enlarge-view)
                         :process $ let
                             process-id $ -> router :params :id
                           {}
@@ -1674,8 +1688,8 @@
                             :dict $ -> processes
                               .map-kv $ fn (k v)
                                 [] k $ dissoc v :content
-                        :profile $ twig-members (:sessions db) (:users db)
-                    :count $ count (:sessions db)
+                        :profile $ twig-members (&map:get db :sessions) (&map:get db :users)
+                    :count $ count (&map:get db :sessions)
                     :color $ color/randomColor
                   , nil
         |twig-members $ %{} :CodeEntry (:doc |)
@@ -1684,7 +1698,7 @@
               -> sessions $ map-kv
                 fn (k session)
                   [] k $ get-in users
-                    [] (:user-id session) :name
+                    [] (&map:get session :user-id) :name
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.twig.container $ :require
@@ -1748,7 +1762,7 @@
               update db :processes $ fn (processes)
                 -> processes $ filter
                   fn (pair)
-                    :alive? $ last pair
+                    (&map:get (option:unwrap-or (last pair) {}) :alive?)
         |clear-history $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn clear-history (db op-data sid op-id op-time)
@@ -1759,14 +1773,14 @@
               let
                   new-history $ merge schema/history
                     {}
-                      :command $ :command op-data
-                      :cwd $ :cwd op-data
+                      :command $ (&map:get op-data :command)
+                      :cwd $ (&map:get op-data :cwd)
                       :started-at op-time
                       :id op-id
-                      :title $ :title op-data
+                      :title $ (&map:get op-data :title)
                 -> db
                   assoc-in
-                    [] :processes $ :pid op-data
+                    [] :processes $ (&map:get op-data :pid)
                     merge schema/process op-data $ {} (:started-at op-time) (:alive? true)
                   update :histories $ fn (histories)
                     if (list? histories) (conj histories new-history) ([] new-history)
@@ -1846,7 +1860,7 @@
             defn remove-message (db op-data sid op-id op-time)
               update-in db ([] :sessions sid :messages)
                 fn (messages)
-                  dissoc messages $ :id op-data
+                  dissoc messages $ (&map:get op-data :id)
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns app.updater.session $ :require ([] app.schema :as schema)
@@ -1858,15 +1872,15 @@
               let-sugar
                     [] username password
                     , op-data
-                  maybe-user $ -> (:users db) (vals) (.to-list)
+                  maybe-user $ -> (&map:get db :users) (vals) (.to-list)
                     find $ fn (user)
-                      and $ = username (:name user)
+                      and $ = username (&map:get user :name)
                 update-in db ([] :sessions sid)
                   fn (session)
                     if (some? maybe-user)
                       if
-                        = (md5 password) (:password maybe-user)
-                        assoc session :user-id $ :id maybe-user
+                        = (md5 password) (&map:get maybe-user :password)
+                        assoc session :user-id $ (&map:get maybe-user :id)
                         update session :messages $ fn (messages)
                           assoc messages op-id $ {} (:id op-id)
                             :text $ str "\"Wrong password for " username
@@ -1884,9 +1898,9 @@
                     [] username password
                     , op-data
                   maybe-user $ find
-                    vals $ :users db
+                    vals $ (&map:get db :users)
                     fn (user)
-                      = username $ :name user
+                      = username $ (&map:get user :name)
                 if (some? maybe-user)
                   update-in db ([] :sessions sid :messages)
                     fn (messages)
@@ -1917,8 +1931,8 @@
           :code $ quote
             defn create-workflow (db op-data sid op-id op-time)
               let
-                  workflow-name $ :name op-data
-                  base-dir $ :base-dir op-data
+                  workflow-name $ (&map:get op-data :name)
+                  base-dir $ (&map:get op-data :base-dir)
                 assoc-in db ([] :workflows op-id)
                   merge schema/workflow $ {} (:id op-id) (:name workflow-name) (:base-dir base-dir)
                     :commands $ {}
@@ -1938,7 +1952,7 @@
               let
                   new-workflow op-data
                 update-in db
-                  [] :workflows $ :id new-workflow
+                  [] :workflows $ (&map:get new-workflow :id)
                   fn (workflow) (merge workflow new-workflow)
         |remove-command $ %{} :CodeEntry (:doc |)
           :code $ quote
@@ -1970,9 +1984,9 @@
           :code $ quote
             defn join-path (xs ys)
               if
-                = (first ys) |/
+                = (option:unwrap-or (first ys) |) |/
                 , ys $ let
-                    absolute? $ = (first xs) |/
+                    absolute? $ = (option:unwrap-or (first xs) |) |/
                     new-path $ join-segments ([])
                       concat (.split xs |/) (.split ys |/)
                   if absolute? (str |/ new-path) new-path
