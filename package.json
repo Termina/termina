@@ -2,6 +2,7 @@
   "name": "termina",
   "version": "0.1.19",
   "description": "Start process from a Webpage",
+  "packageManager": "yarn@4.12.0",
   "main": "./server.mjs",
   "bin": "./server.mjs",
   "scripts": {

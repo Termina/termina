@@ -13,5 +13,5 @@
     |calcit-lang/lilac |0.5.2
     |calcit-lang/memof |0.0.26
     |calcit-lang/recollect |0.0.30
-    |mvc-works/fuzzy-filter |0.0.9
+    |mvc-works/fuzzy-filter |0.0.10
     |mvc-works/ws-edn.calcit |0.0.16
