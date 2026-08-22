@@ -6,11 +6,11 @@
   "main": "./server.mjs",
   "bin": "./server.mjs",
   "scripts": {
-    "watch-server": "cr js",
-    "compile-server": "cr js",
-    "compile-page": "cr --entry page --emit-path out-page js",
+    "watch-server": "calcit calcit.cirru js",
+    "compile-server": "calcit calcit.cirru js",
+    "compile-page": "calcit calcit.cirru --entry page --emit-path out-page js",
     "release-page": "vite build --base=./",
-    "watch-page": "cr --entry page --emit-path out-page/ js"
+    "watch-page": "calcit calcit.cirru --entry page --emit-path out-page/ js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "dependencies": {
-    "@calcit/procs": "^0.13.27",
+    "@calcit/procs": "^0.13.29",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.11",
     "latest-version": "^9.0.0",
