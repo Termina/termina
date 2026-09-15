@@ -10,24 +10,41 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Enable pinned Yarn
-        run: corepack enable && corepack install --global yarn@4.12.0
-
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
-          cache: 'yarn'
 
-      - uses: calcit-lang/setup-calcit@6a2e53ae41e4f0d5856a424b9ed4470d90ea6876
+      - name: Enable pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@4.12.0 --activate
+          yarn --version
 
-      - run: caps --ci && yarn install --immutable && yarn compile-server && yarn compile-page && yarn release-page
+      - uses: calcit-lang/setup-calcit@d02594b15f0e9de723fe1a202a3fa62a87afe07b # v1.4.0
+        with:
+          tools: calcit,caps
+
+      - name: Install dependencies
+        run: caps --strict --ci && yarn install --immutable
+
+      - name: Validate Calcit entries and toolchain
+        run: |
+          caps verify --toolchain
+          calcit calcit.cirru --check-only
+          calcit calcit.cirru --entry page --check-only
+          calcit analyze dynamic-methods --max 0 --summary-only --format json
+          calcit --entry page analyze dynamic-methods --max 0 --summary-only --format json
+          calcit analyze deprecated --summary-only --format json
+          calcit --entry page analyze deprecated --summary-only --format json
+
+      - run: yarn compile-server && yarn compile-page && yarn release-page
 
       - name: Upload web assets
         id: deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: Pendect/action-rsyncer@v2.0.0
+        uses: Pendect/action-rsyncer@b7f90f4f8ed893d4e3f852f7a73180631f63d4bd # v2.0.0
         env:
           DEPLOY_KEY: ${{secrets.rsync_private_key}}
         with:
