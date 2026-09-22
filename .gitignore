@@ -12,3 +12,6 @@ yarn-error.log
 dist-server/
 
 .DS_Store
+.pnp.cjs
+.pnp.loader.mjs
+.yarn
