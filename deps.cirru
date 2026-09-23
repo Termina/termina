@@ -10,8 +10,6 @@
     |Respo/respo-value.calcit |0.5.11
     |Respo/respo.calcit |0.16.112
     |calcit-lang/js-ffi |0.1.35
-    |calcit-lang/lilac |0.5.9
-    |calcit-lang/memof |0.0.33
     |calcit-lang/recollect |0.0.52
     |mvc-works/fuzzy-filter |0.0.14
     |mvc-works/ws-edn.calcit |0.0.30
