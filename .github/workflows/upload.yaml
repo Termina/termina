@@ -34,8 +34,8 @@ jobs:
           caps verify --toolchain
           calcit calcit.cirru --check-only
           calcit calcit.cirru --entry page --check-only
-          calcit analyze dynamic-methods --max 0 --summary-only --format json
-          calcit --entry page analyze dynamic-methods --max 0 --summary-only --format json
+          calcit analyze dynamic-methods --summary-only --format json
+          calcit --entry page analyze dynamic-methods --summary-only --format json
           calcit analyze deprecated --summary-only --format json
           calcit --entry page analyze deprecated --summary-only --format json
 
