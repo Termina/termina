@@ -358,7 +358,8 @@
                       :min-width 320
                 .render remove-plugin
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic) 'String
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
@@ -454,13 +455,15 @@
                   :on-click $ fn (e d!) (d! :effect/connect nil)
                 <> "|No connection..." $ {} (:font-family ui/font-fancy) (:font-size 24)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ []
         'comp-status-color $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-status-color (color)
             div $ {} (:class-name css-status)
               :style $ {} $ :background-color color
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Dynamic
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |& $ {}
@@ -884,9 +887,10 @@
             div ({}) (<> "|Page missing")
               div
                 {} $ :style $ {} (:font-family ui/font-code)
-                <> router
+                <> $ str router
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.missing
           :require
@@ -913,9 +917,10 @@
                     d! :router/change $ {} $ :name :profile
                 <> $ if logged-in? |Me |Guest
                 =< 8 nil
-                <> count-members
+                <> $ str count-members
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Bool (:: 'Map 'Tag 'Dynamic) 'Number
         'css-nav $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-nav
             {} $ |& $ merge ui/row-center

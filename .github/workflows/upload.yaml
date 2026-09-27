@@ -19,10 +19,10 @@ jobs:
       - name: Enable pinned Yarn
         run: |
           corepack enable
-          corepack prepare yarn@4.12.0 --activate
+          corepack prepare yarn@4.18.0 --activate
           yarn --version
 
-      - uses: calcit-lang/setup-calcit@d02594b15f0e9de723fe1a202a3fa62a87afe07b # v1.4.0
+      - uses: calcit-lang/setup-calcit@ca701be5a471759e442aa053cd100720bbe1f09f # v1.5.0
         with:
           tools: calcit,caps
 
@@ -34,8 +34,8 @@ jobs:
           caps verify --toolchain
           calcit calcit.cirru --check-only
           calcit calcit.cirru --entry page --check-only
-          calcit analyze dynamic-methods --max 0 --summary-only --format json
-          calcit --entry page analyze dynamic-methods --max 0 --summary-only --format json
+          calcit analyze dynamic-methods --summary-only --format json
+          calcit --entry page analyze dynamic-methods --summary-only --format json
           calcit analyze deprecated --summary-only --format json
           calcit --entry page analyze deprecated --summary-only --format json
 
