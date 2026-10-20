@@ -23,12 +23,6 @@
           :code $ quote $ defref *store nil
           :examples $ []
           :schema $ :: 'Ref 'Dynamic
-        'KeyboardEventHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait KeyboardEventHost (:key 'String) (:meta-key? 'Bool)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-            :names $ {} $ :meta-key? |metaKey
-          :schema $ :: 'Trait
         'UrlObjectHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait UrlObjectHost (:hostname 'String)
             :query $ :: 'JsNullish 'app.client/UrlQueryHost
@@ -111,13 +105,13 @@
         'on-window-keydown $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-window-keydown (event)
             let
-                keyboard-event $ unsafe-coerce event KeyboardEventHost
+                keyboard-event $ js-ffi.browser/keyboard-event-host event
               when
                 and
-                  = |k $ .-key keyboard-event
-                  .-metaKey keyboard-event
+                  = |k $ js-ffi.browser/keyboard-event-key keyboard-event
+                  keyboard-event :meta-key?
                 let
-                    store $ assert-type
+                    store $ decode-map-as
                       or @*store $ {}
                       :: 'Map 'Tag 'Dynamic
                     router $ option:unwrap-or (get store :router) ({})
@@ -148,6 +142,7 @@
                 add-watch! *store :changes $ fn (store prev) (render-app!)
                 add-watch! *states :changes $ fn (states prev) (render-app!)
                 println "|Code updated."
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -2890,16 +2885,16 @@
         'check-version! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn check-version! ()
             let
-                pkg $ assert-type
+                pkg $ decode-map-as
                   to-calcit-data $ js/JSON.parse $ fs/readFileSync
                     path/join
                       fileURLToPath $ new js/URL |. js/import.meta.url
                       , |../package.json
                   :: 'Map 'String 'Dynamic
-                version $ assert-type
+                version $ decode-map-as
                   option:unwrap $ get pkg |version
                   , 'String
-                package-name $ assert-type
+                package-name $ decode-map-as
                   option:unwrap $ get pkg |name
                   , 'String
                 version-promise $ unsafe-coerce (latest-version package-name) StringPromiseHost
@@ -3024,11 +3019,12 @@
             let
                 options $ {}
                   :on-open $ fn (sid socket)
-                    @*proxied-dispatch! (:: :session/connect) sid
+                    @*proxied-dispatch! (:: :session/connect) (decode-map-as sid 'String)
                     println "|New client."
-                  :on-data $ fn (sid action) (@*proxied-dispatch! action sid)
+                  :on-data $ fn (sid action)
+                    @*proxied-dispatch! action $ decode-map-as sid 'String
                   :on-close $ fn (sid event) (println "|Client closed!")
-                    @*proxied-dispatch! (:: :session/disconnect) sid
+                    @*proxied-dispatch! (:: :session/disconnect) (decode-map-as sid 'String)
                   :on-error $ fn (error) (js/console.error error)
               match (env-get |HOST)
                 (:some host)
