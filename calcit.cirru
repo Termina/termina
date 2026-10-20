@@ -23,17 +23,6 @@
           :code $ quote $ defref *store nil
           :examples $ []
           :schema $ :: 'Ref 'Dynamic
-        'UrlObjectHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait UrlObjectHost (:hostname 'String)
-            :query $ :: 'JsNullish 'app.client/UrlQueryHost
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
-        'UrlQueryHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait UrlQueryHost (:host 'String) (:port 'String)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
         'connect! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn connect! ()
             ws-connect! (resolve-websocket-url)
@@ -158,18 +147,8 @@
             :args $ []
         'resolve-websocket-url $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn resolve-websocket-url ()
-            let
-                url-obj $ unsafe-coerce
-                  url-parse (location-href) true
-                  , UrlObjectHost
-                raw-query $ .-query url-obj
-                host $ if (js-present? raw-query)
-                  .-host $ unsafe-coerce raw-query UrlQueryHost
-                  .-hostname url-obj
-                port $ if (js-present? raw-query)
-                  .-port $ unsafe-coerce raw-query UrlQueryHost
-                  str $ assert-type (:port config/site) 'Number
-              str |ws:// host |: port
+            app.util/websocket-url (location-href)
+              decode-map-as (:port config/site) 'Number
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ []
@@ -196,12 +175,12 @@
             ws-edn.client :refer $ ws-connect! ws-send!
             recollect.patch :refer $ patch-twig
             cumulo-util.core :refer $ on-page-touch
-            |url-parse :default url-parse
             |bottom-tip :default hud!
             |./calcit.build-errors :default client-errors
             |../js-out/calcit.build-errors :default server-errors
             js-ffi.browser :refer $ EventHost add-event-listener! location-href storage-get
             respo.ffi.browser :as respo-browser
+            app.util :refer $ websocket-url
     'app.comp.command $ %{} 'FileEntry
       :defs $ {}
         'comp-command-button $ %{} 'CodeEntry (:doc |)
@@ -3748,5 +3727,15 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] (:: 'List 'String) (:: 'List 'String)
+        'websocket-url $ %{} 'CodeEntry (:doc "|纯地址选择的浏览器 JS 实现；不连接网络，不把 url-parse 对象强转为自定义宿主。")
+          :code $ quote $ defn websocket-url (href default-port) (raise "|URL parsing requires JavaScript")
+          :examples $ []
+          :ffi $ {} (:target :browser)
+            :js $ {}
+              :inline "|(href, defaultPort) => { const parsed = urlParsePackage.default(href, true); const host = Object.hasOwn(parsed.query, \"host\") ? parsed.query.host : parsed.hostname; const port = Object.hasOwn(parsed.query, \"port\") ? parsed.query.port : String(defaultPort); if (typeof host !== \"string\" || typeof port !== \"string\") { throw new TypeError(\"url-parse address fields must be strings\"); } return \"ws://\" + host + \":\" + port; }"
+              :modules $ {} $ :urlParsePackage |url-parse
+          :schema $ :: 'Fn $ {} (:return 'String)
+            :args $ [] 'String 'Number
+            :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util

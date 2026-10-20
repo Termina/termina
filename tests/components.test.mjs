@@ -14,11 +14,23 @@ import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.c
 import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
 import { decode_changes } from '../out-page/app.schema.mjs';
 import { patch_twig } from '../out-page/recollect.patch.mjs';
+import { websocket_url } from '../out-page/app.util.mjs';
 
 const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd', 'router', 'count', 'color']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
 const part = (value, index) => c._$n_enum_$o_nth(value, index);
 const parse = c.parse_cirru_edn;
+
+test('connection address uses independent defaults for missing host and port without opening a socket', () => {
+  for (const [query, expected] of [
+    ['', 'ws://demo.invalid:6001'],
+    ['?host=127.0.0.1', 'ws://127.0.0.1:6001'],
+    ['?port=19112', 'ws://demo.invalid:19112'],
+    ['?host=127.0.0.1&port=19112', 'ws://127.0.0.1:19112'],
+    ['?host=&port=', 'ws://:'],
+  ]) assert.equal(websocket_url(`http://demo.invalid/${query}`, 6001), expected);
+});
+
 function elements(component) {
   const found = [];
   function visit(node) {
