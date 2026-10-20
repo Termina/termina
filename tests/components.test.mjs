@@ -287,6 +287,8 @@ function storeFixture(route, loggedIn = true) {
   :histories $ []`);
   raw = c.assoc(raw, c.init_tags(['workflows']).workflows, workflowsFixture());
   if (route === 'history') raw = c.assoc(raw, c.init_tags(['histories']).histories, historyFixture());
+  if (route === 'process') raw = c.assoc(raw, c.init_tags(['processes']).processes,
+    parse('{} $ 7 $ {} (:pid 7) (:title |合成进程) (:content $ [] |仅服务端日志)'));
   const session = parse(`{} (:user-id ${loggedIn ? '|u1' : 'nil'}) (:messages $ {}) (:enlarge-view nil)
   :router $ {} (:name :${route}) (:params $ {} (:id 42))`);
   const fieldTags = c.init_tags(['db', 'session']);
@@ -356,6 +358,13 @@ test('actual authenticated server projections render all routes and preserve unk
     assert.ok(texts.includes('Me'), route);
     assert.ok(c._$n__$e_(c.option_$o_unwrap(c.get(wire, futureTag)), future));
     if (route === 'profile') assert.ok(texts.includes('Hello! Ada'));
-    if (route === 'process') assert.ok(texts.includes('Process unavailable'));
+    if (route === 'process') {
+      assert.ok(texts.includes('Process unavailable'));
+      const keys = c.init_tags(['router', 'data', 'dict', 'pid', 'content']);
+      const field = (value, key) => c.option_$o_unwrap(c.get(value, keys[key]));
+      const process = c.option_$o_unwrap(c.get(field(field(field(wire, 'router'), 'data'), 'dict'), 7));
+      assert.equal(field(process, 'pid'), 7);
+      assert.equal(c.option_$o_none_$q_(c.get(process, keys.content)), true);
+    }
   }
 });

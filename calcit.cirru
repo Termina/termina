@@ -36,13 +36,12 @@
           :schema $ :: 'Trait
         'connect! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn connect! ()
-            do
-              ws-connect! (resolve-websocket-url)
-                {}
-                  :on-open $ fn (event) (simulate-login!)
-                  :on-close $ fn (event) (reset! *store nil) (println "|Lost connection!") &unit
-                  :on-data on-server-data
-              , &unit
+            ws-connect! (resolve-websocket-url)
+              {}
+                :on-open $ fn (event) (simulate-login!)
+                :on-close $ fn (event) (reset! *store nil) (println "|Lost connection!") &unit
+                :on-data on-server-data
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -77,9 +76,8 @@
             add-watch! *store :changes $ fn (s p) (render-app!)
             add-watch! *states :changes $ fn (s p) (render-app!)
             add-event-listener! |keydown $ fn (event) (on-window-keydown event)
-            do
-              on-page-touch $ fn () $ if (nil? @*store) (connect!) &unit
-              , &unit
+            on-page-touch $ fn () $ if (nil? @*store) (connect!) &unit
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -121,8 +119,7 @@
                       get-in router $ [] :params :id
                       , nil
                     enlarge-view $ option:unwrap-or (get session :enlarge-view) nil
-                  case-default router-name
-                    do $ println "|no thing to clear in" router-name
+                  case-default router-name (println "|no thing to clear in" router-name)
                     :home $ do
                       dispatch! $ :: :process/clear
                       dispatch! $ :: :process/shorten-content enlarge-view
@@ -2977,7 +2974,7 @@
                   hint-fn $ {}
                     :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
                     :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
-                  %:: MapEntryDecision :keep pid $ assoc process :alive? false
+                  MapEntryDecision :keep pid $ assoc process :alive? false
                 file-content $ format-cirru-edn $ schema/encode-database
                   assoc
                     assoc db :sessions $ {}
@@ -3176,7 +3173,7 @@
                             hint-fn $ {}
                               :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
                               :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
-                            %:: MapEntryDecision :keep k $ dissoc v :content
+                            MapEntryDecision :keep k $ dissoc v :content
                       :profile $ twig-members sessions users
                     :count $ count sessions
                     :color $ color/randomColor
@@ -3202,9 +3199,9 @@
                         name $ decode-map-as
                           option:unwrap-or (get user :name) |unknown
                           , 'String
-                      %:: MapEntryDecision :keep sid name
-                    %:: MapEntryDecision :drop
-                (:none) (%:: MapEntryDecision :drop)
+                      MapEntryDecision :keep sid name
+                    MapEntryDecision :drop
+                (:none) (MapEntryDecision :drop)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ []
