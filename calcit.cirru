@@ -56,14 +56,18 @@
           :code $ quote $ defn dispatch! (op)
             when
               and config/dev? $ not=
-                assert-type
-                  option:unwrap-or (nth op 0) :unknown
+                decode-map-as
+                  .unwrap $ get op 0
                   , 'Tag
                 , :states
               println |Dispatch op
             match op
               (:states cursor s)
-                reset! *states $ assert-type (update-states @*states cursor s) (:: 'Map 'Tag 'Dynamic)
+                reset! *states $ decode-map-as
+                  update-states @*states
+                    decode-map-as cursor $ :: 'List 'Dynamic
+                    , s
+                  :: 'Map 'Tag 'Dynamic
               (:effect/connect) (connect!)
               _ $ ws-send! op
           :examples $ []
@@ -130,6 +134,7 @@
                       dispatch! $ :: :process/shorten-content enlarge-view
                     :history $ dispatch! $ :: :process/clear-history
                     :process $ dispatch! $ :: :process/shorten-content process-id
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'js-ffi.browser/EventHost
@@ -802,10 +807,14 @@
         'comp-login $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-login (states)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ or
-                  option:unwrap-or (get states :data) nil
-                  , initial-state
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ decode-map-as
+                  or
+                    option:unwrap-or (get states :data) nil
+                    , initial-state
+                  :: 'Map 'Tag 'String
               div
                 {} $ :style $ merge ui/flex ui/center
                 div ({})
@@ -813,32 +822,54 @@
                     {} $ :style $ {}
                     div ({})
                       input $ {} (:placeholder |Username)
-                        :value $ option:unwrap-or (get state :username) nil
+                        :value $ .unwrap $ get state :username
                         :style ui/input
                         :on-input $ fn (e d!)
-                          d! cursor $ assoc state :username $ option:unwrap-or (get e :value) nil
+                          hint-fn $ {}
+                            :args $ [] (:: 'Map 'Tag 'Dynamic)
+                              :: 'Fn $ {}
+                                :args $ [] 'Dynamic
+                                :rest 'Dynamic
+                                :return 'Unit
+                            :return 'Unit
+                          d! $ :: :states cursor $ assoc state :username
+                            decode-map-as
+                              .unwrap $ get e :value
+                              , 'String
+                          , &unit
                     =< nil 8
                     div ({})
                       input $ {} (:placeholder |Password)
-                        :value $ option:unwrap-or (get state :password) nil
+                        :value $ .unwrap $ get state :password
                         :style ui/input
                         :on-input $ fn (e d!)
-                          d! cursor $ assoc state :password $ option:unwrap-or (get e :value) nil
+                          hint-fn $ {}
+                            :args $ [] (:: 'Map 'Tag 'Dynamic)
+                              :: 'Fn $ {}
+                                :args $ [] 'Dynamic
+                                :rest 'Dynamic
+                                :return 'Unit
+                            :return 'Unit
+                          d! $ :: :states cursor $ assoc state :password
+                            decode-map-as
+                              .unwrap $ get e :value
+                              , 'String
+                          , &unit
                   =< nil 8
                   div
                     {} $ :style $ {} (:text-align :right)
                     span $ {} (:inner-text "|Sign up")
                       :style $ merge style/link
                       :on-click $ on-submit
-                        option:unwrap-or (get state :username) nil
-                        option:unwrap-or (get state :password) nil
+                        .unwrap $ get state :username
+                        .unwrap $ get state :password
                         , true
                     =< 8 nil
                     span $ {} (:inner-text "|Log in")
                       :style $ merge style/link
                       :on-click $ on-submit
-                        option:unwrap-or (get state :username) nil
-                        option:unwrap-or (get state :password) nil
+                        .unwrap $ get state :username
+                        .unwrap $ get state :password
                         , false
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -851,16 +882,19 @@
         'on-submit $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-submit (username password signup?)
             fn (e dispatch!)
-              dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
-              storage-set!
-                assert-type (:storage-key config/site) 'String
+              dispatch! $ if signup?
+                :: :user/sign-up $ [] username password
+                :: :user/log-in $ [] username password
+              storage-set! (:storage-key config/site)
                 format-cirru-edn $ [] username password
               , &unit
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'String 'String 'Bool
             :return $ :: 'Fn $ {} (:return 'Unit)
-              :args $ [] 'Dynamic 'Dynamic
+              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                :: 'Fn $ {} (:rest 'Dynamic) (:return 'Unit)
+                  :args $ [] 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.login
           :require
