@@ -1139,94 +1139,141 @@
       :defs $ {}
         'comp-process $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-process (process)
-            div
-              {} $ :class-name css-process
+            let
+                content $ decode-map-as
+                  .unwrap $ get process :content
+                  :: 'List $ :: 'Map 'Tag 'Dynamic
               div
-                {} (:class-name css-title-bar)
-                  :style $ if
-                    option:unwrap-or (get process :alive?) nil
-                    {} $ :background-color $ hsl 50 100 60
+                {} $ :class-name css-process
                 div
-                  {} $ :class-name css/row-middle
-                  <>
-                    or
-                      option:unwrap-or (get process :title) nil
-                      , |Task
-                    merge style/text $ {} $ :color :black
-                div
-                  {} $ :class-name css/row-middle
-                  button $ {} (:class-name css/button)
-                    :style $ {}
-                      :background $ hsl 0 0 0 $ %some 0.1
-                      :color :white
-                    :on-click $ fn (e d!)
-                      d! $ :: :session/enlarge $ option:unwrap-or (get process :pid) nil
-                    :inner-text |Enlarge
-                  ; =< 8 nil
-                  ; a $ {} (:class-name css/link)
-                    :on-click $ fn (e d!)
-                      d! :router/change $ {} (:name :process)
-                        :params $ {} $ :id
-                          option:unwrap-or (get process :pid) nil
-                    :inner-text |View
-                  if
-                    option:unwrap-or (get process :alive?) nil
-                    a
-                      {} (:class-name css-link-kill)
-                        :on-click $ fn (e d!)
-                          d! :effect/kill $ option:unwrap-or (get process :pid) nil
-                      <> |Kill
-                    a $ {} (:style style/link) (:inner-text |Redo)
+                  {} (:class-name css-title-bar)
+                    :style $ if
+                      decode-map-as
+                        .unwrap $ get process :alive?
+                        , 'Bool
+                      {} $ :background-color $ hsl 50 100 60
+                  div
+                    {} $ :class-name css/row-middle
+                    <>
+                      decode-map-as
+                        or
+                          option:unwrap-or (get process :title) nil
+                          , |Task
+                        , 'String
+                      merge style/text $ {} $ :color :black
+                  div
+                    {} $ :class-name css/row-middle
+                    button $ {} (:class-name css/button)
+                      :style $ {}
+                        :background $ hsl 0 0 0 $ %some 0.1
+                        :color :white
                       :on-click $ fn (e d!)
-                        d! :effect/run $ {}
-                          :cwd $ option:unwrap-or (get process :cwd) nil
-                          :command $ option:unwrap-or (get process :command) nil
-                          :title $ option:unwrap-or (get process :title) nil
-                        d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
-              div
-                {} $ :class-name $ str-spaced css/expand css-process-log
-                <>
-                  option:unwrap-or (get process :command) nil
-                  merge style/text
-                =< 8 nil
-                <>
-                  option:unwrap-or (get process :cwd) nil
-                  merge style/text $ {} $ :color (hsl 0 0 60)
-              if-not
-                empty? $ option:unwrap-or (get process :content) nil
-                list->
-                  {} $ :class-name css-content-list
-                  ->
-                    assert-type
-                      option:unwrap-or (get process :content) []
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    take-last 4
-                    map-indexed $ fn (idx chunk)
-                      [] idx $ let
-                          urls $ find-urls $ assert-type
-                            option:unwrap-or (get chunk :data) |
-                            , 'String
-                        div
-                          {} $ :style $ {} (:margin-top 2) (:display :block)
-                            :background-color $ hsl 0 0 0 $ %some 0.5
-                          if-not (empty? urls)
-                            list-> ({})
-                              -> urls $ map $ fn (url)
-                                [] url $ a $ {} (:inner-text url) (:target |_blank) (:href url)
-                                  :style $ {}
-                                    :color $ hsl 200 80 70
-                                    :margin "|0 8px"
-                          <>
-                            option:unwrap-or (get chunk :data) nil
-                            {}
-                              :color $ case-default
-                                option:unwrap-or (get chunk :type) nil
-                                hsl 60 0 72
-                                :stderr $ hsl 60 80 36
-                                :error $ hsl 0 80 50
-                              :padding 8
-                              :display :block
-                              :white-space :pre-line
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :session/enlarge $ decode-map-as
+                          .unwrap $ get process :pid
+                          , 'Number
+                        , &unit
+                      :inner-text |Enlarge
+                    ; =< 8 nil
+                    ; a $ {} (:class-name css/link)
+                      :on-click $ fn (e d!)
+                        d! :router/change $ {} (:name :process)
+                          :params $ {} $ :id
+                            option:unwrap-or (get process :pid) nil
+                      :inner-text |View
+                    if
+                      decode-map-as
+                        .unwrap $ get process :alive?
+                        , 'Bool
+                      a
+                        {} (:class-name css-link-kill)
+                          :on-click $ fn (e d!)
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :effect/kill $ decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
+                            , &unit
+                        <> |Kill
+                      a $ {} (:style style/link) (:inner-text |Redo)
+                        :on-click $ fn (e d!)
+                          hint-fn $ {}
+                            :args $ [] (:: 'Map 'Tag 'Dynamic)
+                              :: 'Fn $ {}
+                                :args $ [] 'Dynamic
+                                :rest 'Dynamic
+                                :return 'Unit
+                            :return 'Unit
+                          d! $ :: :effect/run $ {}
+                            :cwd $ decode-map-as
+                              .unwrap $ get process :cwd
+                              , 'String
+                            :command $ decode-map-as
+                              .unwrap $ get process :command
+                              , 'String
+                            :title $ option:unwrap-or (get process :title) nil
+                          d! $ :: :process/remove-dead $ decode-map-as
+                            .unwrap $ get process :pid
+                            , 'Number
+                          , &unit
+                div
+                  {} $ :class-name $ str-spaced css/expand css-process-log
+                  <>
+                    decode-map-as
+                      .unwrap $ get process :command
+                      , 'String
+                    merge style/text
+                  =< 8 nil
+                  <>
+                    decode-map-as
+                      .unwrap $ get process :cwd
+                      , 'String
+                    merge style/text $ {} $ :color (hsl 0 0 60)
+                if-not (empty? content)
+                  list->
+                    {} $ :class-name css-content-list
+                    -> content (take-last 4)
+                      map-indexed $ fn (idx chunk)
+                        [] idx $ let
+                            urls $ find-urls $ decode-map-as
+                              .unwrap $ get chunk :data
+                              , 'String
+                          div
+                            {} $ :style $ {} (:margin-top 2) (:display :block)
+                              :background-color $ hsl 0 0 0 $ %some 0.5
+                            if-not (empty? urls)
+                              list-> ({})
+                                -> urls $ map $ fn (url)
+                                  [] url $ a $ {} (:inner-text url) (:target |_blank) (:href url)
+                                    :style $ {}
+                                      :color $ hsl 200 80 70
+                                      :margin "|0 8px"
+                            <>
+                              decode-map-as
+                                .unwrap $ get chunk :data
+                                , 'String
+                              {}
+                                :color $ case-default
+                                  decode-map-as
+                                    .unwrap $ get chunk :type
+                                    , 'Tag
+                                  hsl 60 0 72
+                                  :stderr $ hsl 60 80 36
+                                  :error $ hsl 0 80 50
+                                :padding 8
+                                :display :block
+                                :white-space :pre-line
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] $ :: 'Map 'Tag 'Dynamic
@@ -1268,9 +1315,9 @@
         'find-urls $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn find-urls (text)
             let
-                matched $ .!match text $ new js/RegExp |https?://\\S+ |g
+                matched $ .!match text $ new js/RegExp |https?://\S+ |g
               if (js-nullish? matched) ([])
-                unsafe-coerce (to-calcit-data matched) (:: 'List 'String)
+                decode-map-as (to-calcit-data matched) (:: 'List 'String)
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
           :schema $ :: 'Fn $ {}
@@ -1290,6 +1337,10 @@
             respo-ui.css :as css
     'app.comp.process-detail $ %{} 'FileEntry
       :defs $ {}
+        'DetailState $ %{} 'CodeEntry (:doc "|详情页私有筛选状态；可从旧 Map 解码，初始值沿用原页面，不改变服务数据格式。")
+          :code $ quote $ defstruct DetailState (:filter 'String) (:filter? 'Bool) (:wrap? 'Bool) (:all-log? 'Bool) (:hide-thread-info? 'Bool)
+          :examples $ []
+          :schema $ :: 'List
         'ScrollElementHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait ScrollElementHost (:scroll-top 'Number) (:scroll-height 'Number)
           :examples $ []
@@ -1300,13 +1351,24 @@
         'comp-process-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-process-detail (states process)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ either
-                  option:unwrap-or (get states :data) nil
-                  {} (:filter |) (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ let
+                    raw-state $ either
+                      option:unwrap-or (get states :data) nil
+                      {} (:filter |) (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
+                  decode-map-as
+                    if (struct? raw-state) (&struct:to-map raw-state) raw-state
+                    , DetailState
+                content $ decode-map-as
+                  .unwrap $ get process :content
+                  :: 'List $ :: 'Map 'Tag 'Dynamic
                 command-plugin $ use-prompt (>> states :command)
                   {} (:text "|change command")
-                    :initial $ option:unwrap-or (get process :command) nil
+                    :initial $ decode-map-as
+                      .unwrap $ get process :command
+                      , 'String
               div
                 {} (:class-name css-process)
                   :style $ {} $ :flex 2
@@ -1317,76 +1379,149 @@
                       {} $ :gap 4
                     input $ {} (:type |checkbox)
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
-                      :checked $ option:unwrap-or (get state :filter?) nil
+                      :checked $ :filter? state
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :filter? $ not
-                          option:unwrap-or (get state :filter?) nil
-                    if
-                      option:unwrap-or (get state :filter?) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :filter?
+                          not $ :filter? state
+                        , &unit
+                    if (:filter? state)
                       input $ {} (:class-name css-filter)
-                        :value $ option:unwrap-or (get state :filter) nil
+                        :value $ :filter state
                         :on-input $ fn (e d!)
-                          d! cursor $ assoc state :filter $ option:unwrap-or (get e :value) nil
+                          hint-fn $ {}
+                            :args $ [] (:: 'Map 'Tag 'Dynamic)
+                              :: 'Fn $ {}
+                                :args $ [] 'Dynamic
+                                :rest 'Dynamic
+                                :return 'Unit
+                            :return 'Unit
+                          d! $ :: :states cursor $ assoc state :filter
+                            decode-map-as
+                              .unwrap $ get e :value
+                              , 'String
+                          , &unit
                         :placeholder |filter...
                       <> |Filter...
                     input $ {} (:type |checkbox)
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
-                      :checked $ option:unwrap-or (get state :all-log?) nil
+                      :checked $ :all-log? state
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :all-log? $ not
-                          option:unwrap-or (get state :all-log?) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :all-log?
+                          not $ :all-log? state
+                        , &unit
                     <> "|All log?"
                     comp-icon :arrow-down
                       {} (:font-size 14) (:class-name css-down-icon)
                         :color $ hsl 0 0 80
                       , on-scroll-down!
-                    if-not
-                      empty? $ option:unwrap-or (get process :content) nil
+                    if-not (empty? content)
                       a
                         {}
                           :on-click $ fn (e d!)
-                            d! :process/shorten-content $ option:unwrap-or (get process :pid) nil
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :process/shorten-content $ decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
+                            , &unit
                           :style style/link
                         <> |Clear
                     =< 8 nil
                     input $ {} (:type |checkbox)
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
-                      :checked $ option:unwrap-or (get state :hide-thread-info?) nil
+                      :checked $ :hide-thread-info? state
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :hide-thread-info? $ not
-                          option:unwrap-or (get state :hide-thread-info?) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :hide-thread-info?
+                          not $ :hide-thread-info? state
+                        , &unit
                     <> |HideThread?
                     input $ {} (:type |checkbox)
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
-                      :checked $ option:unwrap-or (get state :wrap?) nil
+                      :checked $ :wrap? state
                       :on-input $ fn (e d!)
-                        d! cursor $ assoc state :wrap? $ not
-                          option:unwrap-or (get state :wrap?) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :wrap?
+                          not $ :wrap? state
+                        , &unit
                     <> |Wrap?
                   div
                     {} $ :class-name css-toolbar
                     span $ {}
-                      :inner-text $ or
-                        option:unwrap-or (get process :title) nil
-                        , |Task
+                      :inner-text $ decode-map-as
+                        or
+                          option:unwrap-or (get process :title) nil
+                          , |Task
+                        , 'String
                       :class-name css/font-fancy
                       :style $ merge style/text
                         {} $ :padding "|0 8px"
-                        assert-type
+                        decode-map-as
                           if
-                            option:unwrap-or (get process :alive?) false
+                            decode-map-as
+                              .unwrap $ get process :alive?
+                              , 'Bool
                             {} (:color :black) (:border-radius |4px)
                               :background-color $ hsl 60 100 60
                             {}
                           :: 'Map 'Tag 'Dynamic
                       :title $ str
-                        option:unwrap-or (get process :cwd) nil
-                        , &newline $ option:unwrap-or (get process :command) nil
+                        decode-map-as
+                          .unwrap $ get process :cwd
+                          , 'String
+                        , &newline $ decode-map-as
+                          .unwrap $ get process :command
+                          , 'String
                       :on-click $ fn (e d!)
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
                         .show command-plugin d! $ fn (text)
+                          hint-fn $ {}
+                            :args $ [] 'String
+                            :return 'Unit
                           d! $ :: :process/change-command
-                            option:unwrap-or (get process :pid) nil
+                            decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
                             , text
+                          , &unit
+                        , &unit
                     ; =< 16 nil
                     ; <>
                       option:unwrap-or (get process :command) nil
@@ -1400,29 +1535,69 @@
                       , style/text
                     =< 8 nil
                     if
-                      option:unwrap-or (get process :alive?) nil
+                      decode-map-as
+                        .unwrap $ get process :alive?
+                        , 'Bool
                       a
                         {} (:class-name css/link)
                           :style $ {} (:color :red) (:border-color :red)
                           :on-click $ fn (e d!)
-                            d! :effect/kill $ option:unwrap-or (get process :pid) nil
-                          :title $ option:unwrap-or (get process :command) nil
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :effect/kill $ decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
+                            , &unit
+                          :title $ decode-map-as
+                            .unwrap $ get process :command
+                            , 'String
                         <> |Kill
                       div ({})
                         a $ {} (:class-name css/link) (:inner-text |Redo)
-                          :title $ option:unwrap-or (get process :command) nil
+                          :title $ decode-map-as
+                            .unwrap $ get process :command
+                            , 'String
                           :on-click $ fn (e d!)
-                            d! :effect/run $ {}
-                              :cwd $ option:unwrap-or (get process :cwd) nil
-                              :command $ option:unwrap-or (get process :command) nil
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :effect/run $ {}
+                              :cwd $ decode-map-as
+                                .unwrap $ get process :cwd
+                                , 'String
+                              :command $ decode-map-as
+                                .unwrap $ get process :command
+                                , 'String
                               :title $ option:unwrap-or (get process :title) nil
                               :enlarge? true
-                            d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
+                            d! $ :: :process/remove-dead $ decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
+                            , &unit
                         =< 8 nil
                         a $ {} (:class-name css/link) (:inner-text |Drop)
                           :on-click $ fn (e d!)
-                            d! :router/change $ {} $ :name :home
-                            d! :process/remove-dead $ option:unwrap-or (get process :pid) nil
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :router/change $ {} (:name :home)
+                            d! $ :: :process/remove-dead $ decode-map-as
+                              .unwrap $ get process :pid
+                              , 'Number
+                            , &unit
                 =< nil 8
                 div
                   {} $ :class-name $ str-spaced |scroll-area css-logs-list
@@ -1430,42 +1605,38 @@
                     not $ empty? process
                     list->
                       {} $ :style $ {}
-                        :white-space $ if
-                          option:unwrap-or (get state :wrap?) nil
-                          , |pre-wrap |pre
-                      ->
-                        option:unwrap-or (get process :content) nil
+                        :white-space $ if (:wrap? state) |pre-wrap |pre
+                      -> content
                         filter $ fn (chunk)
                           if
                             or
-                              not $ option:unwrap-or (get state :filter?) nil
-                              blank? $ option:unwrap-or (get state :filter) nil
-                            , true $ includes?
-                              assert-type
-                                option:unwrap-or (get chunk :data) |
+                              not $ :filter? state
+                              blank? $ :filter state
+                            , true $ .includes?
+                              decode-map-as
+                                .unwrap $ get chunk :data
                                 , 'String
-                              assert-type
-                                option:unwrap-or (get state :filter) |
-                                , 'String
-                        take-last $ if
-                          option:unwrap-or (get state :all-log?) nil
-                          , 2000 60
+                              :filter state
+                        take-last $ if (:all-log? state) 2000 60
                         map-indexed $ fn (idx chunk)
-                          []
-                            option:unwrap-or (get chunk :data) nil
-                            span $ {} (:class-name css-log)
-                              :style $ if
-                                = :stderr $ option:unwrap-or (get chunk :type) nil
-                                {} $ :color :red
-                                {}
-                              :inner-text $ do
-                                if
-                                  option:unwrap-or (get state :hide-thread-info?) nil
-                                  hide-thread-info $ option:unwrap-or (get chunk :data) nil
-                                  option:unwrap-or (get chunk :data) nil
-                                ; .!replace
-                                  option:unwrap-or (get chunk :data) nil
-                                  , &newline $ str &newline &newline
+                          [] idx $ span $ {} (:class-name css-log)
+                            :style $ if
+                              = :stderr $ decode-map-as
+                                .unwrap $ get chunk :type
+                                , 'Tag
+                              {} $ :color :red
+                              {}
+                            :inner-text $ do
+                              if (:hide-thread-info? state)
+                                hide-thread-info $ decode-map-as
+                                  .unwrap $ get chunk :data
+                                  , 'String
+                                decode-map-as
+                                  .unwrap $ get chunk :data
+                                  , 'String
+                              ; .!replace
+                                option:unwrap-or (get chunk :data) nil
+                                , &newline $ str &newline &newline
                   =< nil 200
                 .render command-plugin
           :examples $ []
@@ -1563,7 +1734,9 @@
                 {} $ :padding 16
               div
                 {} $ :style $ {} (:font-family ui/font-fancy) (:font-size 32) (:font-weight 100)
-                <> $ str "|Hello! " $ option:unwrap-or (get user :name) nil
+                <> $ str "|Hello! " $ decode-map-as
+                  .unwrap $ get user :name
+                  , 'String
               =< nil 16
               div
                 {} $ :style ui/row
@@ -1571,27 +1744,48 @@
                 =< 8 nil
                 list->
                   {} $ :style ui/row
-                  -> members (&map:to-list)
-                    &list:map-pair $ fn (k username)
-                      [] k $ div
-                        {} $ :style $ {} (:padding "|0 8px")
-                          :border $ str "|1px solid " $ hsl 0 0 80
-                          :border-radius |16px
-                          :margin "|0 4px"
-                        <> username
+                  map
+                    .to-list $ .keys members
+                    fn (k)
+                      let
+                          username $ .unwrap $ get members k
+                        [] k $ div
+                          {} $ :style $ {} (:padding "|0 8px")
+                            :border $ str "|1px solid " $ hsl 0 0 80
+                            :border-radius |16px
+                            :margin "|0 4px"
+                          <> username
               =< nil 48
               div ({})
                 button
                   {}
                     :style $ merge style/button
-                    :on-click $ fn (_e _d!) (refresh-page!)
+                    :on-click $ fn (_e _d!)
+                      hint-fn $ {}
+                        :args $ [] (:: 'Map 'Tag 'Dynamic)
+                          :: 'Fn $ {}
+                            :args $ [] 'Dynamic
+                            :rest 'Dynamic
+                            :return 'Unit
+                        :return 'Unit
+                      refresh-page!
+                      , &unit
                   <> |Refresh
                 =< 8 nil
                 button
                   {}
                     :style $ merge style/button $ {} (:color :red) (:border-color :red)
-                    :on-click $ fn (_ dispatch!) (dispatch! :user/log-out nil)
-                      storage-remove! $ assert-type (:storage-key config/site) 'String
+                    :on-click $ fn (_ dispatch!)
+                      hint-fn $ {}
+                        :args $ [] (:: 'Map 'Tag 'Dynamic)
+                          :: 'Fn $ {}
+                            :args $ [] 'Dynamic
+                            :rest 'Dynamic
+                            :return 'Unit
+                        :return 'Unit
+                      dispatch! $ :: :user/log-out nil
+                      storage-remove! $ :storage-key config/site
+                      , &unit
                   <> "|Log out"
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
