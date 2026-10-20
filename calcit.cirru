@@ -708,7 +708,16 @@
               {} $ :class-name css-history-page
               div ({})
                 button $ {} (:class-name css/button) (:inner-text |Clear)
-                  :on-click $ fn (e d!) (d! :process/clear-history nil)
+                  :on-click $ fn (e d!)
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :process/clear-history nil
+                    , &unit
               =< nil 16
               if (empty? histories)
                 <> |Empty $ {} (:font-family ui/font-fancy) (:font-weight 100) (:color :white)
@@ -721,20 +730,26 @@
                       div
                         {} $ :class-name $ str-spaced css/row-middle css-history
                         <>
-                          format-date-time $ assert-type
+                          format-date-time $ decode-map-as
                             option:unwrap-or (get history :started-at) 0
                             , 'Number
                           , css-date-text
                         <>
-                          or
-                            option:unwrap-or (get history :title) nil
-                            , |Task
+                          decode-map-as
+                            or
+                              option:unwrap-or (get history :title) nil
+                              , |Task
+                            , 'String
                           merge style/text $ {} $ :min-width 160
                         <>
-                          option:unwrap-or (get history :command) nil
+                          decode-map-as
+                            .unwrap $ get history :command
+                            , 'String
                           merge style/text $ {} $ :min-width 160
                         <>
-                          option:unwrap-or (get history :cwd) nil
+                          decode-map-as
+                            .unwrap $ get history :cwd
+                            , 'String
                           merge style/text
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -766,11 +781,12 @@
           :examples $ []
           :schema $ :: 'Dynamic
         'format-date-time $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn format-date-time (timestamp)
-            unsafe-coerce
-              .!format (dayjs timestamp) "|MM-DD HH:mm:ss"
-              , String
+          :code $ quote $ defn format-date-time (timestamp) (raise "|Date formatting requires JavaScript")
           :examples $ []
+          :ffi $ {} (:target :browser)
+            :js $ {}
+              :inline "|(timestamp) => { const value = dayjsPackage.default(timestamp).format(\"MM-DD HH:mm:ss\"); if (typeof value !== \"string\") { throw new TypeError(\"dayjs.format returned non-string\"); } return value; }"
+              :modules $ {} $ :dayjsPackage |dayjs
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] 'Number
             :features $ #{} :js-ffi
@@ -782,7 +798,6 @@
             respo.core :refer $ defcomp <> >> list-> span div button
             respo.comp.space :refer $ =<
             app.style :as style
-            |dayjs :default dayjs
             respo.css :refer $ defstyle
             respo-ui.css :as css
     'app.comp.home $ %{} 'FileEntry
@@ -1049,7 +1064,9 @@
           :schema $ :: 'Dynamic
         'lower-case $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn lower-case (text)
-            unsafe-coerce (.!toLowerCase text) 'String
+            decode-map-as
+              to-calcit-data (.!toLowerCase text) true
+              , 'String
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
           :schema $ :: 'Fn $ {} (:return 'String)
@@ -1836,8 +1853,10 @@
           :schema $ :: 'Dynamic
         'hide-thread-info $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn hide-thread-info (text)
-            unsafe-coerce
-              .!replace text (new js/RegExp |^[\d\s\:\-\.\+]+\s+\[[\w\d\s\:\,]+\]\s?) |
+            decode-map-as
+              to-calcit-data
+                .!replace text (new js/RegExp |^[\d\s\:\-\.\+]+\s+\[[\w\d\s\:\,]+\]\s?) |
+                , true
               , 'String
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
@@ -1940,10 +1959,9 @@
         'refresh-page! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-page! ()
             let
-                host-location $ unsafe-coerce js/location LocationHost
-                now $ unsafe-coerce (js/Date.now) 'Number
-              .replace! host-location $ str (.-protocol host-location) |// (.-host host-location) |?time= now
-              , &unit
+                url $ location-snapshot
+                now $ unix-time-ms
+              location-replace! $ str (:protocol url) |// (:host url) |?time= now
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -1959,7 +1977,7 @@
             respo.comp.space :refer $ =<
             app.config :as config
             app.style :as style
-            js-ffi.browser :refer $ LocationHost storage-remove!
+            js-ffi.browser :refer $ storage-remove! location-snapshot location-replace!
     'app.comp.workflow $ %{} 'FileEntry
       :defs $ {}
         'WorkflowListState $ %{} 'CodeEntry
@@ -2447,15 +2465,6 @@
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
             :names $ {} (:kill |kill) (:on |on) (:pid |pid) (:stderr |stderr) (:stdout |stdout) (:unref |unref)
           :schema $ :: 'Trait
-        'RegExpHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait RegExpHost
-            .test $ :: 'Fn $ {}
-              :args $ [] RegExpHost 'String
-              :return 'Bool
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
-            :names $ {} $ :test |test
-          :schema $ :: 'Trait
         'create-process! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create-process! (op-data dispatch! sid)
             let
@@ -2553,11 +2562,10 @@
               , 'String
             :features $ #{} :js-ffi
         'env-chunk? $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn env-chunk? (chunk)
-            let
-                pattern $ unsafe-coerce (new js/RegExp |^\w+=) RegExpHost
-              .test pattern chunk
+          :code $ quote $ defn env-chunk? (chunk) (raise "|Command classification requires JavaScript")
           :examples $ []
+          :ffi $ {} (:target :node)
+            :js $ {} $ :inline "|(chunk) => new RegExp(\"^\\\\w+=\").test(chunk)"
           :schema $ :: 'Fn $ {} (:return 'Bool)
             :args $ [] 'String
             :features $ #{} :js-ffi
@@ -2625,7 +2633,7 @@
         'read-bool-field-or $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-bool-field-or (data key fallback)
             match (get data key)
-              (:some value) (assert-type value 'Bool)
+              (:some value) (decode-map-as value 'Bool)
               (:none) fallback
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Bool)
@@ -2633,7 +2641,7 @@
         'read-string-field $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-string-field (data key)
             match (get data key)
-              (:some value) (assert-type value 'String)
+              (:some value) (decode-map-as value 'String)
               (:none)
                 raise $ str |Missing-string-field:- key
           :examples $ []

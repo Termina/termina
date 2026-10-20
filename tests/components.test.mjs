@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 import * as c from '../out-page/calcit.core.mjs';
 import { comp_command_button, comp_command_editor, comp_command_row } from '../out-page/app.comp.command.mjs';
 import { comp_process, find_urls } from '../out-page/app.comp.process.mjs';
-import { comp_process_detail } from '../out-page/app.comp.process-detail.mjs';
+import { comp_process_detail, hide_thread_info } from '../out-page/app.comp.process-detail.mjs';
 import { comp_profile } from '../out-page/app.comp.profile.mjs';
-import { comp_home } from '../out-page/app.comp.home.mjs';
+import { comp_home, lower_case } from '../out-page/app.comp.home.mjs';
+import { comp_history, format_date_time } from '../out-page/app.comp.history.mjs';
+import dayjs from 'dayjs';
 import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.comp.workflow.mjs';
 import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
 
@@ -167,6 +169,36 @@ test('profile renders typed member names without erasing the key/value relation'
   assert.ok(texts.includes('乙'));
 });
 
+test('String FFI boundaries retain colon-prefixed text, Unicode and the original local date format', () => {
+  for (const text of ['ABC', ':READY', '中文🌱', 'İ']) {
+    assert.equal(lower_case(text), text.toLowerCase());
+  }
+  assert.equal(hide_thread_info('2026-10-21 10:00:00 [INFO 42] 消息🌱'), '消息🌱');
+  assert.equal(hide_thread_info(':READY'), ':READY');
+  for (const timestamp of [0, Date.UTC(2026, 9, 21, 12, 34, 56)]) {
+    assert.equal(format_date_time(timestamp), dayjs(timestamp).format('MM-DD HH:mm:ss'));
+  }
+});
+
+function historyFixture() {
+  return parse('[] $ {} (:id |h1) (:title nil) (:started-at 0) (:command |never-run) (:cwd |/synthetic)');
+}
+
+test('nonempty history renders its actual fields and clear retains the existing wire operation', () => {
+  const nodes = elements(comp_history(historyFixture()));
+  const texts = nodes.map(node => attr(node, 'inner-text'));
+  assert.ok(texts.includes(dayjs(0).format('MM-DD HH:mm:ss')));
+  assert.ok(texts.includes('Task'));
+  assert.ok(texts.includes('never-run'));
+  assert.ok(texts.includes('/synthetic'));
+  const clear = nodes.find(node => attr(node, 'inner-text') === 'Clear');
+  const calls = [];
+  read(read(clear, 'event'), 'click')(parse('{}'), (...args) => calls.push(args));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].length, 1);
+  assert.ok(c._$n__$e_(calls[0][0], parse(':: :process/clear-history nil')));
+});
+
 function workflowsFixture() {
   return parse(`{}
   |w2 $ {} (:id |w2) (:name |Beta) (:base-dir |/synthetic/beta) (:commands $ {})
@@ -252,6 +284,7 @@ function storeFixture(route, loggedIn = true) {
   :processes $ {}
   :histories $ []`);
   raw = c.assoc(raw, c.init_tags(['workflows']).workflows, workflowsFixture());
+  if (route === 'history') raw = c.assoc(raw, c.init_tags(['histories']).histories, historyFixture());
   const session = parse(`{} (:user-id ${loggedIn ? '|u1' : 'nil'}) (:messages $ {}) (:enlarge-view nil)
   :router $ {} (:name :${route}) (:params $ {} (:id 42))`);
   const fieldTags = c.init_tags(['db', 'session']);
