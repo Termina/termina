@@ -221,32 +221,50 @@
                   :margin 4
                   :color $ hsl 0 0 40
                 :on-click $ fn (e d!)
+                  hint-fn $ {}
+                    :args $ [] (:: 'Map 'Tag 'Dynamic)
+                      :: 'Fn $ {}
+                        :args $ [] 'Dynamic
+                        :rest 'Dynamic
+                        :return 'Unit
+                    :return 'Unit
                   &doseq
-                    command $ &set:to-list $ vals
-                      assert-type
+                    command $ .to-list $ .distinct-values
+                      decode-map-as
                         option:unwrap-or (get workflow :commands) ({})
                         :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                    d! :effect/run $ {}
-                      :command $ option:unwrap-or (get command :code) nil
+                    d! $ :: :effect/run $ {}
+                      :command $ decode-map-as
+                        .unwrap $ get command :code
+                        , 'String
                       :cwd $ join-path
-                        option:unwrap-or (get workflow :base-dir) nil
-                        option:unwrap-or (get command :path) nil
+                        decode-map-as
+                          .unwrap $ get workflow :base-dir
+                          , 'String
+                        decode-map-as
+                          .unwrap $ get command :path
+                          , 'String
                       :title $ option:unwrap-or (get command :title) nil
-              <> $ option:unwrap-or (get workflow :name) nil
+                  , &unit
+              <> $ decode-map-as
+                .unwrap $ get workflow :name
+                , 'String
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] $ :: 'Map 'Tag 'Dynamic
         'comp-command-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-command-editor (states base-command on-submit)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ assert-type
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ decode-map-as
                   or
                     option:unwrap-or (get states :data) nil
                     if (option:some? base-command)
                       select-keys (option:unwrap base-command) ([] :code :path :title)
                       {} (:title |) (:code |) (:path |./)
-                  :: 'Map 'Tag 'Dynamic
+                  :: 'Map 'Tag 'String
               div
                 {} $ :style $ merge ui/column
                   {} $ :padding "|0 16px 16px"
@@ -255,44 +273,94 @@
                 =< nil 8
                 input $ {}
                   :style $ merge ui/input $ {} (:width 320) (:font-family ui/font-code)
-                  :value $ option:unwrap-or (get state :title) nil
+                  :value $ .unwrap $ get state :title
                   :placeholder |title...
                   :on-input $ fn (e d!)
-                    d! cursor $ assoc state :title $ option:unwrap-or (get e :value) nil
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :states cursor $ assoc state :title
+                      decode-map-as
+                        .unwrap $ get e :value
+                        , 'String
+                    , &unit
                 =< nil 8
                 input $ {}
                   :style $ merge ui/input $ {} (:width 320) (:font-family ui/font-code)
-                  :value $ option:unwrap-or (get state :code) nil
+                  :value $ .unwrap $ get state :code
                   :placeholder "|Command code"
                   :on-input $ fn (e d!)
-                    d! cursor $ assoc state :code $ option:unwrap-or (get e :value) nil
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :states cursor $ assoc state :code
+                      decode-map-as
+                        .unwrap $ get e :value
+                        , 'String
+                    , &unit
                 =< nil 8
                 input $ {}
                   :style $ merge ui/input $ {} (:width 320) (:font-family ui/font-code)
-                  :value $ option:unwrap-or (get state :path) nil
+                  :value $ .unwrap $ get state :path
                   :placeholder "|Command path"
                   :on-input $ fn (e d!)
-                    d! cursor $ assoc state :path $ option:unwrap-or (get e :value) nil
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :states cursor $ assoc state :path
+                      decode-map-as
+                        .unwrap $ get e :value
+                        , 'String
+                    , &unit
                 =< nil 16
                 div
                   {} $ :style ui/row-parted
                   span $ {}
                   button
                     {} (:style style/button)
-                      :on-click $ fn (e d!) (on-submit state d!) (d! cursor nil)
+                      :on-click $ fn (e d!)
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        on-submit state d!
+                        d! $ :: :states cursor nil
+                        , &unit
                     <> |Submit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'Map 'Tag 'Dynamic)
               :: 'Option $ :: 'Map 'Tag 'Dynamic
-              , 'Dynamic
+              :: 'Fn $ {} (:return 'Unit)
+                :args $ [] (:: 'Map 'Tag 'String)
+                  :: 'Fn $ {} (:rest 'Dynamic) (:return 'Unit)
+                    :args $ [] 'Dynamic
         'comp-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-command-row (states command workflow-id)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ either
-                  option:unwrap-or (get states :data) nil
-                  {} $ :pop? false
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ decode-map-as
+                  either
+                    option:unwrap-or (get states :data) nil
+                    {} $ :pop? false
+                  :: 'Map 'Tag 'Bool
                 remove-plugin $ use-confirm (>> states :remove) ({})
               div
                 {} $ :style style-command-row
@@ -301,57 +369,127 @@
                   div
                     {} $ :style ui/row-middle
                     <>
-                      or
-                        option:unwrap-or (get command :title) nil
-                        , |Task
+                      decode-map-as
+                        or
+                          option:unwrap-or (get command :title) nil
+                          , |Task
+                        , 'String
                       {} $ :font-size 20
                     =< 8 nil
                     comp-icon :play
                       {} (:font-size 14) (:cursor :pointer)
                         :color $ hsl 200 80 70
-                      fn (e d! m!)
-                        d! :effect/run $ {}
-                          :cwd $ option:unwrap-or (get command :path) nil
-                          :command $ option:unwrap-or (get command :code) nil
+                      fn (e d!)
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :effect/run $ {}
+                          :cwd $ decode-map-as
+                            .unwrap $ get command :path
+                            , 'String
+                          :command $ decode-map-as
+                            .unwrap $ get command :code
+                            , 'String
                           :title $ option:unwrap-or (get command :title) nil
+                        , &unit
                   div
                     {} $ :style ui/row-parted
                     comp-icon :edit-2
                       &{} :font-size 14 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
-                        d! cursor $ assoc state :pop? true
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :pop? true
+                        , &unit
                     comp-modal
                       {} (:title |Demo)
                         :style $ {} $ :width 400
                         :container-style $ {}
                         :render $ fn (on-close)
-                          comp-command-editor (>> states :edit-command)
-                            %some $ assert-type command $ :: 'Map 'Tag 'Dynamic
-                            fn (command-draft d! m!)
-                              d! :workflow/edit-command $ [] workflow-id
-                                option:unwrap-or (get command :id) nil
+                          hint-fn $ {}
+                            :args $ [] $ :: 'Fn
+                              {}
+                                :args $ [] $ :: 'Fn
+                                  {}
+                                    :args $ [] 'Dynamic
+                                    :rest 'Dynamic
+                                    :return 'Unit
+                                :return 'Unit
+                            :return 'respo.schema/Component
+                          comp-command-editor
+                            decode-map-as (>> states :edit-command) (:: 'Map 'Tag 'Dynamic)
+                            %some $ decode-map-as command $ :: 'Map 'Tag 'Dynamic
+                            fn (command-draft d!)
+                              hint-fn $ {}
+                                :args $ [] (:: 'Map 'Tag 'String)
+                                  :: 'Fn $ {}
+                                    :args $ [] 'Dynamic
+                                    :rest 'Dynamic
+                                    :return 'Unit
+                                :return 'Unit
+                              d! $ :: :workflow/edit-command $ [] workflow-id
+                                decode-map-as
+                                  .unwrap $ get command :id
+                                  , 'String
                                 , command-draft
-                              on-close
-                      option:unwrap-or (get state :pop?) nil
+                              on-close d!
+                              , &unit
+                      .unwrap $ get state :pop?
                       fn (d!)
-                        d! cursor $ assoc state :pop? false
+                        hint-fn $ {}
+                          :args $ [] $ :: 'Fn
+                            {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :pop? false
+                        , &unit
                     =< 8 nil
                     comp-icon :x
                       &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                       fn (e d!)
-                        .show remove-plugin d! $ fn () $ d! :workflow/remove-command
-                          [] workflow-id $ option:unwrap-or (get command :id) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        .show remove-plugin d! $ fn ()
+                          hint-fn $ {}
+                            :args $ []
+                            :return 'Unit
+                          d! $ :: :workflow/remove-command $ [] workflow-id
+                            decode-map-as
+                              .unwrap $ get command :id
+                              , 'String
+                          , &unit
+                        , &unit
                 div
                   {} $ :style $ merge ui/row-middle
                     {} $ :font-family ui/font-code
                   <>
-                    option:unwrap-or (get command :path) nil
+                    decode-map-as
+                      .unwrap $ get command :path
+                      , 'String
                     {} (:display :inline-block)
                       :background-color $ hsl 0 0 100 $ %some 0.2
                       :padding "|0 8px"
                   =< 24 nil
                   <>
-                    option:unwrap-or (get command :code) nil
+                    decode-map-as
+                      .unwrap $ get command :code
+                      , 'String
                     {}
                       :background-color $ hsl 0 0 100 $ %some 0.2
                       :padding "|0 8px"
@@ -671,13 +809,23 @@
                             :style $ {} $ :width 400
                             :container-style $ {}
                             :render $ fn (on-close)
-                              comp-command-editor (>> states :quick-run) (%none)
+                              comp-command-editor
+                                decode-map-as (>> states :quick-run) (:: 'Map 'Tag 'Dynamic)
+                                %none
                                 fn (draft d!)
-                                  d! :effect/run $ {}
-                                    :command $ option:unwrap-or (get draft :code) nil
-                                    :cwd $ option:unwrap-or (get draft :path) nil
-                                    :title $ option:unwrap-or (get draft :title) nil
+                                  hint-fn $ {}
+                                    :args $ [] (:: 'Map 'Tag 'String)
+                                      :: 'Fn $ {}
+                                        :args $ [] 'Dynamic
+                                        :rest 'Dynamic
+                                        :return 'Unit
+                                    :return 'Unit
+                                  d! $ :: :effect/run $ {}
+                                    :command $ .unwrap $ get draft :code
+                                    :cwd $ .unwrap $ get draft :path
+                                    :title $ .unwrap $ get draft :title
                                   on-close d!
+                                  , &unit
                           option:unwrap-or (get state :pop?) nil
                           fn (d!)
                             d! cursor $ assoc state :pop? false
@@ -1585,12 +1733,22 @@
                           :style $ {} $ :width 400
                           :container-style $ {}
                           :render $ fn (on-close)
-                            comp-command-editor (>> states :add-command) (%none)
-                              fn (command-draft d! m!)
-                                d! :workflow/add-command $ {}
+                            comp-command-editor
+                              decode-map-as (>> states :add-command) (:: 'Map 'Tag 'Dynamic)
+                              %none
+                              fn (command-draft d!)
+                                hint-fn $ {}
+                                  :args $ [] (:: 'Map 'Tag 'String)
+                                    :: 'Fn $ {}
+                                      :args $ [] 'Dynamic
+                                      :rest 'Dynamic
+                                      :return 'Unit
+                                  :return 'Unit
+                                d! $ :: :workflow/add-command $ {}
                                   :workflow-id $ option:unwrap-or (get workflow :id) nil
                                   :draft command-draft
-                                on-close
+                                on-close d!
+                                , &unit
                         option:unwrap-or (get state :pop?) nil
                         , on-close
                   div
