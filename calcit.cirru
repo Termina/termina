@@ -727,6 +727,10 @@
             respo-ui.css :as css
     'app.comp.home $ %{} 'FileEntry
       :defs $ {}
+        'HomeState $ %{} 'CodeEntry (:doc "|首页私有查询与弹窗状态，可从旧 Map 解码。")
+          :code $ quote $ defstruct HomeState (:query 'String) (:pop? 'Bool)
+          :examples $ []
+          :schema $ :: 'List
         'comp-empty $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-empty ()
             span $ {}
@@ -736,27 +740,41 @@
         'comp-home $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-home (states router-data)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ or
-                  option:unwrap-or (get states :data) nil
-                  {} (:query |) (:pop? false)
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ let
+                    raw-state $ or
+                      option:unwrap-or (get states :data) nil
+                      {} (:query |) (:pop? false)
+                  decode-map-as
+                    if (struct? raw-state) (&struct:to-map raw-state) raw-state
+                    , HomeState
+                workflows $ decode-map-as
+                  .unwrap-or (get router-data :workflows) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                processes $ decode-map-as
+                  .unwrap-or (get router-data :processes) ({})
+                  :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
+                raw-enlarge-view $ .unwrap-or (get router-data :enlarge-view) nil
+                enlarge-view $ if
+                  or (nil? raw-enlarge-view) (= raw-enlarge-view false)
+                  Option :none
+                  Option :some $ decode-map-as raw-enlarge-view 'Number
               div
                 {} $ :class-name $ str-spaced css/expand css/column css-home
                 =< nil 8
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
-                  option:fold (get router-data :enlarge-view)
-                    fn () $ comp-empty
-                    fn (enlarge-view)
-                      let
-                          processes $ assert-type
-                            option:unwrap-or (get router-data :processes) ({})
-                            :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
-                          process-id $ assert-type enlarge-view 'Number
-                        option:fold (get processes process-id)
-                          fn () $ comp-empty
-                          fn (large-process)
-                            comp-process-detail (>> states :enlarge) large-process
+                  match enlarge-view
+                    (:none) (comp-empty)
+                    (:some process-id)
+                      match (get processes process-id)
+                        (:none) (comp-empty)
+                        (:some large-process)
+                          comp-process-detail
+                            decode-map-as (>> states :enlarge) (:: 'Map 'Tag 'Dynamic)
+                            , large-process
                   div
                     {} $ :class-name $ str-spaced css/expand css/column
                     div
@@ -765,50 +783,84 @@
                       div
                         {} $ :class-name $ str-spaced css/flex css/row-middle
                         input $ {} (:class-name css-filter) (:placeholder |filter...)
-                          :value $ option:unwrap-or (get state :query) nil
+                          :value $ :query state
                           :on-input $ fn (e d!)
-                            d! cursor $ assoc state :query $ option:unwrap-or (get e :value) nil
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :states cursor $ assoc state :query
+                              decode-map-as
+                                .unwrap $ get e :value
+                                , 'String
+                            , &unit
                         list->
                           {}
                             :class-name $ str-spaced css/flex css/row
                             :style $ {} $ :flex-wrap :wrap
-                          ->
-                            assert-type
-                              option:unwrap-or (get router-data :workflows) ({})
-                              :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                            &map:to-list
-                            &list:filter-pair $ fn (k workflow)
-                              option:unwrap-or
-                                get
-                                  parse-by-letter
-                                    lower-case $ assert-type
-                                      option:unwrap-or (get workflow :name) |
-                                      , 'String
-                                    lower-case $ assert-type
-                                      option:unwrap-or (get state :query) |
-                                      , 'String
-                                  , :matches?
-                                , nil
-                            &list:sort-by $ fn (pair)
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last pair) ({})
-                                  , :name
-                                , nil
-                            &list:map-pair $ fn (k workflow)
-                              [] k $ comp-command-button workflow
+                          map
+                            sort
+                              filter
+                                .to-list $ .keys workflows
+                                fn (workflow-id)
+                                  decode-map-as
+                                    .unwrap $ get
+                                      parse-by-letter
+                                        lower-case $ decode-map-as
+                                          .unwrap $ get
+                                            .unwrap $ get workflows workflow-id
+                                            , :name
+                                          , 'String
+                                        lower-case $ :query state
+                                      , :matches?
+                                    , 'Bool
+                              fn (left-id right-id)
+                                .compare
+                                  decode-map-as
+                                    .unwrap $ get
+                                      .unwrap $ get workflows left-id
+                                      , :name
+                                    , 'String
+                                  decode-map-as
+                                    .unwrap $ get
+                                      .unwrap $ get workflows right-id
+                                      , :name
+                                    , 'String
+                            fn (workflow-id)
+                              [] workflow-id $ comp-command-button $ .unwrap (get workflows workflow-id)
                       div
                         {} $ :class-name css/row-middle
                         button $ {}
                           :class-name $ str-spaced css/button style/css-button
                           :inner-text |Run
                           :on-click $ fn (e d!)
-                            d! cursor $ assoc state :pop? true
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :states cursor $ assoc state :pop? true
+                            , &unit
                         comp-modal
                           {} (:title |Demo)
                             :style $ {} $ :width 400
                             :container-style $ {}
                             :render $ fn (on-close)
+                              hint-fn $ {}
+                                :args $ [] $ :: 'Fn
+                                  {}
+                                    :args $ [] $ :: 'Fn
+                                      {}
+                                        :args $ [] 'Dynamic
+                                        :rest 'Dynamic
+                                        :return 'Unit
+                                    :return 'Unit
+                                :return 'respo.schema/Component
                               comp-command-editor
                                 decode-map-as (>> states :quick-run) (:: 'Map 'Tag 'Dynamic)
                                 %none
@@ -826,77 +878,87 @@
                                     :title $ .unwrap $ get draft :title
                                   on-close d!
                                   , &unit
-                          option:unwrap-or (get state :pop?) nil
+                          :pop? state
                           fn (d!)
-                            d! cursor $ assoc state :pop? false
+                            hint-fn $ {}
+                              :args $ [] $ :: 'Fn
+                                {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
+                            d! $ :: :states cursor $ assoc state :pop? false
+                            , &unit
                         =< 8 nil
                         button $ {}
                           :class-name $ str-spaced css/button style/css-button
                           :inner-text "|Kill all"
                           :on-click $ fn (e d!)
+                            hint-fn $ {}
+                              :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                :: 'Fn $ {}
+                                  :args $ [] 'Dynamic
+                                  :rest 'Dynamic
+                                  :return 'Unit
+                              :return 'Unit
                             &doseq
-                              pid $ &set:to-list $ keys
-                                assert-type
+                              pid $ .to-list $ .keys
+                                decode-map-as
                                   option:unwrap-or (get router-data :processes) ({})
                                   :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
-                              d! :effect/kill pid
+                              d! $ :: :effect/kill pid
+                            , &unit
                         =< 8 nil
                         a
                           {} (:class-name css/link)
-                            :on-click $ fn (e d!) (d! :process/clear nil)
+                            :on-click $ fn (e d!)
+                              hint-fn $ {}
+                                :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                  :: 'Fn $ {}
+                                    :args $ [] 'Dynamic
+                                    :rest 'Dynamic
+                                    :return 'Unit
+                                :return 'Unit
+                              d! $ :: :process/clear nil
+                              , &unit
                           <> |Clear
                     list->
                       {} $ :class-name $ str-spaced css/flex css-process-list
-                      ->
-                        assert-type
-                          option:unwrap-or (get router-data :processes) ({})
-                          :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
-                        &map:to-list
-                        filter $ fn (x)
-                          not= (first x) (get router-data :enlarge-view)
-                        sort $ fn (x y)
-                          if
-                            and
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last y) ({})
-                                  , :alive?
-                                , nil
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last x) ({})
-                                  , :alive?
-                                , nil
-                            -
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last x) ({})
-                                  , :started-at
-                                , nil
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last y) ({})
-                                  , :started-at
-                                , nil
-                            -
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last y) ({})
-                                  , :started-at
-                                , nil
-                              option:unwrap-or
-                                get
-                                  option:unwrap-or (last x) ({})
-                                  , :started-at
-                                , nil
-                        &list:sort-by $ fn (pair)
-                          not $ option:unwrap-or
-                            get
-                              option:unwrap-or (last pair) ({})
-                              , :alive?
-                            , nil
-                        &list:map-pair $ fn (pid process)
-                          [] pid $ comp-process process
+                      map
+                        sort
+                          filter
+                            .to-list $ .keys processes
+                            fn (pid)
+                              not= (Option :some pid) enlarge-view
+                          fn (left-id right-id)
+                            let
+                                left-process $ .unwrap $ get processes left-id
+                                right-process $ .unwrap $ get processes right-id
+                                left-alive? $ decode-map-as
+                                  .unwrap $ get left-process :alive?
+                                  , 'Bool
+                                right-alive? $ decode-map-as
+                                  .unwrap $ get right-process :alive?
+                                  , 'Bool
+                              if (= left-alive? right-alive?)
+                                if left-alive?
+                                  -
+                                    decode-map-as
+                                      .unwrap $ get left-process :started-at
+                                      , 'Number
+                                    decode-map-as
+                                      .unwrap $ get right-process :started-at
+                                      , 'Number
+                                  -
+                                    decode-map-as
+                                      .unwrap $ get right-process :started-at
+                                      , 'Number
+                                    decode-map-as
+                                      .unwrap $ get left-process :started-at
+                                      , 'Number
+                                if left-alive? -1 1
+                        fn (pid)
+                          [] pid $ comp-process $ .unwrap (get processes pid)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
@@ -1815,15 +1877,32 @@
             js-ffi.browser :refer $ LocationHost storage-remove!
     'app.comp.workflow $ %{} 'FileEntry
       :defs $ {}
+        'WorkflowListState $ %{} 'CodeEntry
+          :doc "|工作流列表私有状态；焦点缺失为 Option :none，不再把 nil 声明为 String。"
+          :code $ quote $ defstruct WorkflowListState
+            :focused-id $ :: 'Option 'String
+            :pop? 'Bool
+          :examples $ []
+          :schema $ :: 'List
         'comp-workflow-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-container (states workflows)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ assert-type
-                  or
-                    option:unwrap-or (get states :data) nil
-                    {} (:focused-id nil) (:base-workflow nil) (:pop? false)
-                  :: 'Map 'Tag 'Dynamic
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ let
+                    original-state $ or
+                      option:unwrap-or (get states :data) nil
+                      {} (:focused-id nil) (:base-workflow nil) (:pop? false)
+                    state-map $ dissoc
+                      if (struct? original-state) (&struct:to-map original-state) original-state
+                      , :base-workflow
+                  decode-map-as
+                    if
+                      nil? $ .unwrap-or (get state-map :focused-id) nil
+                      dissoc state-map :focused-id
+                      , state-map
+                    , WorkflowListState
               div
                 {} $ :style $ merge ui/flex ui/row
                   {} $ :padding 16
@@ -1837,38 +1916,95 @@
                         :color $ hsl 200 80 60
                         :cursor :pointer
                       fn (e d!)
-                        d! cursor $ assoc state :pop? true
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :pop? true
+                        , &unit
                     comp-modal
                       {} (:title |Demo)
                         :style $ {} $ :width 400
                         :container-style $ {}
                         :render $ fn (on-close)
-                          comp-workflow-editor (>> states :editor) (%none) on-close
-                      option:unwrap-or (get state :pop?) nil
+                          hint-fn $ {}
+                            :args $ [] $ :: 'Fn
+                              {}
+                                :args $ [] $ :: 'Fn
+                                  {}
+                                    :args $ [] 'Dynamic
+                                    :rest 'Dynamic
+                                    :return 'Unit
+                                :return 'Unit
+                            :return 'respo.schema/Component
+                          comp-workflow-editor
+                            decode-map-as (>> states :editor) (:: 'Map 'Tag 'Dynamic)
+                            %none
+                            , on-close
+                      :pop? state
                       fn (d!)
-                        d! cursor $ assoc state :pop? false
+                        hint-fn $ {}
+                          :args $ [] $ :: 'Fn
+                            {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :pop? false
+                        , &unit
                   =< nil 8
                   list-> ({})
-                    -> workflows (&map:to-list)
-                      &list:sort-by $ fn (pair)
-                        option:unwrap-or
-                          get
-                            option:unwrap-or (last pair) ({})
-                            , :name
-                          , nil
-                      &list:map-pair $ fn (k workflow)
-                        [] k $ div
-                          {}
-                            :style $ merge style-workflow-entry $ {}
-                              :background-color $ if
-                                =
-                                  option:unwrap-or (get workflow :id) nil
-                                  option:unwrap-or (get state :focused-id) nil
-                                hsl 0 0 100 $ %some 0.2
-                                hsl 0 0 100 $ %some 0
-                            :on-click $ fn (e d!)
-                              d! cursor $ assoc state :focused-id $ option:unwrap-or (get workflow :id) nil
-                          <> $ option:unwrap-or (get workflow :name) nil
+                    map
+                      sort
+                        .to-list $ .keys workflows
+                        fn (left-id right-id)
+                          .compare
+                            decode-map-as
+                              .unwrap $ get
+                                .unwrap $ get workflows left-id
+                                , :name
+                              , 'String
+                            decode-map-as
+                              .unwrap $ get
+                                .unwrap $ get workflows right-id
+                                , :name
+                              , 'String
+                      fn (k)
+                        let
+                            workflow $ .unwrap $ get workflows k
+                          [] k $ div
+                            {}
+                              :style $ merge style-workflow-entry $ {}
+                                :background-color $ if
+                                  match (:focused-id state)
+                                    (:none) false
+                                    (:some focused-id)
+                                      =
+                                        decode-map-as
+                                          .unwrap $ get workflow :id
+                                          , 'String
+                                        , focused-id
+                                  hsl 0 0 100 $ %some 0.2
+                                  hsl 0 0 100 $ %some 0
+                              :on-click $ fn (e d!)
+                                hint-fn $ {}
+                                  :args $ [] (:: 'Map 'Tag 'Dynamic)
+                                    :: 'Fn $ {}
+                                      :args $ [] 'Dynamic
+                                      :rest 'Dynamic
+                                      :return 'Unit
+                                  :return 'Unit
+                                d! $ :: :states cursor $ assoc state :focused-id
+                                  Option :some $ decode-map-as
+                                    .unwrap $ get workflow :id
+                                    , 'String
+                                , &unit
+                            <> $ decode-map-as
+                              .unwrap $ get workflow :name
+                              , 'String
                 div $ {} $ :style
                   {} (:width 1)
                     :background-color $ hsl 0 0 100 $ %some 0.2
@@ -1876,19 +2012,25 @@
                 div
                   {} $ :style $ merge ui/flex
                     {} $ :padding 8
-                  let
-                      focused-id $ assert-type
-                        option:unwrap-or (get state :focused-id) |
-                        , 'String
-                    if (contains? workflows focused-id)
-                      let
-                          workflow $ option:unwrap $ get workflows focused-id
-                        comp-workflow-detail (>> states :detail) workflow
+                  match (:focused-id state)
+                    (:none)
                       div ({})
                         <> |Nothing $ {} (:font-family ui/font-fancy)
                           :color $ hsl 0 0 70
                           :font-size 20
                           :font-weight 100
+                    (:some focused-id)
+                      match (get workflows focused-id)
+                        (:none)
+                          div ({})
+                            <> |Nothing $ {} (:font-family ui/font-fancy)
+                              :color $ hsl 0 0 70
+                              :font-size 20
+                              :font-weight 100
+                        (:some workflow)
+                          comp-workflow-detail
+                            decode-map-as (>> states :detail) (:: 'Map 'Tag 'Dynamic)
+                            , workflow
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'Map 'Tag 'Dynamic)
@@ -1896,11 +2038,18 @@
         'comp-workflow-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-detail (states workflow)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ either
-                  option:unwrap-or (get states :data) nil
-                  {} (:pop? false) (:edit? false)
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ decode-map-as
+                  either
+                    option:unwrap-or (get states :data) nil
+                    {} (:pop? false) (:edit? false)
+                  :: 'Map 'Tag 'Bool
                 remove-plugin $ use-confirm (>> states :remove) ({})
+                commands $ decode-map-as
+                  .unwrap-or (get workflow :commands) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
               div ({})
                 div
                   {} $ :style $ merge ui/row-parted
@@ -1911,22 +2060,50 @@
                       :font-weight 100
                     =< 8 nil
                     <>
-                      option:unwrap-or (get workflow :base-dir) nil
+                      decode-map-as
+                        .unwrap $ get workflow :base-dir
+                        , 'String
                       {} (:font-family ui/font-code)
                         :color $ hsl 0 0 70
                     =< 40 nil
                     comp-icon :plus
                       &{} :font-size 16 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
-                        d! cursor $ assoc state :pop? true
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :pop? true
+                        , &unit
                     let
                         on-close $ fn (d!)
-                          d! cursor $ assoc state :pop? false
+                          hint-fn $ {}
+                            :args $ [] $ :: 'Fn
+                              {}
+                                :args $ [] 'Dynamic
+                                :rest 'Dynamic
+                                :return 'Unit
+                            :return 'Unit
+                          d! $ :: :states cursor $ assoc state :pop? false
+                          , &unit
                       comp-modal
                         {} (:title |Demo)
                           :style $ {} $ :width 400
                           :container-style $ {}
                           :render $ fn (on-close)
+                            hint-fn $ {}
+                              :args $ [] $ :: 'Fn
+                                {}
+                                  :args $ [] $ :: 'Fn
+                                    {}
+                                      :args $ [] 'Dynamic
+                                      :rest 'Dynamic
+                                      :return 'Unit
+                                  :return 'Unit
+                              :return 'respo.schema/Component
                             comp-command-editor
                               decode-map-as (>> states :add-command) (:: 'Map 'Tag 'Dynamic)
                               %none
@@ -1939,45 +2116,88 @@
                                       :return 'Unit
                                   :return 'Unit
                                 d! $ :: :workflow/add-command $ {}
-                                  :workflow-id $ option:unwrap-or (get workflow :id) nil
+                                  :workflow-id $ decode-map-as
+                                    .unwrap $ get workflow :id
+                                    , 'String
                                   :draft command-draft
                                 on-close d!
                                 , &unit
-                        option:unwrap-or (get state :pop?) nil
+                        .unwrap $ get state :pop?
                         , on-close
                   div
                     {} $ :style ui/row-parted
                     comp-icon :edit-2
                       &{} :font-size 14 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
-                        d! cursor $ assoc state :edit? true
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :edit? true
+                        , &unit
                     comp-modal
                       {} (:title |Demo)
                         :style $ {} $ :width 400
                         :container-style $ {}
                         :render $ fn (on-close)
-                          comp-workflow-editor (>> states :editor)
-                            %some $ assert-type workflow $ :: 'Map 'Tag 'Dynamic
+                          hint-fn $ {}
+                            :args $ [] $ :: 'Fn
+                              {}
+                                :args $ [] $ :: 'Fn
+                                  {}
+                                    :args $ [] 'Dynamic
+                                    :rest 'Dynamic
+                                    :return 'Unit
+                                :return 'Unit
+                            :return 'respo.schema/Component
+                          comp-workflow-editor
+                            decode-map-as (>> states :editor) (:: 'Map 'Tag 'Dynamic)
+                            %some workflow
                             , on-close
-                      option:unwrap-or (get state :edit?) nil
+                      .unwrap $ get state :edit?
                       fn (d!)
-                        d! cursor $ assoc state :edit? false
+                        hint-fn $ {}
+                          :args $ [] $ :: 'Fn
+                            {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        d! $ :: :states cursor $ assoc state :edit? false
+                        , &unit
                     =< 8 nil
                     comp-icon :x
                       &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                       fn (e d!)
-                        .show remove-plugin d! $ fn () $ d! :workflow/remove
-                          option:unwrap-or (get workflow :id) nil
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
+                        .show remove-plugin d! $ fn ()
+                          hint-fn $ {}
+                            :args $ []
+                            :return 'Unit
+                          d! $ :: :workflow/remove $ decode-map-as
+                            .unwrap $ get workflow :id
+                            , 'String
+                          , &unit
+                        , &unit
                 list-> ({})
-                  ->
-                    assert-type
-                      option:unwrap-or (get workflow :commands) ({})
-                      :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                    &map:to-list
-                    &list:map-pair $ fn (k command)
-                      [] k $ comp-command-row (>> states k) command $ assert-type
-                        option:unwrap-or (get workflow :id) |
-                        , 'String
+                  map
+                    .to-list $ .keys commands
+                    fn (k)
+                      [] k $ comp-command-row
+                        decode-map-as (>> states k) (:: 'Map 'Tag 'Dynamic)
+                        .unwrap $ get commands k
+                        decode-map-as
+                          .unwrap $ get workflow :id
+                          , 'String
                 .render remove-plugin
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -1985,14 +2205,16 @@
         'comp-workflow-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-editor (states base-workflow on-toggle)
             let
-                cursor $ option:unwrap-or (get states :cursor) nil
-                state $ assert-type
+                cursor $ decode-map-as
+                  .unwrap $ get states :cursor
+                  :: 'List 'Dynamic
+                state $ decode-map-as
                   or
                     option:unwrap-or (get states :data) nil
                     if (option:some? base-workflow)
                       select-keys (option:unwrap base-workflow) ([] :name :base-dir)
                       {} (:name |) (:base-dir |./)
-                  :: 'Map 'Tag 'Dynamic
+                  :: 'Map 'Tag 'String
               div
                 {} $ :style $ merge ui/column
                   {} $ :padding |8px
@@ -2003,17 +2225,39 @@
                   input $ {}
                     :style $ merge ui/input $ {} (:width 240)
                     :placeholder "|Workflow name"
-                    :value $ option:unwrap-or (get state :name) nil
+                    :value $ .unwrap $ get state :name
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :name $ option:unwrap-or (get e :value) nil
+                      hint-fn $ {}
+                        :args $ [] (:: 'Map 'Tag 'Dynamic)
+                          :: 'Fn $ {}
+                            :args $ [] 'Dynamic
+                            :rest 'Dynamic
+                            :return 'Unit
+                        :return 'Unit
+                      d! $ :: :states cursor $ assoc state :name
+                        decode-map-as
+                          .unwrap $ get e :value
+                          , 'String
+                      , &unit
                 =< nil 8
                 div ({})
                   input $ {}
                     :style $ merge ui/input $ {} (:width 240)
                     :placeholder "|Base directory"
-                    :value $ option:unwrap-or (get state :base-dir) nil
+                    :value $ .unwrap $ get state :base-dir
                     :on-input $ fn (e d!)
-                      d! cursor $ assoc state :base-dir $ option:unwrap-or (get e :value) nil
+                      hint-fn $ {}
+                        :args $ [] (:: 'Map 'Tag 'Dynamic)
+                          :: 'Fn $ {}
+                            :args $ [] 'Dynamic
+                            :rest 'Dynamic
+                            :return 'Unit
+                        :return 'Unit
+                      d! $ :: :states cursor $ assoc state :base-dir
+                        decode-map-as
+                          .unwrap $ get e :value
+                          , 'String
+                      , &unit
                 =< nil 16
                 div
                   {} $ :style ui/row-parted
@@ -2021,21 +2265,33 @@
                   button
                     {} (:style style/button)
                       :on-click $ fn (e d!)
+                        hint-fn $ {}
+                          :args $ [] (:: 'Map 'Tag 'Dynamic)
+                            :: 'Fn $ {}
+                              :args $ [] 'Dynamic
+                              :rest 'Dynamic
+                              :return 'Unit
+                          :return 'Unit
                         let
                             data $ select-keys state $ [] :name :base-dir
                           if (option:some? base-workflow)
-                            d! :workflow/edit $ assoc data :id $ option:unwrap-or
-                              get (option:unwrap base-workflow) :id
-                              , nil
-                            d! :workflow/create data
-                          d! cursor nil
+                            d! $ :: :workflow/edit $ assoc data :id
+                              option:unwrap-or
+                                get (option:unwrap base-workflow) :id
+                                , nil
+                            d! $ :: :workflow/create data
+                          d! $ :: :states cursor nil
                           on-toggle d!
+                        , &unit
                     <> |Submit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'Map 'Tag 'Dynamic)
               :: 'Option $ :: 'Map 'Tag 'Dynamic
-              , 'Dynamic
+              :: 'Fn $ {} (:return 'Unit)
+                :args $ [] $ :: 'Fn
+                  {} (:rest 'Dynamic) (:return 'Unit)
+                    :args $ [] 'Dynamic
         'style-workflow-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-workflow-entry
             {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)

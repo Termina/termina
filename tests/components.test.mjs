@@ -5,6 +5,8 @@ import { comp_command_button, comp_command_editor, comp_command_row } from '../o
 import { comp_process, find_urls } from '../out-page/app.comp.process.mjs';
 import { comp_process_detail } from '../out-page/app.comp.process-detail.mjs';
 import { comp_profile } from '../out-page/app.comp.profile.mjs';
+import { comp_home } from '../out-page/app.comp.home.mjs';
+import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.comp.workflow.mjs';
 
 const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
@@ -160,4 +162,80 @@ test('profile renders typed member names without erasing the key/value relation'
   assert.ok(texts.includes('Hello! 合成🐈'));
   assert.ok(texts.includes('甲'));
   assert.ok(texts.includes('乙'));
+});
+
+function workflowsFixture() {
+  return parse(`{}
+  |w2 $ {} (:id |w2) (:name |Beta) (:base-dir |/synthetic/beta) (:commands $ {})
+  |w1 $ {} (:id |w1) (:name |Alpha) (:base-dir |/synthetic/alpha) (:commands $ {})`);
+}
+
+test('home handles legacy absent enlargement, preserves process ordering and filters workflow names', () => {
+  const extraTags = c.init_tags(['processes', 'workflows', 'enlarge-view', 'data']);
+  let processes = parse('{}');
+  for (const [pid, alive, time] of [[1, true, 100], [2, true, 200], [3, false, 300], [4, false, 50]]) {
+    processes = c.assoc(processes, pid, parse(`{} (:pid ${pid}) (:title |P${pid}) (:command |never-run) (:cwd |/synthetic) (:alive? ${alive}) (:started-at ${time}) (:content $ [])`));
+  }
+  let router = c.assoc(parse('{} (:enlarge-view nil)'), extraTags.processes, processes);
+  router = c.assoc(router, extraTags.workflows, workflowsFixture());
+  const states = parse('{} (:cursor $ [] :home) (:data nil)');
+  const enlargePids = nodes => nodes.filter(node => attr(node, 'inner-text') === 'Enlarge').map(node => {
+    const calls = [];
+    read(read(node, 'event'), 'click')(parse('{}'), (...args) => calls.push(args));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].length, 1);
+    return part(calls[0][0], 1);
+  });
+  const initial = elements(comp_home(states, router));
+  assert.deepEqual(enlargePids(initial), [1, 2, 3, 4]);
+  assert.deepEqual(enlargePids(elements(comp_home(states, c.assoc(router, extraTags['enlarge-view'], false)))), [1, 2, 3, 4]);
+  assert.deepEqual(enlargePids(elements(comp_home(states, c.assoc(router, extraTags['enlarge-view'], 2)))), [1, 3, 4]);
+  assert.deepEqual(initial.map(node => attr(node, 'inner-text')).filter(text => text === 'Alpha' || text === 'Beta'), ['Alpha', 'Beta']);
+  const query = initial.find(node => read(node, 'name').value === 'input' && attr(node, 'placeholder') === 'filter...');
+  const calls = [];
+  read(read(query, 'event'), 'input')(parse('{} (:value |alp)'), (...args) => calls.push(args));
+  assert.equal(calls[0].length, 1);
+  const updated = c.assoc(states, extraTags.data, part(calls[0][0], 2));
+  const filtered = elements(comp_home(updated, router)).map(node => attr(node, 'inner-text'));
+  assert.ok(filtered.includes('Alpha'));
+  assert.ok(!filtered.includes('Beta'));
+});
+
+test('workflow list restores a nil focus, then preserves typed selection across rerender', () => {
+  const states = parse('{} (:cursor $ [] :workflows) (:data $ {} (:focused-id nil) (:base-workflow nil) (:pop? false))');
+  const workflows = workflowsFixture();
+  const initial = elements(comp_workflow_container(states, workflows));
+  assert.ok(initial.some(node => attr(node, 'inner-text') === 'Nothing'));
+  const entry = initial.find(node => c.listToArray(read(node, 'children')).some(child => {
+    const optional = read(child, 'node');
+    if (!c.option_$o_some_$q_(optional)) return false;
+    const value = part(c.option_$o_unwrap(optional), 1);
+    return value.fields.some(tag => tag.value === 'attrs') && attr(value, 'inner-text') === 'Alpha';
+  }));
+  assert.ok(entry);
+  const calls = [];
+  read(read(entry, 'event'), 'click')(parse('{}'), (...args) => calls.push(args));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].length, 1);
+  const updated = c.assoc(states, c.init_tags(['data']).data, part(calls[0][0], 2));
+  assert.ok(elements(comp_workflow_container(updated, workflows)).some(node => attr(node, 'inner-text') === 'Commands'));
+});
+
+test('workflow editor preserves create/edit payloads and calls close with dispatch', () => {
+  const states = parse('{} (:cursor $ [] :editor) (:data nil)');
+  for (const [base, expectedTag] of [[parse(':: :none'), 'workflow/create'], [parse(':: :some $ {} (:id |w1) (:name |Alpha) (:base-dir |/synthetic/alpha)'), 'workflow/edit']]) {
+    const calls = [], closes = [];
+    const dispatch = (...args) => calls.push(args);
+    const nodes = elements(comp_workflow_editor(states, base, (...args) => closes.push(args)));
+    const submit = nodes.find(node => read(node, 'name').value === 'button');
+    read(read(submit, 'event'), 'click')(parse('{}'), dispatch);
+    assert.equal(part(calls[0][0], 0).value, expectedTag);
+    assert.ok(calls.every(args => args.length === 1));
+    const payload = part(calls[0][0], 1);
+    const fieldTags = c.init_tags(['name', 'base-dir', 'id']);
+    assert.equal(c.option_$o_unwrap(c.get(payload, fieldTags.name)), expectedTag === 'workflow/create' ? '' : 'Alpha');
+    assert.equal(c.option_$o_unwrap(c.get(payload, fieldTags['base-dir'])), expectedTag === 'workflow/create' ? './' : '/synthetic/alpha');
+    if (expectedTag === 'workflow/edit') assert.equal(c.option_$o_unwrap(c.get(payload, fieldTags.id)), 'w1');
+    assert.deepEqual(closes, [[dispatch]]);
+  }
 });
