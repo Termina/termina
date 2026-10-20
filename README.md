@@ -27,8 +27,16 @@ Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru
 17 个命名空间的旧 import 标记已通过官方事务规范化。进程管理模块冷检查 10/10 通过；
 命令解析在真实入口检查 `List<String>`，返回 Enum，不再使用 unsafe 强转，
 进程查询按 Option 分支处理，替换已退役的 `join-str`。重新生成解析入口 JS 后，原四个场景回归通过。
-共享 config/runtime/util/twig/manager 的 19 个定义冷检查通过；原路径打印示例改为一项带断言的原生测试，
+服务端及共享公开定义冷检查 80/80、服务端可达检查 99/99 通过；原路径打印示例改为带断言的原生测试，
 保留原七个场景。已核对全部导入及精确代码引用，退休四个未使用的工具函数和对应陈旧导入。
+
+数据库五个固定集合字段使用真实 Database 结构，未知根字段保存在 extensions 并原样编码回去。
+磁盘及公开投影仍为原 Map，数字 PID 和内部 Map 记录不改格式；并不声称这些异构记录已全部静态闭合。
+账号、消息、日志与工作流操作在实际入口取得 ID/文本等具体类型，不用回调声明冒充深层值证明。
+历史 Reel 的开放元数据在 updater-from-record 检查，不放宽业务 updater 的 String/Number 合同。
+旧进程的内存根模型发生变化，部署时须完整重启 Node，不能只热更；无需另写存档改写脚本。
+三项原生测试与四组 Node 回归覆盖路径、端口、原格式往返/扩展、账号、工作流与日志操作；
+仅用内存合成状态，不创建真实账号、写实际数据库或执行进程命令。
 
 配置现在使用真实 Site；存储路径通过类型化环境/路径适配器读取。
 可用 `TERMINA_STORAGE_FILE` 指定绝对存储路径，未设置时仍使用原 HOME/.config/termina.cirru；
@@ -43,12 +51,12 @@ Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru
 并用合成数据验证登录态及密码字段省略；缓存查询按 Option 解包，不把 Option 本身传给 diff。
 服务端 ReelState 保留实际 Db 泛型，持久化保留数字 PID key；定时器改为真实 NodeTimerHost，
 SIGINT 回调按实际零参数合同声明。没有为了通过检查假造 Fn/JsObject 或放宽预算。
-完整 server/page 入口仍有 updater 动态嵌套数据、派发、前端状态/控件等类型错误，且仍有 unsafe 待迁移；
-上述局部通过不代表完整 strict、生产构建或服务运行验收通过。
+前端入口仍有派发、状态/控件等类型错误，且 FFI 仍有 unsafe 待迁移；
+上述服务端检查不代表完整 strict、前端生产构建或服务运行验收通过。
 后续将 op-id 改用正式 JS-FFI 的随机 UUID，时间使用 `unix-time-ms`；已存 ID 不变，新 ID 仍为 String，
 调用方不应依赖旧 nanoid 的长度。端口使用受检 Number 解析，保留配置端口和 Node 的 0 随机端口，
-非法尾缀、小数、非有限值及越界值拒绝，不再让 parseInt 静默截断。共享冷检查现为 20/20，
-原路径场景及端口场景两项原生测试通过；仍有 17 处 unsafe 待迁移，不把数字减少冒称完成。
+非法尾缀、小数、非有限值及越界值拒绝，不再让 parseInt 静默截断。
+仍有 17 处 unsafe 待迁移，不把数字减少冒称完成。
 
 ### Workflow
 

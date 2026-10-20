@@ -1952,6 +1952,20 @@
           :require $ js-ffi.node :refer $ env-get path-join path-absolute?
     'app.schema $ %{} 'FileEntry
       :defs $ {}
+        'Database $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Database
+            :sessions $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+            :users $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+            :workflows $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+            :processes $ :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
+            :histories $ :: 'List $ :: 'Map 'Tag 'Dynamic
+            :extensions $ :: 'Map 'Tag 'Dynamic
+          :examples $ []
+          :schema $ :: 'StructDef
+        'LogEvent $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct LogEvent (:pid 'Number) (:data 'String)
+          :examples $ []
+          :schema $ :: 'StructDef
         'command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def command
             {} (:id nil) (:title |) (:path |.) (:code |)
@@ -1959,14 +1973,76 @@
           :schema $ :: 'Dynamic
         'database $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def database
-            {}
-              :sessions $ do session $ {}
-              :users $ do user $ {}
-              :processes $ do process $ {}
-              :workflows $ do workflow $ {}
-              :histories $ do history $ []
+            Database :sessions ({}) :users ({}) :workflows ({}) :processes ({}) :histories ([]) :extensions $ {}
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'app.schema/Database
+        'decode-database $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn decode-database (raw)
+            let
+                data $ decode-map-as raw $ :: 'Map 'Tag 'Dynamic
+              Database :sessions
+                decode-map-as
+                  .unwrap-or (get data :sessions) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                , :users
+                  decode-map-as
+                    .unwrap-or (get data :users) ({})
+                    :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                  , :workflows
+                    decode-map-as
+                      .unwrap-or (get data :workflows) ({})
+                      :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                    , :processes
+                      decode-map-as
+                        .unwrap-or (get data :processes) ({})
+                        :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
+                      , :histories
+                        decode-map-as
+                          .unwrap-or (get data :histories) ([])
+                          :: 'List $ :: 'Map 'Tag 'Dynamic
+                        , :extensions $ -> data (dissoc :sessions) (dissoc :users) (dissoc :workflows) (dissoc :processes) (dissoc :histories)
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-map-roundtrip)
+            :code $ quote $ let
+                raw $ {}
+                  :sessions $ {} $ |s1
+                    {} $ :user-id nil
+                  :users $ {} $ |u1
+                    {} (:name |Ada) (:avatar nil)
+                  :processes $ {} $ 42
+                    {} (:pid 42)
+                      :content $ []
+                  :workflows $ {}
+                  :histories $ []
+                  :future $ [] |kept nil 7
+                decoded $ decode-database raw
+              assert= raw $ encode-database decoded
+              assert= true $ .some? $ get (:processes decoded) 42
+        'decode-log-event $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn decode-log-event (raw)
+            let
+                items $ decode-map-as raw $ :: 'List 'Dynamic
+              assert "|Log event requires PID and text" $ = (count items) 2
+              LogEvent :pid
+                decode-map-as
+                  .unwrap $ get items 0
+                  , 'Number
+                , :data $ decode-map-as
+                  .unwrap $ get items 1
+                  , 'String
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/LogEvent)
+            :args $ [] 'Dynamic
+        'encode-database $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn encode-database (db)
+            merge-dynamic (:extensions db)
+              dissoc (&struct:to-map db) :extensions
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'app.schema/Database
+            :return $ :: 'Map 'Tag 'Dynamic
         'history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def history
             {} (:id nil) (:pid 0) (:started-at 0) (:cwd |) (:command |)
@@ -2024,7 +2100,7 @@
         '*initial-db $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *initial-db (load-database!)
           :examples $ []
-          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Ref 'app.schema/Database
         '*loop-trigger $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *loop-trigger (Option :none)
           :examples $ []
@@ -2038,12 +2114,12 @@
         '*reader-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *reader-reel @*reel
           :examples $ []
-          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
+          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
         '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *reel
             ReelState :base @*initial-db :db @*initial-db :records ([]) :merged? false
           :examples $ []
-          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
+          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
         'StringPromiseHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait StringPromiseHost
             .then $ :: 'Fn $ {}
@@ -2106,18 +2182,14 @@
           :code $ quote $ defn load-database! ()
             let
                 found? $ file-exists? storage-file
-                loaded $ if found?
-                  decode-map-as
-                    parse-cirru-edn $ read-text! storage-file
-                    :: 'Map 'Tag 'Dynamic
-                  {}
               println $ if found? |Found-local-EDN-data |Found-no-data
-              merge-dynamic schema/database loaded
+              if found?
+                schema/decode-database $ parse-cirru-edn $ read-text! storage-file
+                , schema/database
           :examples $ []
-          :schema $ :: 'Fn $ {}
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
             :args $ []
             :features $ #{} :js-ffi
-            :return $ :: 'Map 'Tag 'Dynamic
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -2150,17 +2222,16 @@
           :code $ quote $ defn persist-db! ()
             let
                 db $ :db @*reel
-                processes $ decode-map-as
-                  option:unwrap-or (get db :processes) ({})
-                  :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
+                processes $ :processes db
                 stopped $ filter-map-kv processes $ fn (pid process)
                   hint-fn $ {}
                     :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
                     :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
                   %:: MapEntryDecision :keep pid $ assoc process :alive? false
-                file-content $ format-cirru-edn $ assoc
-                  assoc db :sessions $ {}
-                  , :processes stopped
+                file-content $ format-cirru-edn $ schema/encode-database
+                  assoc
+                    assoc db :sessions $ {}
+                    , :processes stopped
               write-mildly! storage-file file-content
               , &unit
           :examples $ []
@@ -2169,7 +2240,7 @@
             :features $ #{} :js-ffi
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (println "|Code updated.") (clear-twig-caches!) (reset! *proxied-dispatch! dispatch!)
-            reset! *reel $ refresh-reel @*reel @*initial-db updater
+            reset! *reel $ refresh-reel @*reel @*initial-db updater-from-record
             match @*loop-trigger
               (:some timer) (clear-timeout! timer)
               (:none) &unit
@@ -2206,7 +2277,7 @@
                   :on-error $ fn (error) (js/console.error error)
               match (env-get |HOST)
                 (:some host)
-                  wss-serve! port $ assoc options :host host
+                  wss-serve! port $ merge-dynamic options $ {} (:host host)
                 (:none) (wss-serve! port options)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'ws-edn.server/NodeWebSocketServerHost)
@@ -2229,7 +2300,7 @@
                   records $ :records reel
                   session $ decode-map-as
                     option:unwrap-or
-                      get-in db $ [] :sessions sid
+                      get-in (:sessions db) ([] sid)
                       {}
                     :: 'Map 'Tag 'Dynamic
                   old-store $ option:unwrap-or (get @*client-caches sid) nil
@@ -2244,8 +2315,14 @@
               , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
+            :args $ [] $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
             :features $ #{} :js-ffi
+        'updater-from-record $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn updater-from-record (db op sid op-id op-time)
+            updater db op (decode-map-as sid 'String) (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Dynamic 'Dynamic 'Dynamic 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
           :require (app.schema :as schema)
@@ -2319,21 +2396,11 @@
                   :: 'Map 'Tag 'Dynamic
                 base-data $ {} (:logged-in? logged-in?) (:session session)
                   :reel-length $ count records
-                workflows $ decode-map-as
-                  option:unwrap-or (get db :workflows) ({})
-                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                processes $ decode-map-as
-                  option:unwrap-or (get db :processes) ({})
-                  :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
-                histories $ decode-map-as
-                  option:unwrap-or (get db :histories) []
-                  :: 'List $ :: 'Map 'Tag 'Dynamic
-                sessions $ decode-map-as
-                  option:unwrap-or (get db :sessions) ({})
-                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                users $ decode-map-as
-                  option:unwrap-or (get db :users) ({})
-                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                workflows $ :workflows db
+                processes $ :processes db
+                histories $ :histories db
+                sessions $ :sessions db
+                users $ :users db
               merge-dynamic base-data $ decode-map-as
                 if logged-in?
                   {}
@@ -2366,7 +2433,7 @@
                 :: 'Map 'Tag 'Dynamic
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic)
               :: 'List $ :: 'List 'Dynamic
             :features $ #{} :js-ffi
             :return $ :: 'Map 'Tag 'Dynamic
@@ -2415,133 +2482,189 @@
             match op
               (:session/connect) (session/connect db sid op-id op-time)
               (:session/disconnect) (session/disconnect db sid op-id op-time)
-              (:session/remove-message d) (session/remove-message db d sid op-id op-time)
-              (:session/enlarge d) (session/enlarge db d sid op-id op-time)
-              (:user/log-in d) (user/log-in db d sid op-id op-time)
-              (:user/sign-up d) (user/sign-up db d sid op-id op-time)
+              (:session/remove-message d)
+                session/remove-message db
+                  decode-map-as
+                    .unwrap $ get
+                      decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                      , :id
+                    , 'String
+                  , sid op-id op-time
+              (:session/enlarge d)
+                session/enlarge db
+                  if (nil? d) (Option :none)
+                    Option :some $ decode-map-as d 'Number
+                  , sid op-id op-time
+              (:user/log-in d)
+                user/log-in db
+                  decode-map-as d $ :: 'List 'String
+                  , sid op-id op-time
+              (:user/sign-up d)
+                user/sign-up db
+                  decode-map-as d $ :: 'List 'String
+                  , sid op-id op-time
               (:user/log-out d) (user/log-out db d sid op-id op-time)
-              (:router/change d) (router/change db d sid op-id op-time)
-              (:process/create d) (process/create db d sid op-id op-time)
-              (:process/stdout d) (process/stdout db d sid op-id op-time)
-              (:process/stderr d) (process/stderr db d sid op-id op-time)
-              (:process/error d) (process/error db d sid op-id op-time)
+              (:router/change d)
+                router/change db
+                  decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                  , sid op-id op-time
+              (:process/create d)
+                process/create db
+                  decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                  , sid op-id op-time
+              (:process/stdout d)
+                let
+                    event $ schema/decode-log-event d
+                  process/stdout db (:pid event) (:data event) sid op-id op-time
+              (:process/stderr d)
+                let
+                    event $ schema/decode-log-event d
+                  process/stderr db (:pid event) (:data event) sid op-id op-time
+              (:process/error d)
+                let
+                    event $ schema/decode-log-event d
+                  process/error db (:pid event) (:data event) sid op-id op-time
               (:process/clear d) (process/clear db d sid op-id op-time)
-              (:process/finish d) (process/finish db d sid op-id op-time)
-              (:process/change-command pid next) (process/change-command db pid next sid op-id op-time)
-              (:process/remove-dead d) (process/remove-dead db d sid op-id op-time)
-              (:process/shorten-content d) (process/shorten-content db d sid op-id op-time)
-              (:workflow/create d) (workflow/create-workflow db d sid op-id op-time)
-              (:workflow/remove d) (workflow/remove-workflow db d sid op-id op-time)
-              (:workflow/add-command d) (workflow/add-command db d sid op-id op-time)
-              (:workflow/remove-command d) (workflow/remove-command db d sid op-id op-time)
-              (:workflow/edit-command d) (workflow/edit-command db d sid op-id op-time)
-              (:workflow/edit d) (workflow/edit-workflow db d sid op-id op-time)
+              (:process/finish d)
+                process/finish db (decode-map-as d 'Number) sid op-id op-time
+              (:process/change-command pid next)
+                process/change-command db (decode-map-as pid 'Number) (decode-map-as next 'String) sid op-id op-time
+              (:process/remove-dead d)
+                process/remove-dead db (decode-map-as d 'Number) sid op-id op-time
+              (:process/shorten-content d)
+                process/shorten-content db (decode-map-as d 'Number) sid op-id op-time
+              (:workflow/create d)
+                workflow/create-workflow db
+                  decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                  , sid op-id op-time
+              (:workflow/remove d)
+                workflow/remove-workflow db (decode-map-as d 'String) sid op-id op-time
+              (:workflow/add-command d)
+                workflow/add-command db
+                  decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                  , sid op-id op-time
+              (:workflow/remove-command d)
+                let
+                    items $ decode-map-as d $ :: 'List 'String
+                  workflow/remove-command db
+                    decode-map-as
+                      .unwrap $ get items 0
+                      , 'String
+                    decode-map-as
+                      .unwrap $ get items 1
+                      , 'String
+                    , sid op-id op-time
+              (:workflow/edit-command d)
+                let
+                    items $ decode-map-as d $ :: 'List 'Dynamic
+                  workflow/edit-command db
+                    decode-map-as
+                      .unwrap $ get items 0
+                      , 'String
+                    decode-map-as
+                      .unwrap $ get items 1
+                      , 'String
+                    decode-map-as
+                      .unwrap $ get items 2
+                      :: 'Map 'Tag 'Dynamic
+                    , sid op-id op-time
+              (:workflow/edit d)
+                workflow/edit-workflow db
+                  decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                  , sid op-id op-time
               (:process/clear-history d) (process/clear-history db d sid op-id op-time)
               _ $ do (println "|Unknown op:" op) db
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Dynamic 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
-          :require (app.updater.session :as session) (app.updater.user :as user) (app.updater.router :as router) (app.schema :as schema)
-            respo-message.updater :refer $ update-messages
-            app.updater.process :as process
-            app.updater.workflow :as workflow
+          :require (app.updater.session :as session) (app.updater.user :as user) (app.updater.router :as router) (app.schema :as schema) (app.updater.process :as process) (app.updater.workflow :as workflow)
     'app.updater.process $ %{} 'FileEntry
       :defs $ {}
         'change-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn change-command (db pid next sid op-id op-time)
-            assoc-in db ([] :processes pid :command) next
+            assoc db :processes $ assoc-in (:processes db) ([] pid :command) next
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'String 'Number
         'clear $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn clear (db op-data sid op-id op-time)
-            update db :processes $ fn (processes)
-              -> processes $ filter $ fn (pair)
-                let
-                    proc $ option:unwrap-or (last pair) nil
-                  option:unwrap-or (get proc :alive?) false
+            assoc db :processes $ filter-map-kv (:processes db)
+              fn (pid process)
+                hint-fn $ {}
+                  :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
+                  :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
+                if
+                  decode-map-as
+                    .unwrap-or (get process :alive?) false
+                    , 'Bool
+                  MapEntryDecision :keep pid process
+                  MapEntryDecision :drop
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Dynamic 'String 'String 'Number
         'clear-history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn clear-history (db op-data sid op-id op-time)
             assoc db :histories $ []
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Dynamic 'String 'String 'Number
         'create $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create (db op-data sid op-id op-time)
             let
-                new-history $ merge schema/history $ {}
-                  :command $ option:unwrap-or (get op-data :command) nil
-                  :cwd $ option:unwrap-or (get op-data :cwd) nil
-                  :started-at op-time
-                  :id op-id
-                  :title $ option:unwrap-or (get op-data :title) nil
-              -> db
-                assoc-in
-                  [] :processes $ option:unwrap-or (get op-data :pid) nil
-                  merge-dynamic schema/process
-                    assert-type op-data $ :: 'Map 'Tag 'Dynamic
-                    {} (:started-at op-time) (:alive? true)
-                update :histories $ fn (histories)
-                  hint-fn $ {}
-                    :args $ [] 'Dynamic
-                    :return 'Dynamic
-                  conj
-                    assert-type histories $ :: 'List $ :: 'Map 'Tag 'Dynamic
-                    , new-history
+                pid $ decode-map-as
+                  .unwrap $ get op-data :pid
+                  , 'Number
+                command $ decode-map-as
+                  .unwrap $ get op-data :command
+                  , 'String
+                cwd $ decode-map-as
+                  .unwrap $ get op-data :cwd
+                  , 'String
+                raw-title $ .unwrap-or (get op-data :title) nil
+                title $ if (nil? raw-title) nil $ decode-map-as raw-title 'String
+                process $ merge-dynamic schema/process op-data $ {} (:pid pid) (:command command) (:cwd cwd) (:title title) (:started-at op-time) (:alive? true)
+                history $ merge schema/history $ {} (:command command) (:cwd cwd) (:started-at op-time) (:id op-id) (:title title)
+              assoc
+                assoc db :processes $ assoc (:processes db) pid process
+                , :histories $ conj (:histories db) history
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
         'error $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn error (db op-data sid op-id op-time)
-            let-sugar
-                  [] pid data
-                  , op-data
-              update-in db ([] :processes pid :content)
-                fn (content)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    :return $ :: 'List $ :: 'Map 'Tag 'Dynamic
-                  conj
-                    option:unwrap-or content $ assert-type ([])
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    {} (:type :error) (:data data)
+          :code $ quote $ defn error (db pid data sid op-id op-time)
+            let
+                processes $ :processes db
+                process $ .unwrap-or (get processes pid) ({})
+                content $ decode-map-as
+                  .unwrap-or (get process :content) ([])
+                  :: 'List $ :: 'Map 'Tag 'Dynamic
+              assoc db :processes $ assoc processes pid $ assoc process :content
+                conj content $ {} (:type :error) (:data data)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'String 'Number
         'finish $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn finish (db op-data sid op-id op-time)
-            assoc-in db ([] :processes op-data :alive?) false
+            assoc db :processes $ assoc-in (:processes db) ([] op-data :alive?) false
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'Number
         'remove-dead $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-dead (db op-data sid op-id op-time)
             if
               not $ option:unwrap-or
-                get-in db $ [] :processes op-data :alive?
+                get-in (:processes db) ([] op-data :alive?)
                 , false
-              dissoc-in db $ [] :processes op-data
+              assoc db :processes $ dissoc (:processes db) op-data
               , db
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'Number
         'shorten-content $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shorten-content (db op-data sid op-id op-time)
-            update-in db ([] :processes op-data)
+            assoc db :processes $ update-in (:processes db) ([] op-data)
               fn (process)
                 hint-fn $ {}
                   :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
@@ -2551,283 +2674,287 @@
                   , :content $ assert-type ([])
                     :: 'List $ :: 'Map 'Tag 'Dynamic
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'Number
         'stderr $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn stderr (db op-data sid op-id op-time)
-            let-sugar
-                  [] pid data
-                  , op-data
-              update-in db ([] :processes pid :content)
-                fn (content)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    :return $ :: 'List $ :: 'Map 'Tag 'Dynamic
-                  conj
-                    option:unwrap-or content $ assert-type ([])
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    {} (:type :stderr) (:data data)
+          :code $ quote $ defn stderr (db pid data sid op-id op-time)
+            let
+                processes $ :processes db
+                process $ .unwrap-or (get processes pid) ({})
+                content $ decode-map-as
+                  .unwrap-or (get process :content) ([])
+                  :: 'List $ :: 'Map 'Tag 'Dynamic
+              assoc db :processes $ assoc processes pid $ assoc process :content
+                conj content $ {} (:type :stderr) (:data data)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'String 'Number
         'stdout $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn stdout (db op-data sid op-id op-time)
-            let-sugar
-                  [] pid data
-                  , op-data
-              update-in db ([] :processes pid :content)
-                fn (content)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    :return $ :: 'List $ :: 'Map 'Tag 'Dynamic
-                  conj
-                    option:unwrap-or content $ assert-type ([])
-                      :: 'List $ :: 'Map 'Tag 'Dynamic
-                    {} (:type :stdout) (:data data)
+          :code $ quote $ defn stdout (db pid data sid op-id op-time)
+            let
+                processes $ :processes db
+                process $ .unwrap-or (get processes pid) ({})
+                content $ decode-map-as
+                  .unwrap-or (get process :content) ([])
+                  :: 'List $ :: 'Map 'Tag 'Dynamic
+              assoc db :processes $ assoc processes pid $ assoc process :content
+                conj content $ {} (:type :stdout) (:data data)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Number 'String 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.process
-          :require (app.schema :as schema)
-            medley.core :refer $ dissoc-in
+          :require $ app.schema :as schema
     'app.updater.router $ %{} 'FileEntry
       :defs $ {} $ 'change
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defn change (db op-data sid op-id op-time)
-            assoc-in db ([] :sessions sid :router) op-data
+            assoc db :sessions $ assoc-in (:sessions db) ([] sid :router) op-data
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.router
     'app.updater.session $ %{} 'FileEntry
       :defs $ {}
+        'add-message $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn add-message (db sid message-id text)
+            let
+                sessions $ :sessions db
+                session $ .unwrap-or (get sessions sid) ({})
+                messages $ decode-map-as
+                  .unwrap-or (get session :messages) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              assoc db :sessions $ assoc sessions sid $ assoc session :messages
+                assoc messages message-id $ {} (:id message-id) (:text text)
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'String
         'connect $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn connect (db sid op-id op-time)
-            assoc-in db ([] :sessions sid)
+            assoc db :sessions $ assoc-in (:sessions db) ([] sid)
               merge schema/session $ {} $ :id sid
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'Number
         'disconnect $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn disconnect (db sid op-id op-time)
-            update db :sessions $ fn (session) (dissoc session sid)
+            assoc db :sessions $
+              fn (session)
+                hint-fn $ {}
+                  :args $ [] $ :: 'Map 'String (:: 'Map 'Tag 'Dynamic)
+                  :return $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                dissoc session sid
+              :sessions db
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'Number
         'enlarge $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn enlarge (db d sid op-id op-time)
-            assoc-in db ([] :sessions sid :enlarge-view) d
+          :code $ quote $ defn enlarge (db target sid op-id op-time)
+            assoc db :sessions $ assoc-in (:sessions db) ([] sid :enlarge-view)
+              match target
+                (:some pid) pid
+                (:none) nil
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Option 'Number) 'String 'String 'Number
         'remove-message $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn remove-message (db op-data sid op-id op-time)
+          :code $ quote $ defn remove-message (db message-id sid op-id op-time)
             let
-                op-map $ assert-type op-data $ :: 'Map 'Tag 'Dynamic
-                message-id $ assert-type
-                  option:unwrap $ get op-map :id
-                  , 'String
-              assert-type
-                update-in db ([] :sessions sid :messages)
-                  fn (messages)
-                    hint-fn $ {}
-                      :args $ [] $ :: 'Option (:: 'Map 'String 'Dynamic)
-                      :return $ :: 'Map 'String 'Dynamic
-                    dissoc
-                      option:unwrap-or messages $ assert-type ({}) (:: 'Map 'String 'Dynamic)
-                      , message-id
-                :: 'Map 'Tag 'Dynamic
+                sessions $ :sessions db
+                session $ .unwrap-or (get sessions sid) ({})
+                messages $ decode-map-as
+                  .unwrap-or (get session :messages) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              assoc db :sessions $ assoc sessions sid $ assoc session :messages (dissoc messages message-id)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.session
           :require $ app.schema :as schema
     'app.updater.user $ %{} 'FileEntry
       :defs $ {}
+        'hash-password $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn hash-password (password)
+            decode-map-as
+              to-calcit-data $ md5 password
+              , 'String
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'String)
+            :args $ [] 'String
+            :features $ #{} :js-ffi
         'log-in $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn log-in (db op-data sid op-id op-time)
-            let-sugar
-                  [] username password
-                  , op-data
-                maybe-user $ ->
-                  assert-type
-                    option:unwrap-or (get db :users) ({})
-                    :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                  vals
-                  , &set:to-list $ find
-                    fn (user)
-                      hint-fn $ {}
-                        :args $ [] $ :: 'Map 'Tag 'Dynamic
-                        :return 'Bool
-                      and $ = username $ option:unwrap-or (get user :name) nil
-                user $ option:unwrap-or maybe-user nil
-              update-in db ([] :sessions sid)
-                fn (session)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
-                    :return $ :: 'Map 'Tag 'Dynamic
-                  let
-                      session' $ option:unwrap-or session $ assert-type ({}) (:: 'Map 'Tag 'Dynamic)
-                    if (option:some? maybe-user)
-                      if
-                        = (md5 password)
-                          option:unwrap-or (get user :password) nil
-                        assoc session' :user-id $ option:unwrap-or (get user :id) nil
-                        update session' :messages $ fn (messages)
-                          assoc messages op-id $ {} (:id op-id)
-                            :text $ str "|Wrong password for " username
-                      update session' :messages $ fn (messages)
-                        assoc messages op-id $ {} (:id op-id)
-                          :text $ str "|No user named: " username
-          :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
-        'log-out $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn log-out (db op-data sid op-id op-time)
-            assoc-in db ([] :sessions sid :user-id) nil
-          :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
-        'sign-up $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn sign-up (db op-data sid op-id op-time)
-            let-sugar
-                  [] username password
-                  , op-data
+          :code $ quote $ defn log-in (db credentials sid op-id op-time)
+            assert "|Login requires username and password" $ = (count credentials) 2
+            let
+                username $ .unwrap $ get credentials 0
+                password $ .unwrap $ get credentials 1
                 maybe-user $ find
-                  &set:to-list $ vals $ assert-type
-                    option:unwrap-or (get db :users) ({})
-                    :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                  &set:to-list $ vals $ :users db
                   fn (user)
                     hint-fn $ {}
                       :args $ [] $ :: 'Map 'Tag 'Dynamic
                       :return 'Bool
-                    = username $ option:unwrap-or (get user :name) nil
-              if (option:some? maybe-user)
-                update-in db ([] :sessions sid :messages)
-                  fn (messages)
-                    hint-fn $ {}
-                      :args $ [] $ :: 'Option (:: 'Map 'String 'Dynamic)
-                      :return $ :: 'Map 'String 'Dynamic
-                    assoc
-                      option:unwrap-or messages $ assert-type ({}) (:: 'Map 'String 'Dynamic)
-                      , op-id $ {} (:id op-id)
-                        :text $ str |Name-is-taken:- username
-                -> db
-                  assoc-in ([] :sessions sid :user-id) op-id
-                  assoc-in ([] :users op-id)
-                    {} (:id op-id) (:name username) (:nickname username)
-                      :password $ md5 password
-                      :avatar nil
+                    = username $ decode-map-as
+                      .unwrap $ get user :name
+                      , 'String
+              match maybe-user
+                (:some user)
+                  if
+                    = (hash-password password)
+                      decode-map-as
+                        .unwrap $ get user :password
+                        , 'String
+                    assoc db :sessions $ update-in (:sessions db) ([] sid)
+                      fn (current)
+                        hint-fn $ {}
+                          :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
+                          :return $ :: 'Map 'Tag 'Dynamic
+                        assoc
+                          .unwrap-or current $ {}
+                          , :user-id $ decode-map-as
+                            .unwrap $ get user :id
+                            , 'String
+                    add-message db sid op-id $ str "|Wrong password for " username
+                (:none)
+                  add-message db sid op-id $ str "|No user named: " username
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'List 'String) 'String 'String 'Number
+        'log-out $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn log-out (db op-data sid op-id op-time)
+            assoc db :sessions $ assoc-in (:sessions db) ([] sid :user-id) nil
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'Dynamic 'String 'String 'Number
+        'sign-up $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn sign-up (db credentials sid op-id op-time)
+            assert "|Signup requires username and password" $ = (count credentials) 2
+            let
+                username $ .unwrap $ get credentials 0
+                password $ .unwrap $ get credentials 1
+                maybe-user $ find
+                  &set:to-list $ vals $ :users db
+                  fn (user)
+                    hint-fn $ {}
+                      :args $ [] $ :: 'Map 'Tag 'Dynamic
+                      :return 'Bool
+                    = username $ decode-map-as
+                      .unwrap $ get user :name
+                      , 'String
+              if (.some? maybe-user)
+                add-message db sid op-id $ str |Name-is-taken:- username
+                let
+                    sessions $ update-in (:sessions db) ([] sid)
+                      fn (current)
+                        hint-fn $ {}
+                          :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
+                          :return $ :: 'Map 'Tag 'Dynamic
+                        assoc
+                          .unwrap-or current $ {}
+                          , :user-id op-id
+                    users $ assoc (:users db) op-id $ {} (:id op-id) (:name username) (:nickname username)
+                      :password $ hash-password password
+                      :avatar nil
+                  assoc (assoc db :sessions sessions) :users users
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'List 'String) 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.user
-          :require $ |md5 :default md5
+          :require (|md5 :default md5)
+            app.updater.session :refer $ add-message
     'app.updater.workflow $ %{} 'FileEntry
       :defs $ {}
         'add-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn add-command (db op-data sid op-id op-time)
-            let-sugar
-                  {} workflow-id draft
-                  , op-data
-              assoc-in db ([] :workflows workflow-id :commands op-id)
-                merge-dynamic
-                  assert-type draft $ :: 'Map 'Tag 'Dynamic
-                  {} $ :id op-id
+            let
+                id $ decode-map-as
+                  .unwrap $ get op-data :workflow-id
+                  , 'String
+                draft $ decode-map-as
+                  .unwrap $ get op-data :draft
+                  :: 'Map 'Tag 'Dynamic
+                workflows $ :workflows db
+                workflow $ .unwrap-or (get workflows id) ({})
+                commands $ decode-map-as
+                  .unwrap-or (get workflow :commands) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              assoc db :workflows $ assoc workflows id $ assoc workflow :commands
+                assoc commands op-id $ assoc draft :id op-id
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
         'create-workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create-workflow (db op-data sid op-id op-time)
             let
-                workflow-name $ option:unwrap-or (get op-data :name) |
-                base-dir $ option:unwrap-or (get op-data :base-dir) |~/
-              assoc-in db ([] :workflows op-id)
-                merge schema/workflow $ {} (:id op-id) (:name workflow-name) (:base-dir base-dir)
-                  :commands $ {} $ op-id
-                    merge schema/command $ {} (:id op-id) (:title workflow-name) (:path base-dir) (:code "|echo nothing yet")
+                name $ decode-map-as
+                  .unwrap-or (get op-data :name) |
+                  , 'String
+                base-dir $ decode-map-as
+                  .unwrap-or (get op-data :base-dir) |~/
+                  , 'String
+                command $ merge schema/command $ {} (:id op-id) (:title name) (:path base-dir) (:code "|echo nothing yet")
+                workflow $ merge schema/workflow $ {} (:id op-id) (:name name) (:base-dir base-dir)
+                  :commands $ {} $ op-id command
+              assoc db :workflows $ assoc (:workflows db) op-id workflow
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
         'edit-command $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn edit-command (db op-data sid op-id op-time)
-            let-sugar
-                  [] workflow-id command-id changes
-                  , op-data
-              update-in db ([] :workflows workflow-id :commands command-id)
-                fn (command)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
-                    :return $ :: 'Map 'Tag 'Dynamic
-                  merge-dynamic
-                    option:unwrap-or command $ assert-type ({}) (:: 'Map 'Tag 'Dynamic)
-                    assert-type changes $ :: 'Map 'Tag 'Dynamic
-          :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
-        'edit-workflow $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn edit-workflow (db op-data sid op-id op-time)
+          :code $ quote $ defn edit-command (db workflow-id command-id changes sid op-id op-time)
             let
-                new-workflow $ assert-type op-data $ :: 'Map 'Tag 'Dynamic
-              update-in db
-                [] :workflows $ option:unwrap-or (get new-workflow :id) nil
-                fn (workflow)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
-                    :return $ :: 'Map 'Tag 'Dynamic
-                  merge-dynamic
-                    option:unwrap-or workflow $ assert-type ({}) (:: 'Map 'Tag 'Dynamic)
-                    , new-workflow
+                workflows $ :workflows db
+                workflow $ .unwrap-or (get workflows workflow-id) ({})
+                commands $ decode-map-as
+                  .unwrap-or (get workflow :commands) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                command $ .unwrap-or (get commands command-id) ({})
+              assoc db :workflows $ assoc workflows workflow-id $ assoc workflow :commands
+                assoc commands command-id $ merge-dynamic command changes
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
+        'edit-workflow $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn edit-workflow (db changes sid op-id op-time)
+            let
+                id $ decode-map-as
+                  .unwrap $ get changes :id
+                  , 'String
+                workflow $ .unwrap-or
+                  get (:workflows db) id
+                  {}
+              assoc db :workflows $ assoc (:workflows db) id $ merge-dynamic workflow changes
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
         'remove-command $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn remove-command (db op-data sid op-id op-time)
-            let-sugar
-                  [] workflow-id command-id
-                  , op-data
-              update-in db ([] :workflows workflow-id :commands)
-                fn (commands)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'Option (:: 'Map 'String 'Dynamic)
-                    :return $ :: 'Map 'String 'Dynamic
-                  dissoc
-                    option:unwrap-or commands $ assert-type ({}) (:: 'Map 'String 'Dynamic)
-                    assert-type command-id 'String
+          :code $ quote $ defn remove-command (db workflow-id command-id sid op-id op-time)
+            let
+                workflows $ :workflows db
+                workflow $ .unwrap-or (get workflows workflow-id) ({})
+                commands $ decode-map-as
+                  .unwrap-or (get workflow :commands) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              assoc db :workflows $ assoc workflows workflow-id $ assoc workflow :commands (dissoc commands command-id)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'String 'String 'Number
         'remove-workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-workflow (db op-data sid op-id op-time)
             let
                 workflow-id op-data
-              update db :workflows $ fn (workflows) (dissoc workflows workflow-id)
+              assoc db :workflows $
+                fn (workflows)
+                  hint-fn $ {}
+                    :args $ [] $ :: 'Map 'String (:: 'Map 'Tag 'Dynamic)
+                    :return $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                  dissoc workflows workflow-id
+                :workflows db
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'String 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
+            :args $ [] 'app.schema/Database 'String 'String 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.workflow
           :require $ app.schema :as schema
