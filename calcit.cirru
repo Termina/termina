@@ -1927,8 +1927,23 @@
           :require (|child_process :as cp) (|string-argv :default string-argv)
             js-ffi.node :refer $ env-or
     'app.runtime $ %{} 'FileEntry
-      :defs $ {} $ 'read-storage-file
-        %{} 'CodeEntry (:doc |)
+      :defs $ {}
+        'parse-port $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn parse-port (text)
+            match (parse-float text)
+              (:ok port)
+                if
+                  and (integer? port) (>= port 0) (<= port 65535)
+                  , port $ raise "|port must be an integer from 0 to 65535"
+              (:err _error) (raise "|port must be an integer from 0 to 65535")
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Number)
+            :args $ [] 'String
+          :tests $ [] $ %{} 'TestEntry (:name |valid-port-and-node-ephemeral)
+            :code $ quote $ do
+              assert= 11014 $ parse-port |11014
+              assert= 0 $ parse-port |0
+        'read-storage-file $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-storage-file (filename)
             match (env-get |TERMINA_STORAGE_FILE)
               (:some override)
@@ -2078,16 +2093,21 @@
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op sid)
             let
-                op-id $ unsafe-coerce (nanoid) 'String
-                op-time $ unsafe-coerce (js/Date.now) 'Number
+                op-id $ random-uuid
+                op-time $ unix-time-ms
               if config/dev? $ println |Dispatch! (str op) sid
               try
                 match op
                   (:effect/persist) (persist-db!)
-                  (:effect/run d) (create-process! d dispatch! sid)
-                  (:effect/kill d) (kill-process! d dispatch! sid)
+                  (:effect/run d)
+                    create-process!
+                      decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                      , dispatch! sid
+                  (:effect/kill d)
+                    kill-process! (decode-map-as d 'Number) dispatch! sid
                   _ $ reset! *reel $ reel-reducer @*reel updater op sid op-id op-time config/dev?
                 fn (error) (js/console.error error)
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Dynamic 'String
@@ -2112,9 +2132,8 @@
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
             let
-                port $ unsafe-coerce
-                  js/parseInt $ env-or |port $ str (:port config/site)
-                  , 'Number
+                port $ parse-port $ env-or |port
+                  str $ :port config/site
                 ui-url $ str |http://termina.mvc-works.org/?port= port
               run-server! port
               println |Server-started.-Open-UI-on- ui-url
@@ -2123,7 +2142,9 @@
             set-interval!
               fn () $ persist-db!
               , 60000
-            check-version!
+            when
+              not= (env-or |NO_VERSION_CHECK |0) |1
+              check-version!
             , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -2184,14 +2205,19 @@
             :features $ #{} :js-ffi
         'run-server! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-server! (port)
-            wss-serve! port $ {}
-              :on-open $ fn (sid socket)
-                @*proxied-dispatch! (:: :session/connect) sid
-                println "|New client."
-              :on-data $ fn (sid action) (@*proxied-dispatch! action sid)
-              :on-close $ fn (sid event) (println "|Client closed!")
-                @*proxied-dispatch! (:: :session/disconnect) sid
-              :on-error $ fn (error) (js/console.error error)
+            let
+                options $ {}
+                  :on-open $ fn (sid socket)
+                    @*proxied-dispatch! (:: :session/connect) sid
+                    println "|New client."
+                  :on-data $ fn (sid action) (@*proxied-dispatch! action sid)
+                  :on-close $ fn (sid event) (println "|Client closed!")
+                    @*proxied-dispatch! (:: :session/disconnect) sid
+                  :on-error $ fn (error) (js/console.error error)
+              match (env-get |HOST)
+                (:some host)
+                  wss-serve! port $ assoc options :host host
+                (:none) (wss-serve! port options)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'ws-edn.server/NodeWebSocketServerHost)
             :args $ [] 'Number
@@ -2249,9 +2275,9 @@
             ws-edn.server :refer $ wss-serve! wss-send! wss-each!
             app.manager :refer $ create-process! kill-process!
             |url-parse :default url-parse
-            |nanoid :refer $ nanoid
-            js-ffi.node :refer $ env-or file-exists? read-text! set-timeout! clear-timeout! set-interval! exit!
-            app.runtime :refer $ read-storage-file
+            js-ffi.node :refer $ env-or file-exists? read-text! set-timeout! clear-timeout! set-interval! exit! env-get
+            app.runtime :refer $ read-storage-file parse-port
+            js-ffi.shared :refer $ random-uuid
     'app.style $ %{} 'FileEntry
       :defs $ {}
         'button $ %{} 'CodeEntry (:doc |)

@@ -33,8 +33,11 @@ Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru
 配置现在使用真实 Site；存储路径通过类型化环境/路径适配器读取。
 可用 `TERMINA_STORAGE_FILE` 指定绝对存储路径，未设置时仍使用原 HOME/.config/termina.cirru；
 该参数仅选择数据文件，**不意味着网络隔离**，更不能用它作为直接启动服务的许可。
-现有 WebSocket 依赖尚不能显式绑定回环地址，已向上游提交 [ws-edn #69](https://github.com/mvc-works/ws-edn.calcit/issues/69)。
-正式支持并验收前不启动该服务做网络测试。
+已修复并发布 [ws-edn 0.0.44](https://github.com/mvc-works/ws-edn.calcit/releases/tag/0.0.44)，
+并通过 [Cumulo Reel 0.0.60](https://github.com/Cumulo/cumulo-reel.calcit/releases/tag/0.0.60) 对齐精确依赖图，
+本分支同时使用这两个正式版本，不通过 root override 绕过 strict。
+服务端已接入可选 `HOST`（显式使用 `127.0.0.1` 才是回环；省略仍保留原 Node 默认），
+以及 `NO_VERSION_CHECK=1` 跳过主入口 npm 版本请求。完整类型与协议迁移前仍不启动服务做网络测试。
 
 修正 nil user-id 被 Option 的 key 存在性误判为已登录、匿名 session 导致成员投影异常，
 并用合成数据验证登录态及密码字段省略；缓存查询按 Option 解包，不把 Option 本身传给 diff。
@@ -42,6 +45,10 @@ Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru
 SIGINT 回调按实际零参数合同声明。没有为了通过检查假造 Fn/JsObject 或放宽预算。
 完整 server/page 入口仍有 updater 动态嵌套数据、派发、前端状态/控件等类型错误，且仍有 unsafe 待迁移；
 上述局部通过不代表完整 strict、生产构建或服务运行验收通过。
+后续将 op-id 改用正式 JS-FFI 的随机 UUID，时间使用 `unix-time-ms`；已存 ID 不变，新 ID 仍为 String，
+调用方不应依赖旧 nanoid 的长度。端口使用受检 Number 解析，保留配置端口和 Node 的 0 随机端口，
+非法尾缀、小数、非有限值及越界值拒绝，不再让 parseInt 静默截断。共享冷检查现为 20/20，
+原路径场景及端口场景两项原生测试通过；仍有 17 处 unsafe 待迁移，不把数字减少冒称完成。
 
 ### Workflow
 
