@@ -1874,13 +1874,19 @@
                 chunks $ unsafe-coerce
                   to-calcit-data $ string-argv command
                   :: 'List 'String
-                env-chunks $ reduce chunks
-                  assert-type ([]) (:: 'List 'String)
-                  fn (acc chunk)
-                    hint-fn $ {}
-                      :args $ [] (:: 'List 'String) 'String
-                      :return $ :: 'List 'String
-                    if (env-chunk? chunk) (conj acc chunk) acc
+                env-chunks $ loop
+                    remaining chunks
+                    found $ assert-type ([]) (:: 'List 'String)
+                  hint-fn $ {}
+                    :args $ [] (:: 'List 'String) (:: 'List 'String)
+                    :return $ :: 'List 'String
+                  if (empty? remaining) found $ let
+                      chunk $ option:unwrap $ first remaining
+                    if (env-chunk? chunk)
+                      recur
+                        slice remaining 1 $ count remaining
+                        conj found chunk
+                      , found
                 command-chunks $ slice chunks (count env-chunks) (count chunks)
                 envs $ reduce env-chunks
                   assert-type
@@ -1892,7 +1898,13 @@
                     hint-fn $ {}
                       :args $ [] (:: 'Map 'String 'String) 'String
                       :return $ :: 'Map 'String 'String
-                    let[] (k v) (split chunk |=) (assoc acc k v)
+                    let
+                        parts $ split chunk |=
+                        k $ option:unwrap $ first parts
+                        v $ join-str
+                          slice parts 1 $ count parts
+                          , |=
+                      assoc acc k v
               :: :command
                 option:unwrap $ nth command-chunks 0
                 slice command-chunks 1 $ count command-chunks

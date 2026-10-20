@@ -18,3 +18,4 @@ out-page/
 .github/
 dist/
 .calcit-error.cirru
+.calcit/
