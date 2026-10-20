@@ -19,10 +19,15 @@ TODO: new npm package.
 不要用 `node server.mjs` 作为未经隔离的验证命令。本地不执行 Caps，也不发布 npm、合并或部署生产。
 Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru/package.cirru 或提交生成代码。
 
-Fuzzy Filter 0.0.15 仍声明旧的 Reel/UI/Respo 精确版本，与当前正式 Cumulo/Alerts 依赖图不一致，
-已记录为 [fuzzy-filter #35](https://github.com/mvc-works/fuzzy-filter/issues/35)。将先修复上游并正式发版，
-不以缓存软链接、取消 strict 或 main/hash 引用绕过。旧模块只保存在忽略目录 `.calcit/modules0243`；
-当前 `.calcit/modules` 尚未准备好 0.30.1 图，禁止把旧缓存当新版本验收证据。
+已修复并正式发布 [Fuzzy Filter 0.0.16](https://github.com/mvc-works/fuzzy-filter/releases/tag/0.0.16)，
+本分支引用该正式 tag，不以取消 strict 或 main/hash 引用绕过原版本冲突。
+旧模块保存在忽略目录 `.calcit/modules0243`；当前本地视图按精确发布版本准备了 14 个模块，
+仅用于迁移检查，不能替代未来独立 CI 的 strict Caps 安装。
+
+17 个命名空间的旧 import 标记已通过官方事务规范化。进程管理模块冷检查 10/10 通过；
+命令解析在真实入口检查 `List<String>`，返回 Enum，不再使用 unsafe 强转，
+进程查询按 Option 分支处理，替换已退役的 `join-str`。重新生成解析入口 JS 后，原四个场景回归通过。
+完整 server/page 入口仍有存储、twig、UI 状态与派发类型错误；该局部通过不代表完整 strict 或服务运行验收通过。
 
 ### Workflow
 

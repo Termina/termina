@@ -193,19 +193,19 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.client
           :require
-            [] respo.core :refer $ [] render! clear-cache! realize-ssr!
-            [] respo.cursor :refer $ [] update-states
-            [] app.comp.container :refer $ [] comp-container
-            [] app.schema :as schema
-            [] app.config :as config
-            [] ws-edn.client :refer $ [] ws-connect! ws-send!
-            [] recollect.patch :refer $ [] patch-twig
-            [] cumulo-util.core :refer $ [] on-page-touch
-            [] |url-parse :default url-parse
+            respo.core :refer $ render! clear-cache! realize-ssr!
+            respo.cursor :refer $ update-states
+            app.comp.container :refer $ comp-container
+            app.schema :as schema
+            app.config :as config
+            ws-edn.client :refer $ ws-connect! ws-send!
+            recollect.patch :refer $ patch-twig
+            cumulo-util.core :refer $ on-page-touch
+            |url-parse :default url-parse
             |bottom-tip :default hud!
             |./calcit.build-errors :default client-errors
             |../js-out/calcit.build-errors :default server-errors
-            js-ffi.browser :refer $ [] EventHost query-selector add-event-listener! location-href storage-get
+            js-ffi.browser :refer $ EventHost query-selector add-event-listener! location-href storage-get
     'app.comp.command $ %{} 'FileEntry
       :defs $ {}
         'comp-command-button $ %{} 'CodeEntry (:doc |)
@@ -375,14 +375,14 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.command
           :require
-            [] respo-ui.core :refer $ [] hsl
-            [] respo-ui.core :as ui
-            [] respo.core :refer $ [] defcomp >> <> span div input button a
-            [] respo.comp.space :refer $ [] =<
-            [] feather.core :refer $ [] comp-i comp-icon
-            [] respo-alerts.core :refer $ [] use-confirm comp-modal
-            [] app.style :as style
-            [] app.util :refer $ [] join-path
+            respo-ui.core :refer $ hsl
+            respo-ui.core :as ui
+            respo.core :refer $ defcomp >> <> span div input button a
+            respo.comp.space :refer $ =<
+            feather.core :refer $ comp-i comp-icon
+            respo-alerts.core :refer $ use-confirm comp-modal
+            app.style :as style
+            app.util :refer $ join-path
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
         'comp-container $ %{} 'CodeEntry (:doc |)
@@ -872,14 +872,14 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.login
           :require
-            [] respo.core :refer $ [] defcomp <> div input button span
-            [] respo.comp.space :refer $ [] =<
-            [] respo.comp.inspect :refer $ [] comp-inspect
-            [] respo-ui.core :as ui
-            [] app.schema :as schema
-            [] app.style :as style
-            [] app.config :as config
-            js-ffi.browser :refer $ [] storage-set!
+            respo.core :refer $ defcomp <> div input button span
+            respo.comp.space :refer $ =<
+            respo.comp.inspect :refer $ comp-inspect
+            respo-ui.core :as ui
+            app.schema :as schema
+            app.style :as style
+            app.config :as config
+            js-ffi.browser :refer $ storage-set!
     'app.comp.missing $ %{} 'FileEntry
       :defs $ {} $ 'comp-missing
         %{} 'CodeEntry (:doc |)
@@ -894,9 +894,9 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.missing
           :require
-            [] hsl.core :refer $ [] hsl
-            [] respo-ui.core :as ui
-            [] respo.core :refer $ [] defcomp <> span div
+            hsl.core :refer $ hsl
+            respo-ui.core :as ui
+            respo.core :refer $ defcomp <> span div
     'app.comp.navigation $ %{} 'FileEntry
       :defs $ {}
         'comp-navigation $ %{} 'CodeEntry (:doc |)
@@ -1381,7 +1381,7 @@
             respo-ui.comp :refer $ comp-tabs
             respo-ui.css :as css
             respo-alerts.core :refer $ use-modal-menu use-prompt
-            js-ffi.browser :refer $ [] query-selector DomElementHost
+            js-ffi.browser :refer $ query-selector DomElementHost
     'app.comp.profile $ %{} 'FileEntry
       :defs $ {}
         'comp-profile $ %{} 'CodeEntry (:doc |)
@@ -1441,14 +1441,14 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.profile
           :require
-            [] respo-ui.core :refer $ [] hsl
-            [] app.schema :as schema
-            [] respo-ui.core :as ui
-            [] respo.core :refer $ [] defcomp list-> <> span div button
-            [] respo.comp.space :refer $ [] =<
-            [] app.config :as config
-            [] app.style :as style
-            js-ffi.browser :refer $ [] LocationHost storage-remove!
+            respo-ui.core :refer $ hsl
+            app.schema :as schema
+            respo-ui.core :as ui
+            respo.core :refer $ defcomp list-> <> span div button
+            respo.comp.space :refer $ =<
+            app.config :as config
+            app.style :as style
+            js-ffi.browser :refer $ LocationHost storage-remove!
     'app.comp.workflow $ %{} 'FileEntry
       :defs $ {}
         'comp-workflow-container $ %{} 'CodeEntry (:doc |)
@@ -1672,17 +1672,17 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.workflow
           :require
-            [] respo-ui.core :refer $ [] hsl
-            [] respo-ui.core :as ui
-            [] respo.core :refer $ [] defcomp <> >> list-> span div input button a
-            [] respo.comp.space :refer $ [] =<
-            [] clojure.string :as string
-            [] app.style :as style
-            [] app.util :refer $ [] map-val
-            [] inflow-popup.comp.popup :refer $ [] comp-popup
-            [] feather.core :refer $ [] comp-i comp-icon
-            [] app.comp.command :refer $ [] comp-command-editor comp-command-row
-            [] respo-alerts.core :refer $ [] use-confirm comp-modal
+            respo-ui.core :refer $ hsl
+            respo-ui.core :as ui
+            respo.core :refer $ defcomp <> >> list-> span div input button a
+            respo.comp.space :refer $ =<
+            clojure.string :as string
+            app.style :as style
+            app.util :refer $ map-val
+            inflow-popup.comp.popup :refer $ comp-popup
+            feather.core :refer $ comp-i comp-icon
+            app.comp.command :refer $ comp-command-editor comp-command-row
+            respo-alerts.core :refer $ use-confirm comp-modal
     'app.config $ %{} 'FileEntry
       :defs $ {}
         'cdn? $ %{} 'CodeEntry (:doc |)
@@ -1854,13 +1854,13 @@
             :features $ #{} :js-ffi
         'kill-process! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn kill-process! (pid dispatch! sid)
-            let
-                proc $ get @*registry pid
-              if (some? proc)
+            match (get @*registry pid)
+              (:some proc)
                 do (eprintln "|[kill] process" proc) (.!kill proc |SIGTERM)
+              (:none)
                 do (eprintln "|[warn] process not found in registry:" pid @*registry)
                   dispatch! (:: :process/finish pid) sid
-              , &unit
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Number
@@ -1871,11 +1871,11 @@
         'parse-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn parse-command (command)
             let
-                chunks $ unsafe-coerce
+                tokens $ decode-map-as
                   to-calcit-data $ string-argv command
                   :: 'List 'String
                 env-chunks $ loop
-                    remaining chunks
+                    remaining tokens
                     found $ assert-type ([]) (:: 'List 'String)
                   hint-fn $ {}
                     :args $ [] (:: 'List 'String) (:: 'List 'String)
@@ -1887,7 +1887,7 @@
                         slice remaining 1 $ count remaining
                         conj found chunk
                       , found
-                command-chunks $ slice chunks (count env-chunks) (count chunks)
+                command-chunks $ slice tokens (count env-chunks) (count tokens)
                 envs $ reduce env-chunks
                   assert-type
                     {}
@@ -1901,7 +1901,7 @@
                     let
                         parts $ split chunk |=
                         k $ option:unwrap $ first parts
-                        v $ join-str
+                        v $ join-string
                           slice parts 1 $ count parts
                           , |=
                       assoc acc k v
@@ -1910,7 +1910,7 @@
                 slice command-chunks 1 $ count command-chunks
                 , envs
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'Enum)
             :args $ [] 'String
             :features $ #{} :js-ffi
         'read-bool-field-or $ %{} 'CodeEntry (:doc |)
@@ -1932,8 +1932,8 @@
             :args $ [] (:: 'Map 'Tag 'Dynamic) 'Tag
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.manager
-          :require ([] |child_process :as cp) (|string-argv :default string-argv)
-            js-ffi.node :refer $ [] env-or
+          :require (|child_process :as cp) (|string-argv :default string-argv)
+            js-ffi.node :refer $ env-or
     'app.schema $ %{} 'FileEntry
       :defs $ {}
         'command $ %{} 'CodeEntry (:doc |)
@@ -2207,25 +2207,25 @@
             :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
-          :require ([] app.schema :as schema)
-            [] app.updater :refer $ [] updater
-            [] cumulo-reel.core :refer $ [] reel-reducer refresh-reel reel-schema
-            [] |node:fs :as fs
-            [] |child_process :as cp
-            [] |node:path :as path
-            [] |latest-version :default latest-version
-            [] |chalk :default chalk
+          :require (app.schema :as schema)
+            app.updater :refer $ updater
+            cumulo-reel.core :refer $ reel-reducer refresh-reel reel-schema
+            |node:fs :as fs
+            |child_process :as cp
+            |node:path :as path
+            |latest-version :default latest-version
+            |chalk :default chalk
             |node:url :refer $ fileURLToPath
-            [] app.config :as config
-            [] cumulo-util.file :refer $ [] write-mildly!
-            [] app.twig.container :refer $ [] twig-container
-            [] recollect.diff :refer $ [] diff-twig
-            [] recollect.twig :refer $ [] render-twig clear-twig-caches!
-            [] ws-edn.server :refer $ [] wss-serve! wss-send! wss-each!
-            [] app.manager :refer $ [] create-process! kill-process!
-            [] |url-parse :default url-parse
+            app.config :as config
+            cumulo-util.file :refer $ write-mildly!
+            app.twig.container :refer $ twig-container
+            recollect.diff :refer $ diff-twig
+            recollect.twig :refer $ render-twig clear-twig-caches!
+            ws-edn.server :refer $ wss-serve! wss-send! wss-each!
+            app.manager :refer $ create-process! kill-process!
+            |url-parse :default url-parse
             |nanoid :refer $ nanoid
-            js-ffi.node :refer $ [] env-or
+            js-ffi.node :refer $ env-or
     'app.style $ %{} 'FileEntry
       :defs $ {}
         'button $ %{} 'CodeEntry (:doc |)
@@ -2262,8 +2262,8 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.style
           :require
-            [] respo-ui.core :refer $ [] hsl
-            [] respo-ui.core :as ui
+            respo-ui.core :refer $ hsl
+            respo-ui.core :as ui
             respo.css :refer $ defstyle
     'app.twig.container $ %{} 'FileEntry
       :defs $ {}
@@ -2352,8 +2352,8 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.twig.container
           :require
-            [] app.twig.user :refer $ [] twig-user
-            [] |randomcolor :as color
+            app.twig.user :refer $ twig-user
+            |randomcolor :as color
     'app.twig.user $ %{} 'FileEntry
       :defs $ {} $ 'twig-user
         %{} 'CodeEntry (:doc |)
@@ -2400,10 +2400,10 @@
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
-          :require ([] app.updater.session :as session) ([] app.updater.user :as user) ([] app.updater.router :as router) ([] app.schema :as schema)
-            [] respo-message.updater :refer $ [] update-messages
-            [] app.updater.process :as process
-            [] app.updater.workflow :as workflow
+          :require (app.updater.session :as session) (app.updater.user :as user) (app.updater.router :as router) (app.schema :as schema)
+            respo-message.updater :refer $ update-messages
+            app.updater.process :as process
+            app.updater.workflow :as workflow
     'app.updater.process $ %{} 'FileEntry
       :defs $ {}
         'change-command $ %{} 'CodeEntry (:doc |)
@@ -2550,8 +2550,8 @@
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.process
-          :require ([] app.schema :as schema)
-            [] medley.core :refer $ [] dissoc-in
+          :require (app.schema :as schema)
+            medley.core :refer $ dissoc-in
     'app.updater.router $ %{} 'FileEntry
       :defs $ {} $ 'change
         %{} 'CodeEntry (:doc |)
@@ -2610,7 +2610,7 @@
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.session
-          :require $ [] app.schema :as schema
+          :require $ app.schema :as schema
     'app.updater.user $ %{} 'FileEntry
       :defs $ {}
         'log-in $ %{} 'CodeEntry (:doc |)
@@ -2696,8 +2696,8 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.user
           :require
-            [] app.util :refer $ [] find-first
-            [] |md5 :default md5
+            app.util :refer $ find-first
+            |md5 :default md5
     'app.updater.workflow $ %{} 'FileEntry
       :defs $ {}
         'add-command $ %{} 'CodeEntry (:doc |)
@@ -2788,7 +2788,7 @@
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.workflow
-          :require $ [] app.schema :as schema
+          :require $ app.schema :as schema
     'app.util $ %{} 'FileEntry
       :defs $ {}
         'find-first $ %{} 'CodeEntry (:doc |)
@@ -2817,7 +2817,7 @@
             :args $ [] 'String 'String
         'join-segments $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-segments (acc xs)
-            if (empty? xs) (join-str acc |/)
+            if (empty? xs) (join-string acc |/)
               let
                   cursor $ option:unwrap-or (first xs) |
                   next-acc $ cond
@@ -2867,4 +2867,4 @@
           :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util
-          :require $ [] clojure.string :as string
+          :require $ clojure.string :as string

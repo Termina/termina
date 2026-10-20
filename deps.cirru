@@ -11,5 +11,5 @@
     |Respo/respo.calcit |0.16.122
     |calcit-lang/js-ffi |0.2.3
     |calcit-lang/recollect |0.0.65
-    |mvc-works/fuzzy-filter |0.0.15
+    |mvc-works/fuzzy-filter |0.0.16
     |mvc-works/ws-edn.calcit |0.0.43
