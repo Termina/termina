@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import * as c from '../out-page/calcit.core.mjs';
 import { comp_command_button, comp_command_editor, comp_command_row } from '../out-page/app.comp.command.mjs';
 import { comp_process, find_urls } from '../out-page/app.comp.process.mjs';
@@ -7,8 +9,9 @@ import { comp_process_detail } from '../out-page/app.comp.process-detail.mjs';
 import { comp_profile } from '../out-page/app.comp.profile.mjs';
 import { comp_home } from '../out-page/app.comp.home.mjs';
 import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.comp.workflow.mjs';
+import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
 
-const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd']);
+const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd', 'router', 'count', 'color']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
 const part = (value, index) => c._$n_enum_$o_nth(value, index);
 const parse = c.parse_cirru_edn;
@@ -237,5 +240,80 @@ test('workflow editor preserves create/edit payloads and calls close with dispat
     assert.equal(c.option_$o_unwrap(c.get(payload, fieldTags['base-dir'])), expectedTag === 'workflow/create' ? './' : '/synthetic/alpha');
     if (expectedTag === 'workflow/edit') assert.equal(c.option_$o_unwrap(c.get(payload, fieldTags.id)), 'w1');
     assert.deepEqual(closes, [[dispatch]]);
+  }
+});
+
+function storeFixture(route, loggedIn = true) {
+  let raw = parse(`{}
+  :users $ {} $ |u1 $ {} (:name |Ada) (:password |synthetic)
+  :sessions $ {}
+    |s1 $ {} (:user-id |u1)
+    |s2 $ {} (:user-id nil)
+  :processes $ {}
+  :histories $ []`);
+  raw = c.assoc(raw, c.init_tags(['workflows']).workflows, workflowsFixture());
+  const session = parse(`{} (:user-id ${loggedIn ? '|u1' : 'nil'}) (:messages $ {}) (:enlarge-view nil)
+  :router $ {} (:name :${route}) (:params $ {} (:id 42))`);
+  const fieldTags = c.init_tags(['db', 'session']);
+  const input = c.assoc(c.assoc(parse('{}'), fieldTags.db, raw), fieldTags.session, session);
+  const script = `
+    import * as c from './js-out/calcit.core.mjs';
+    import { decode_database } from './js-out/app.schema.mjs';
+    import { twig_container } from './js-out/app.twig.container.mjs';
+    const tags = c.init_tags(['db', 'session']);
+    const fixture = c.parse_cirru_edn(process.argv[1]);
+    const db = decode_database(c.option_$o_unwrap(c.get(fixture, tags.db)));
+    const session = c.option_$o_unwrap(c.get(fixture, tags.session));
+    console.log(c.format_cirru_edn(twig_container(db, session, c.parse_cirru_edn('[]'))));
+  `;
+  // Use the real wire format between independently generated runtime graphs.
+  const output = execFileSync(process.execPath, ['--input-type=module', '-e', script, c.format_cirru_edn(input)], {
+    cwd: fileURLToPath(new URL('../', import.meta.url)),
+    env: { PATH: process.env.PATH ?? '' },
+    encoding: 'utf8',
+    timeout: 10000,
+  });
+  return parse(output);
+}
+
+test('offline reconnect dispatches the zero-payload connection Enum', () => {
+  const nodes = elements(comp_container(parse('{}'), null));
+  const target = nodes.find(node => c.listToArray(read(node, 'children')).some(child => {
+    const optional = read(child, 'node');
+    if (!c.option_$o_some_$q_(optional)) return false;
+    const value = part(c.option_$o_unwrap(optional), 1);
+    return value.fields.some(tag => tag.value === 'attrs') && attr(value, 'inner-text') === 'No connection...';
+  }));
+  assert.ok(target);
+  const calls = [];
+  read(read(target, 'event'), 'click')(parse('{}'), (...args) => calls.push(args));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].length, 1);
+  assert.ok(c._$n__$e_(calls[0][0], parse(':: :effect/connect')));
+});
+
+test('actual guest server projection preserves absent fields rather than inventing navigation data', () => {
+  const wire = storeFixture('home', false);
+  const view = decode_view(wire);
+  assert.equal(c.option_$o_none_$q_(read(view, 'router')), true);
+  assert.equal(c.option_$o_none_$q_(read(view, 'count')), true);
+  assert.equal(c.option_$o_none_$q_(read(view, 'color')), true);
+  const texts = elements(comp_container(parse('{}'), wire)).map(node => attr(node, 'inner-text'));
+  assert.ok(texts.includes('Guest'));
+  assert.ok(texts.includes('Log in'));
+  assert.ok(!texts.includes('nil'));
+});
+
+test('actual authenticated server projections render all routes and preserve unknown wire fields', () => {
+  for (const route of ['home', 'workflows', 'history', 'profile', 'process', 'unknown']) {
+    const futureTag = c.init_tags(['future']).future;
+    const future = parse('[] |保留扩展 7');
+    const wire = c.assoc(storeFixture(route), futureTag, future);
+    const nodes = elements(comp_container(parse('{}'), wire));
+    const texts = nodes.map(node => attr(node, 'inner-text'));
+    assert.ok(texts.includes('Me'), route);
+    assert.ok(c._$n__$e_(c.option_$o_unwrap(c.get(wire, futureTag)), future));
+    if (route === 'profile') assert.ok(texts.includes('Hello! Ada'));
+    if (route === 'process') assert.ok(texts.includes('Process unavailable'));
   }
 });

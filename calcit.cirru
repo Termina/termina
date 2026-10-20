@@ -79,8 +79,8 @@
             println "|Running mode:" $ if config/dev? |dev |release
             render-app!
             connect!
-            add-watch *store :changes $ fn (s p) (render-app!)
-            add-watch *states :changes $ fn (s p) (render-app!)
+            add-watch! *store :changes $ fn (s p) (render-app!)
+            add-watch! *states :changes $ fn (s p) (render-app!)
             add-event-listener! |keydown $ fn (event) (on-window-keydown event)
             do
               on-page-touch $ fn () $ if (nil? @*store) (connect!) &unit
@@ -91,9 +91,9 @@
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
-            option:unwrap $ query-selector |.app
+            option:unwrap $ respo-browser/query-selector |.app
           :examples $ []
-          :schema $ :: 'js-ffi.browser/DomElementHost
+          :schema $ :: 'respo.dom/DomElement
         'on-server-data $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-server-data (data)
             case-default
@@ -144,9 +144,9 @@
             if
               or (js-present? client-errors) (js-present? server-errors)
               hud! |error $ str client-errors &newline server-errors
-              do (hud! |inactive nil) (remove-watch *store :changes) (remove-watch *states :changes) (clear-cache!) (render-app!)
-                add-watch *store :changes $ fn (store prev) (render-app!)
-                add-watch *states :changes $ fn (states prev) (render-app!)
+              do (hud! |inactive nil) (remove-watch! *store :changes) (remove-watch! *states :changes) (clear-cache!) (render-app!)
+                add-watch! *store :changes $ fn (store prev) (render-app!)
+                add-watch! *states :changes $ fn (states prev) (render-app!)
                 println "|Code updated."
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -156,7 +156,9 @@
           :code $ quote $ defn render-app! ()
             render! mount-target
               comp-container
-                option:unwrap-or (get @*states :states) nil
+                decode-map-as
+                  .unwrap $ get @*states :states
+                  :: 'Map 'Tag 'Dynamic
                 , @*store
               , dispatch!
           :examples $ []
@@ -206,7 +208,8 @@
             |bottom-tip :default hud!
             |./calcit.build-errors :default client-errors
             |../js-out/calcit.build-errors :default server-errors
-            js-ffi.browser :refer $ EventHost query-selector add-event-listener! location-href storage-get
+            js-ffi.browser :refer $ EventHost add-event-listener! location-href storage-get
+            respo.ffi.browser :as respo-browser
     'app.comp.command $ %{} 'FileEntry
       :defs $ {}
         'comp-command-button $ %{} 'CodeEntry (:doc |)
@@ -524,52 +527,83 @@
             app.util :refer $ join-path
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
+        'StoreView $ %{} 'CodeEntry (:doc "|页面只读投影；不替代网络原 Map，不丢弃 patch 中未展示的扩展字段。")
+          :code $ quote $ defstruct StoreView (:logged-in? 'Bool)
+            :session $ :: 'Map 'Tag 'Dynamic
+            :reel-length 'Number
+            :router $ :: 'Option $ :: 'Map 'Tag 'Dynamic
+            :user $ :: 'Option $ :: 'Map 'Tag 'Dynamic
+            :count $ :: 'Option 'Number
+            :color $ :: 'Option 'String
+          :examples $ []
+          :schema $ :: 'List
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (states store)
-            let
-                state $ option:unwrap-or (get states :data) nil
-                session $ option:unwrap-or (get store :session) nil
-                router $ option:unwrap-or (get store :router) nil
-                router-data $ option:unwrap-or (get router :data) nil
-              if (nil? store) (comp-offline)
+            if (nil? store) (comp-offline)
+              let
+                  view $ decode-view store
                 div
                   {} $ :class-name $ str-spaced css/global css/fullscreen css/column css-container
-                  comp-navigation
-                    option:unwrap-or (get store :logged-in?) nil
-                    , router $ option:unwrap-or (get store :count) nil
-                  if
-                    option:unwrap-or (get store :logged-in?) nil
+                  comp-navigation (:logged-in? view) (:router view) (:count view)
+                  if (:logged-in? view)
                     let
-                        router $ option:unwrap-or (get store :router) nil
-                        router-data $ option:unwrap-or (get router :data) nil
+                        router $ .unwrap $ :router view
+                        router-data $ .unwrap $ get router :data
                       case-default
-                        option:unwrap-or (get router :name) nil
+                        decode-map-as
+                          .unwrap $ get router :name
+                          , 'Tag
                         comp-missing router
                         :profile $ comp-profile
-                          option:unwrap-or (get store :user) nil
-                          , router-data
-                        :home $ comp-home (>> states :home) router-data
-                        :workflows $ comp-workflow-container (>> states :workflows)
-                          option:unwrap-or (get router-data :workflows) nil
-                        :history $ comp-history $ option:unwrap-or (get router-data :histories) nil
-                        :process $ comp-process-detail (>> states :detail)
-                          assert-type
-                            option:unwrap-or (get router-data :detail) ({})
-                            :: 'Map 'Tag 'Dynamic
-                    comp-login $ >> states :login
-                  comp-status-color $ option:unwrap-or (get store :color) nil
+                          .unwrap $ :user view
+                          decode-map-as router-data $ :: 'Map 'String 'String
+                        :home $ comp-home
+                          decode-map-as (>> states :home) (:: 'Map 'Tag 'Dynamic)
+                          decode-map-as router-data $ :: 'Map 'Tag 'Dynamic
+                        :workflows $ comp-workflow-container
+                          decode-map-as (>> states :workflows) (:: 'Map 'Tag 'Dynamic)
+                          decode-map-as
+                            .unwrap $ get
+                              decode-map-as router-data $ :: 'Map 'Tag 'Dynamic
+                              , :workflows
+                            :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                        :history $ comp-history $ decode-map-as
+                          .unwrap $ get
+                            decode-map-as router-data $ :: 'Map 'Tag 'Dynamic
+                            , :histories
+                          :: 'List $ :: 'Map 'Tag 'Dynamic
+                        :process $ let
+                            process $ decode-map-as
+                              .unwrap $ get
+                                decode-map-as router-data $ :: 'Map 'Tag 'Dynamic
+                                , :detail
+                              :: 'Map 'Tag 'Dynamic
+                          if (empty? process)
+                            div ({}) (<> "|Process unavailable")
+                            comp-process-detail
+                              decode-map-as (>> states :detail) (:: 'Map 'Tag 'Dynamic)
+                              , process
+                    comp-login $ decode-map-as (>> states :login) (:: 'Map 'Tag 'Dynamic)
+                  comp-status-color $ :color view
                   when dev? $ comp-inspect |Store store $ {} (:bottom 0) (:left 0) (:max-width |100%)
                   comp-messages
-                    assert-type
-                      option:unwrap-or
-                        get-in store $ [] :session :messages
+                    decode-map-as
+                      .unwrap-or
+                        get (:session view) :messages
                         {}
                       :: 'Map 'String 'Dynamic
                     {}
-                    fn (info d!) (d! :session/remove-message info)
-                  when dev? $ comp-reel
-                    option:unwrap-or (get store :reel-length) nil
-                    {}
+                    fn (info d!)
+                      hint-fn $ {}
+                        :args $ [] 'Dynamic $ :: 'Fn
+                          {}
+                            :args $ [] 'Dynamic
+                            :rest 'Dynamic
+                            :return 'Unit
+                        :return 'Unit
+                      d! $ :: :session/remove-message info
+                      , &unit
+                  when dev? $ comp-reel (:reel-length view) ({})
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic
@@ -589,7 +623,16 @@
               div
                 {}
                   :style $ {} (:cursor :pointer) (:line-height |32px)
-                  :on-click $ fn (e d!) (d! :effect/connect nil)
+                  :on-click $ fn (e d!)
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :effect/connect
+                    , &unit
                 <> "|No connection..." $ {} (:font-family ui/font-fancy) (:font-size 24)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -597,10 +640,13 @@
         'comp-status-color $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-status-color (color)
             div $ {} (:class-name css-status)
-              :style $ {} $ :background-color color
+              :style $ match color
+                (:none) ({})
+                (:some value)
+                  {} $ :background-color value
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Dynamic
+            :args $ [] $ :: 'Option 'String
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |& $ {}
@@ -612,6 +658,20 @@
             {} $ |& $ {} (:width 24) (:height 24) (:position :absolute) (:bottom 60) (:left 8) (:border-radius |50%) (:opacity 0.6) (:pointer-events :none)
           :examples $ []
           :schema $ :: 'Dynamic
+        'decode-view $ %{} 'CodeEntry (:doc "|在页面入口检查原 Map 投影，只选择实际读取的字段；未展示字段仍留在客户端原始 Store。")
+          :code $ quote $ defn decode-view (raw)
+            decode-map-as
+              .filter-kv
+                decode-map-as raw $ :: 'Map 'Tag 'Dynamic
+                fn (key value)
+                  and
+                    .includes? (#{} :logged-in? :session :reel-length :router :user :count :color) key
+                    not $ and (nil? value)
+                      .includes? (#{} :router :user :count :color) key
+              , StoreView
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.comp.container/StoreView)
+            :args $ [] 'Dynamic
         'style-body $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-body
             {} $ :padding "|8px 16px"
@@ -1150,13 +1210,25 @@
                 {}
                   :style $ {} $ :cursor |pointer
                   :on-click $ fn (e d!)
-                    d! :router/change $ {} $ :name :profile
+                    hint-fn $ {}
+                      :args $ [] (:: 'Map 'Tag 'Dynamic)
+                        :: 'Fn $ {}
+                          :args $ [] 'Dynamic
+                          :rest 'Dynamic
+                          :return 'Unit
+                      :return 'Unit
+                    d! $ :: :router/change $ {} (:name :profile)
+                    , &unit
                 <> $ if logged-in? |Me |Guest
                 =< 8 nil
-                <> $ str count-members
+                <> $ match count-members
+                  (:none) |
+                  (:some n) (to-string n)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Bool (:: 'Map 'Tag 'Dynamic) 'Number
+            :args $ [] 'Bool
+              :: 'Option $ :: 'Map 'Tag 'Dynamic
+              :: 'Option 'Number
         'css-nav $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-nav
             {} $ |& $ merge ui/row-center
@@ -1170,18 +1242,31 @@
           :code $ quote $ defn render-entry (router router-name title)
             div
               {}
-                :style $ merge style-logo $ assert-type
-                  if
-                    = router-name $ option:unwrap-or (get router :name) nil
-                    {} $ :color :white
-                    {}
-                  :: 'Map 'Tag 'Dynamic
+                :style $ merge style-logo $ if
+                  match router
+                    (:none) false
+                    (:some data)
+                      = router-name $ decode-map-as
+                        .unwrap $ get data :name
+                        , 'Tag
+                  {} $ :color :white
+                  {}
                 :on-click $ fn (e d!)
-                  d! :router/change $ {} $ :name router-name
+                  hint-fn $ {}
+                    :args $ [] (:: 'Map 'Tag 'Dynamic)
+                      :: 'Fn $ {}
+                        :args $ [] 'Dynamic
+                        :rest 'Dynamic
+                        :return 'Unit
+                    :return 'Unit
+                  d! $ :: :router/change $ {} (:name router-name)
+                  , &unit
               <> title
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Element)
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Tag 'String
+            :args $ []
+              :: 'Option $ :: 'Map 'Tag 'Dynamic
+              , 'Tag 'String
         'style-logo $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-logo
             {} (:cursor :pointer)
