@@ -2094,29 +2094,29 @@
     'app.server $ %{} 'FileEntry
       :defs $ {}
         '*client-caches $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *client-caches ({})
+          :code $ quote $ defref *client-caches ({})
           :examples $ []
           :schema $ :: 'Ref $ :: 'Map 'String 'Dynamic
         '*initial-db $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *initial-db (load-database!)
+          :code $ quote $ defref *initial-db (load-database!)
           :examples $ []
           :schema $ :: 'Ref 'app.schema/Database
         '*loop-trigger $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *loop-trigger (Option :none)
+          :code $ quote $ defref *loop-trigger (Option :none)
           :examples $ []
           :schema $ :: 'Ref $ :: 'Option 'js-ffi.node/NodeTimerHost
         '*proxied-dispatch! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *proxied-dispatch! dispatch!
+          :code $ quote $ defref *proxied-dispatch! dispatch!
           :examples $ []
           :schema $ :: 'Ref $ :: 'Fn
             {} (:return 'Unit)
               :args $ [] 'Dynamic 'String
         '*reader-reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *reader-reel @*reel
+          :code $ quote $ defref *reader-reel @*reel
           :examples $ []
           :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
         '*reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *reel
+          :code $ quote $ defref *reel
             ReelState :base @*initial-db :db @*initial-db :records ([]) :merged? false
           :examples $ []
           :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
