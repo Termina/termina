@@ -2429,7 +2429,10 @@
             :names $ {} $ :on |on
           :schema $ :: 'Trait
         'ProcessHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait ProcessHost (:pid 'Number) (:stdout 'app.manager/EventEmitterHost) (:stderr 'app.manager/EventEmitterHost)
+          :code $ quote $ deftrait ProcessHost
+            :pid $ :: 'JsNullish 'Number
+            :stdout 'app.manager/EventEmitterHost
+            :stderr 'app.manager/EventEmitterHost
             .on $ :: 'Fn $ {}
               :args $ [] ProcessHost 'String 'Fn
               :return ProcessHost
@@ -2468,68 +2471,80 @@
                           .unref p
                           , p
                   , ProcessHost
-                pid $ .-pid proc
-              swap! *registry assoc pid proc
-              dispatch!
-                :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
-                  :title $ option:unwrap-or (get op-data :title) nil
-                , sid
-              if jump? $ dispatch!
-                :: :router/change $ {} (:name :process)
-                  :params $ {} $ :id pid
-                , sid
-              if enlarge? $ dispatch! (:: :session/enlarge pid) sid
-              .on proc |exit $ fn (code _e) (js/console.warn |[EXIT] code _e)
-                dispatch!
-                  :: :process/error $ [] pid $ str &newline "|exit: " code
-                  , sid
-                dispatch! (:: :process/finish pid) sid
-                swap! *registry dissoc pid
-              .on proc |SIGINT $ fn (sig)
-                dispatch!
-                  :: :process/error $ [] pid $ str-spaced |SIGINT sig
-                  , sid
-              .on proc |SIGTERM $ fn (sig)
-                dispatch!
-                  :: :process/error $ [] pid $ str-spaced |SIGTERM sig
-                  , sid
-              .on proc |SIGKILL $ fn (sig)
-                dispatch!
-                  :: :process/error $ [] pid $ str-spaced |SIGKILL sig
-                  , sid
-              .on proc |error $ fn (event)
-                dispatch!
-                  :: :process/error $ [] pid $ str-spaced |error: (str event)
-                  , sid
-                ; dispatch! (:: :process/finish pid) sid
-                js/console.error "|[TERMINA] process error" event
-              .on proc |disconnect $ fn (event)
-                dispatch!
-                  :: :process/error $ [] pid $ str-spaced |disconntect: (str event)
-                  , sid
-                ; dispatch! (:: :process/finish pid) sid
-                js/console.error "|[TERMINA] process error" event
-              .on proc |uncaughtExceptionMonitor $ fn (err origin)
-                dispatch!
-                  :: :process/error $ [] pid $ str err &newline origin
-                  , sid
-              .on proc |uncaughtException $ fn (err origin)
-                dispatch!
-                  :: :process/error $ [] pid $ str |uncaughtException: err &newline origin
-                  , sid
-              .on proc |unhandledRejection $ fn (err origin)
-                dispatch!
-                  :: :process/error $ [] pid $ str err &newline origin
-                  , sid
-              .on (.-stdout proc) |data $ fn (data)
-                dispatch!
-                  :: :process/stdout $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
-                  , sid
-              .on (.-stderr proc) |data $ fn (data)
-                dispatch!
-                  :: :process/stderr $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
-                  , sid
-              , &unit
+              match
+                js-nullish->option $ .-pid proc
+                (:none)
+                  do
+                    .on proc |error $ fn (event)
+                      dispatch!
+                        :: :session/add-message $ str "|Unable to start command: " command "| — " $ :message (normalize-error event)
+                        , sid
+                      , &unit
+                    , &unit
+                (:some raw-pid)
+                  let
+                      pid $ decode-map-as raw-pid 'Number
+                    swap! *registry assoc pid proc
+                    dispatch!
+                      :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
+                        :title $ option:unwrap-or (get op-data :title) nil
+                      , sid
+                    if jump? $ dispatch!
+                      :: :router/change $ {} (:name :process)
+                        :params $ {} $ :id pid
+                      , sid
+                    if enlarge? $ dispatch! (:: :session/enlarge pid) sid
+                    .on proc |exit $ fn (code _e) (js/console.warn |[EXIT] code _e)
+                      dispatch!
+                        :: :process/error $ [] pid $ str &newline "|exit: " code
+                        , sid
+                      dispatch! (:: :process/finish pid) sid
+                      swap! *registry dissoc pid
+                    .on proc |SIGINT $ fn (sig)
+                      dispatch!
+                        :: :process/error $ [] pid $ str-spaced |SIGINT sig
+                        , sid
+                    .on proc |SIGTERM $ fn (sig)
+                      dispatch!
+                        :: :process/error $ [] pid $ str-spaced |SIGTERM sig
+                        , sid
+                    .on proc |SIGKILL $ fn (sig)
+                      dispatch!
+                        :: :process/error $ [] pid $ str-spaced |SIGKILL sig
+                        , sid
+                    .on proc |error $ fn (event)
+                      dispatch!
+                        :: :process/error $ [] pid $ str-spaced |error: (str event)
+                        , sid
+                      ; dispatch! (:: :process/finish pid) sid
+                      js/console.error "|[TERMINA] process error" event
+                    .on proc |disconnect $ fn (event)
+                      dispatch!
+                        :: :process/error $ [] pid $ str-spaced |disconntect: (str event)
+                        , sid
+                      ; dispatch! (:: :process/finish pid) sid
+                      js/console.error "|[TERMINA] process error" event
+                    .on proc |uncaughtExceptionMonitor $ fn (err origin)
+                      dispatch!
+                        :: :process/error $ [] pid $ str err &newline origin
+                        , sid
+                    .on proc |uncaughtException $ fn (err origin)
+                      dispatch!
+                        :: :process/error $ [] pid $ str |uncaughtException: err &newline origin
+                        , sid
+                    .on proc |unhandledRejection $ fn (err origin)
+                      dispatch!
+                        :: :process/error $ [] pid $ str err &newline origin
+                        , sid
+                    .on (.-stdout proc) |data $ fn (data)
+                      dispatch!
+                        :: :process/stdout $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
+                        , sid
+                    .on (.-stderr proc) |data $ fn (data)
+                      dispatch!
+                        :: :process/stderr $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
+                        , sid
+                    , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] (:: 'Map 'Tag 'Dynamic)
@@ -2627,6 +2642,7 @@
         :code $ quote $ ns app.manager
           :require (|child_process :as cp) (|string-argv :default string-argv)
             js-ffi.node :refer $ env-or
+            js-ffi.shared :refer $ normalize-error
     'app.runtime $ %{} 'FileEntry
       :defs $ {}
         'parse-port $ %{} 'CodeEntry (:doc |)
@@ -3207,6 +3223,8 @@
             match op
               (:session/connect) (session/connect db sid op-id op-time)
               (:session/disconnect) (session/disconnect db sid op-id op-time)
+              (:session/add-message message)
+                session/add-message db sid op-id $ decode-map-as message 'String
               (:session/remove-message d)
                 session/remove-message db
                   decode-map-as

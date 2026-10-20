@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import * as c from "../js-out/calcit.core.mjs";
 import { parse_command, read_string_field, read_bool_field_or, create_process_$x_, _$s_registry } from "../js-out/app.manager.mjs";
+import { database, encode_database } from "../js-out/app.schema.mjs";
+import { updater } from "../js-out/app.updater.mjs";
 
 test("only leading assignments are environment and values retain equals signs", () => {
   const cases = [
@@ -54,4 +59,25 @@ test("spawn receives native args and env, and forwards synthetic stdout/stderr a
   assert.ok(events.every(event => event.sid === "synthetic-session"));
   assert.equal(events.filter(event => event.kind === "process/create").length, 1);
   assert.equal(events.filter(event => event.kind === "process/finish").length, 1);
+});
+
+test("missing program reports a session message without registering an absent PID", { timeout: 5000 }, async () => {
+  const tags = c.init_tags(["command", "cwd", "jump?", "enlarge?", "sessions", "messages", "text"]);
+  const missing = join(tmpdir(), `termina031-missing-${randomUUID()}`, "program");
+  const data = c.assoc(c.assoc(c.parse_cirru_edn('{} (:jump? true) (:enlarge? true)'), tags.command, JSON.stringify(missing)), tags.cwd, process.cwd());
+  const registry = c._$n_atom_$o_deref(_$s_registry);
+  const events = [];
+  let state = updater(database, c.parse_cirru_edn(":: :session/connect"), "failure-session", "connect", 1000);
+  await new Promise(resolve => {
+    create_process_$x_(data, (operation, sid) => {
+      events.push(c._$n_enum_$o_nth(operation, 0).value);
+      state = updater(state, operation, sid, "start-failure", 1001);
+      resolve();
+    }, "failure-session");
+  });
+  assert.deepEqual(events, ["session/add-message"]);
+  assert.ok(c._$n__$e_(registry, c._$n_atom_$o_deref(_$s_registry)));
+  const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key] ?? key));
+  const message = read(read(read(read(encode_database(state), "sessions"), "failure-session"), "messages"), "start-failure");
+  assert.match(read(message, "text"), /Unable to start command:.*ENOENT/);
 });
