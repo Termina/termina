@@ -12,6 +12,8 @@ import { comp_history, format_date_time } from '../out-page/app.comp.history.mjs
 import dayjs from 'dayjs';
 import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.comp.workflow.mjs';
 import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
+import { decode_changes } from '../out-page/app.schema.mjs';
+import { patch_twig } from '../out-page/recollect.patch.mjs';
 
 const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd', 'router', 'count', 'color']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
@@ -293,11 +295,15 @@ function storeFixture(route, loggedIn = true) {
     import * as c from './js-out/calcit.core.mjs';
     import { decode_database } from './js-out/app.schema.mjs';
     import { twig_container } from './js-out/app.twig.container.mjs';
+    import { diff_twig } from './js-out/recollect.diff.mjs';
     const tags = c.init_tags(['db', 'session']);
     const fixture = c.parse_cirru_edn(process.argv[1]);
     const db = decode_database(c.option_$o_unwrap(c.get(fixture, tags.db)));
     const session = c.option_$o_unwrap(c.get(fixture, tags.session));
-    console.log(c.format_cirru_edn(twig_container(db, session, c.parse_cirru_edn('[]'))));
+    const store = twig_container(db, session, c.parse_cirru_edn('[]'));
+    const old = c.assoc(store, c.init_tags(['histories']).histories, c.parse_cirru_edn('[] |old'));
+    const options = c.parse_cirru_edn('{} (:key :id)');
+    console.log(c.format_cirru_edn(c._$L_(store, diff_twig(null, store, options), old, diff_twig(old, store, options))));
   `;
   // Use the real wire format between independently generated runtime graphs.
   const output = execFileSync(process.execPath, ['--input-type=module', '-e', script, c.format_cirru_edn(input)], {
@@ -306,7 +312,10 @@ function storeFixture(route, loggedIn = true) {
     encoding: 'utf8',
     timeout: 10000,
   });
-  return parse(output);
+  const [store, initial, old, incremental] = c.listToArray(parse(output));
+  assert.ok(c._$n__$e_(patch_twig(null, decode_changes(initial)), store), 'initial wire patch');
+  assert.ok(c._$n__$e_(patch_twig(old, decode_changes(incremental)), store), 'incremental wire patch');
+  return store;
 }
 
 test('offline reconnect dispatches the zero-payload connection Enum', () => {

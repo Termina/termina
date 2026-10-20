@@ -70,6 +70,7 @@
                   :: 'Map 'Tag 'Dynamic
               (:effect/connect) (connect!)
               _ $ ws-send! op
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Dynamic
@@ -100,11 +101,10 @@
               option:unwrap-or (get data :kind) nil
               println "|unknown server data kind:" data
               :patch $ let
-                  changes $ assert-type
-                    option:unwrap-or (get data :data) ([])
-                    :: 'List 'recollect.schema/change-op
+                  changes $ schema/decode-changes $ option:unwrap-or (get data :data) ([])
                 when config/dev? $ println |Changes changes
                 reset! *store $ patch-twig @*store changes
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] $ :: 'Map 'Tag 'Dynamic
@@ -1169,6 +1169,13 @@
         'on-submit $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-submit (username password signup?)
             fn (e dispatch!)
+              hint-fn $ {}
+                :args $ [] (:: 'Map 'Tag 'Dynamic)
+                  :: 'Fn $ {}
+                    :args $ [] 'Dynamic
+                    :rest 'Dynamic
+                    :return 'Unit
+                :return 'Unit
               dispatch! $ if signup?
                 :: :user/sign-up $ [] username password
                 :: :user/log-in $ [] username password
@@ -2711,6 +2718,19 @@
             Database :sessions ({}) :users ({}) :workflows ({}) :processes ({}) :histories ([]) :extensions $ {}
           :examples $ []
           :schema $ :: 'app.schema/Database
+        'decode-changes $ %{} 'CodeEntry (:doc "|网络差量的真实检查边界，保留递归 change-op 与有意开放的业务 payload。")
+          :code $ quote $ defn decode-changes (raw) (recollect.schema/decode-changes raw)
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'Dynamic
+            :return $ :: 'List 'recollect.schema/change-op
+          :tests $ [] $ %{} 'TestEntry (:name |wire-replace)
+            :code $ quote $ let
+                expected $ {} $ :text |:VALUE
+                original $ [] $ recollect.schema/change-op :replace expected
+                raw $ parse-cirru-edn $ format-cirru-edn original
+                changes $ decode-changes raw
+              assert= expected $ recollect.patch/patch-twig nil changes
         'decode-database $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-database (raw)
             let
