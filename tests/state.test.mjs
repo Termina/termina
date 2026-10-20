@@ -102,6 +102,9 @@ test("workflow and process transitions retain collection shapes and log data", (
   state = apply(state, ":: :process/finish 42");
   state = apply(state, ":: :process/clear nil");
   assert.equal(c._$n_map_$o_count(read(wire(state), "processes")), 0);
+  const cleared = state;
+  state = apply(state, ":: :process/shorten-content 42");
+  assert.equal(state, cleared, "shortening a cleared process must not create an empty process");
   state = apply(state, ":: :process/clear-history nil");
   assert.equal(c.listToArray(read(wire(state), "histories")).length, 0);
 });

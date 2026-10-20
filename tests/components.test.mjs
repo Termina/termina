@@ -14,12 +14,38 @@ import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.c
 import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
 import { decode_changes } from '../out-page/app.schema.mjs';
 import { patch_twig } from '../out-page/recollect.patch.mjs';
-import { websocket_url } from '../out-page/app.util.mjs';
+import { websocket_url, clear_current_route_$x_ } from '../out-page/app.util.mjs';
 
 const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd', 'router', 'count', 'color']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
 const part = (value, index) => c._$n_enum_$o_nth(value, index);
 const parse = c.parse_cirru_edn;
+
+test('clear shortcut operations retain wire payloads and omit absent process IDs', () => {
+  for (const [input, expected] of [
+    [`{}
+  :router $ {} (:name :home)
+  :session $ {}`, [':: :process/clear nil']],
+    [`{}
+  :router $ {} (:name :home)
+  :session $ {} (:enlarge-view nil)`, [':: :process/clear nil']],
+    [`{}
+  :router $ {} (:name :home)
+  :session $ {} (:enlarge-view 0)`, [':: :process/clear nil', ':: :process/shorten-content 0']],
+    [`{}
+  :router $ {} (:name :history)`, [':: :process/clear-history nil']],
+    [`{}
+  :router $ {} (:name :process)
+    :params $ {} (:id 0)`, [':: :process/shorten-content 0']],
+    [`{}
+  :router $ {} (:name :process)`, []],
+  ]) {
+    const calls = [];
+    assert.equal(clear_current_route_$x_(parse(input), operation => { calls.push(operation); }), undefined);
+    assert.equal(calls.length, expected.length);
+    expected.forEach((operation, index) => assert.ok(c._$n__$e_(calls[index], parse(operation))));
+  }
+});
 
 test('connection address uses independent defaults for missing host and port without opening a socket', () => {
   for (const [query, expected] of [

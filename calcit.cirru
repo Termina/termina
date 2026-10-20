@@ -97,23 +97,11 @@
                 and
                   = |k $ js-ffi.browser/keyboard-event-key keyboard-event
                   keyboard-event :meta-key?
-                let
-                    store $ decode-map-as
-                      or @*store $ {}
-                      :: 'Map 'Tag 'Dynamic
-                    router $ option:unwrap-or (get store :router) ({})
-                    router-name $ option:unwrap-or (get router :name) nil
-                    session $ option:unwrap-or (get store :session) ({})
-                    process-id $ option:unwrap-or
-                      get-in router $ [] :params :id
-                      , nil
-                    enlarge-view $ option:unwrap-or (get session :enlarge-view) nil
-                  case-default router-name (println "|no thing to clear in" router-name)
-                    :home $ do
-                      dispatch! $ :: :process/clear
-                      dispatch! $ :: :process/shorten-content enlarge-view
-                    :history $ dispatch! $ :: :process/clear-history
-                    :process $ dispatch! $ :: :process/shorten-content process-id
+                clear-current-route!
+                  decode-map-as
+                    or @*store $ {}
+                    :: 'Map 'Tag 'Dynamic
+                  , dispatch!
             , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -180,7 +168,7 @@
             |../js-out/calcit.build-errors :default server-errors
             js-ffi.browser :refer $ EventHost add-event-listener! location-href storage-get
             respo.ffi.browser :as respo-browser
-            app.util :refer $ websocket-url
+            app.util :refer $ websocket-url clear-current-route!
     'app.comp.command $ %{} 'FileEntry
       :defs $ {}
         'comp-command-button $ %{} 'CodeEntry (:doc |)
@@ -3406,15 +3394,12 @@
             :args $ [] 'app.schema/Database 'Number 'String 'String 'Number
         'shorten-content $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shorten-content (db op-data sid op-id op-time)
-            assoc db :processes $ update-in (:processes db) ([] op-data)
-              fn (process)
-                hint-fn $ {}
-                  :args $ [] $ :: 'Option (:: 'Map 'Tag 'Dynamic)
-                  :return $ :: 'Map 'Tag 'Dynamic
-                assoc
-                  option:unwrap-or process $ assert-type ({}) (:: 'Map 'Tag 'Dynamic)
-                  , :content $ assert-type ([])
-                    :: 'List $ :: 'Map 'Tag 'Dynamic
+            let
+                processes $ :processes db
+              match (get processes op-data)
+                (:none) db
+                (:some process)
+                  assoc db :processes $ assoc processes op-data $ assoc process :content ([])
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
             :args $ [] 'app.schema/Database 'Number 'String 'String 'Number
@@ -3702,6 +3687,40 @@
           :require $ app.schema :as schema
     'app.util $ %{} 'FileEntry
       :defs $ {}
+        'clear-current-route! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn clear-current-route! (store dispatch!)
+            let
+                router $ decode-map-as
+                  .unwrap-or (get store :router) ({})
+                  :: 'Map 'Tag 'Dynamic
+                router-name $ .unwrap-or (get router :name) nil
+              match router-name
+                :home $ let
+                    session $ decode-map-as
+                      .unwrap-or (get store :session) ({})
+                      :: 'Map 'Tag 'Dynamic
+                  dispatch! $ :: :process/clear nil
+                  match (get session :enlarge-view)
+                    (:none) &unit
+                    (:some pid)
+                      when
+                        not $ nil? pid
+                        dispatch! $ :: :process/shorten-content $ decode-map-as pid 'Number
+                :history $ dispatch! $ :: :process/clear-history nil
+                :process $ match
+                  get-in router $ [] :params :id
+                  (:none) &unit
+                  (:some pid)
+                    when
+                      not $ nil? pid
+                      dispatch! $ :: :process/shorten-content $ decode-map-as pid 'Number
+                _ $ println "|no thing to clear in" router-name
+            , &unit
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] (:: 'Map 'Tag 'Dynamic)
+              :: 'Fn $ {} (:return 'Unit)
+                :args $ [] 'Enum
         'join-path $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-path (xs ys)
             if
