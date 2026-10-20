@@ -2444,7 +2444,6 @@
               :return 'Bool
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
-            :names $ {} (:kill |kill) (:on |on) (:pid |pid) (:stderr |stderr) (:stdout |stdout) (:unref |unref)
           :schema $ :: 'Trait
         'create-process! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create-process! (op-data dispatch! sid)
@@ -2454,23 +2453,23 @@
                 jump? $ read-bool-field-or op-data :jump? false
                 enlarge? $ read-bool-field-or op-data :enlarge? false
                 ; spawn? $ or true $ :spawn? op-data
-                proc $ unsafe-coerce
-                  if (includes? command "| | ")
+                proc $ if (includes? command "| | ")
+                  js-cast
                     cp/exec command $ js-object $ :cwd cwd
-                    let
-                        parsed $ parse-command command
-                      match parsed $
-                        :command proc-name args envs
-                        let
-                            p $ unsafe-coerce
-                              cp/spawn proc-name (to-js-data args)
-                                js-object (:cwd cwd)
-                                  :env $ to-js-data envs
-                                  :detached true
-                              , ProcessHost
-                          .unref p
-                          , p
-                  , ProcessHost
+                    , 'app.manager/ProcessHost
+                  let
+                      parsed $ parse-command command
+                    match parsed $
+                      :command proc-name args envs
+                      let
+                          p $ js-cast
+                            cp/spawn proc-name (to-js-data args)
+                              js-object (:cwd cwd)
+                                :env $ to-js-data envs
+                                :detached true
+                            , 'app.manager/ProcessHost
+                        .unref p
+                        , p
               match
                 js-nullish->option $ .-pid proc
                 (:none)

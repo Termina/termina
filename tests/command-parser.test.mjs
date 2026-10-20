@@ -32,33 +32,36 @@ test("command fields retain actual text and explicit false, with fallback only f
   assert.equal(read_bool_field_or(c.parse_cirru_edn("{}"), tags["enlarge?"], true), true);
 });
 
-test("spawn receives native args and env, and forwards synthetic stdout/stderr and completion", { timeout: 5000 }, async t => {
+test("spawn and exec preserve synthetic stdout/stderr and completion", { timeout: 5000 }, async t => {
   const tags = c.init_tags(["command", "cwd", "pid"]);
   const source = "process.stdout.write(process.env.TERMINA_SYNTHETIC);process.stderr.write('合成-stderr');";
   const command = `TERMINA_SYNTHETIC=:合成 ${JSON.stringify(process.execPath)} -e ${JSON.stringify(source)}`;
-  const data = c.assoc(c.assoc(c.parse_cirru_edn("{}"), tags.command, command), tags.cwd, process.cwd());
-  const events = [];
-  t.after(() => {
-    const created = events.find(event => event.kind === "process/create");
-    if (!created) return;
-    const pid = c.option_$o_unwrap(c.get(created.payload, tags.pid));
-    const child = c.get(c._$n_atom_$o_deref(_$s_registry), pid);
-    if (c.option_$o_some_$q_(child)) c.option_$o_unwrap(child).kill("SIGTERM");
-  });
-  await new Promise(resolve => {
-    create_process_$x_(data, (operation, sid) => {
-      const kind = c._$n_enum_$o_nth(operation, 0).value;
-      events.push({ kind, payload: c._$n_enum_$o_nth(operation, 1), sid });
-      if (["process/stdout", "process/stderr", "process/finish"].every(expected => events.some(event => event.kind === expected))) resolve();
-      return;
-    }, "synthetic-session");
-  });
-  const output = kind => events.filter(event => event.kind === kind).map(event => c.listToArray(event.payload)[1]).join("");
-  assert.equal(output("process/stdout"), ":合成");
-  assert.equal(output("process/stderr"), "合成-stderr");
-  assert.ok(events.every(event => event.sid === "synthetic-session"));
-  assert.equal(events.filter(event => event.kind === "process/create").length, 1);
-  assert.equal(events.filter(event => event.kind === "process/finish").length, 1);
+  const forward = "process.stdin.on('data', chunk => process.stdout.write(chunk));";
+  for (const input of [command, `${command} | ${JSON.stringify(process.execPath)} -e ${JSON.stringify(forward)}`]) {
+    const data = c.assoc(c.assoc(c.parse_cirru_edn("{}"), tags.command, input), tags.cwd, process.cwd());
+    const events = [];
+    t.after(() => {
+      const created = events.find(event => event.kind === "process/create");
+      if (!created) return;
+      const pid = c.option_$o_unwrap(c.get(created.payload, tags.pid));
+      const child = c.get(c._$n_atom_$o_deref(_$s_registry), pid);
+      if (c.option_$o_some_$q_(child)) c.option_$o_unwrap(child).kill("SIGTERM");
+    });
+    await new Promise(resolve => {
+      create_process_$x_(data, (operation, sid) => {
+        const kind = c._$n_enum_$o_nth(operation, 0).value;
+        events.push({ kind, payload: c._$n_enum_$o_nth(operation, 1), sid });
+        if (["process/stdout", "process/stderr", "process/finish"].every(expected => events.some(event => event.kind === expected))) resolve();
+        return;
+      }, "synthetic-session");
+    });
+    const output = kind => events.filter(event => event.kind === kind).map(event => c.listToArray(event.payload)[1]).join("");
+    assert.equal(output("process/stdout"), ":合成");
+    assert.equal(output("process/stderr"), "合成-stderr");
+    assert.ok(events.every(event => event.sid === "synthetic-session"));
+    assert.equal(events.filter(event => event.kind === "process/create").length, 1);
+    assert.equal(events.filter(event => event.kind === "process/finish").length, 1);
+  }
 });
 
 test("missing program reports a session message without registering an absent PID", { timeout: 5000 }, async () => {
