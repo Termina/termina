@@ -169,9 +169,7 @@
                   .-hostname url-obj
                 port $ if (js-present? raw-query)
                   .-port $ unsafe-coerce raw-query UrlQueryHost
-                  str $ assert-type
-                    option:unwrap-or (get config/site :port) 0
-                    , 'Number
+                  str $ assert-type (:port config/site) 'Number
               str |ws:// host |: port
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
@@ -180,9 +178,7 @@
         'simulate-login! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn simulate-login! ()
             let
-                raw $ storage-get $ assert-type
-                  option:unwrap-or (get config/site :storage-key) |
-                  , 'String
+                raw $ storage-get $ assert-type (:storage-key config/site) 'String
               if (option:some? raw)
                 do (println "|Found storage.")
                   dispatch! $ :: :user/log-in $ parse-cirru-edn (option:unwrap raw)
@@ -438,14 +434,12 @@
           :code $ quote $ defcomp comp-offline ()
             div
               {} $ :style $ merge ui/global ui/fullscreen ui/column-dispersive
-                {} $ :background-color $ option:unwrap-or (get config/site :theme) nil
+                {} $ :background-color $ :theme config/site
               div $ {} $ :style
                 {} $ :height 0
               div $ {} $ :style
                 {}
-                  :background-image $ str "|url("
-                    option:unwrap-or (get config/site :icon) nil
-                    , "|)"
+                  :background-image $ str "|url(" (:icon config/site) "|)"
                   :width 128
                   :height 128
                   :background-size :contain
@@ -859,9 +853,7 @@
             fn (e dispatch!)
               dispatch! (if signup? :user/sign-up :user/log-in) ([] username password)
               storage-set!
-                assert-type
-                  option:unwrap-or (get config/site :storage-key) |
-                  , 'String
+                assert-type (:storage-key config/site) 'String
                 format-cirru-edn $ [] username password
               , &unit
           :examples $ []
@@ -1417,9 +1409,7 @@
                   {}
                     :style $ merge style/button $ {} (:color :red) (:border-color :red)
                     :on-click $ fn (_ dispatch!) (dispatch! :user/log-out nil)
-                      storage-remove! $ assert-type
-                        option:unwrap-or (get config/site :storage-key) |
-                        , 'String
+                      storage-remove! $ assert-type (:storage-key config/site) 'String
                   <> "|Log out"
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
