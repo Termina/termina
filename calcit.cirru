@@ -2673,9 +2673,23 @@
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] 'String
             :features $ #{} :js-ffi
+        'report-version! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn report-version! (version-promise version)
+            .then! version-promise $ fn (raw-version)
+              let
+                  npm-version $ decode-map-as (to-calcit-data raw-version true) 'String
+                if (= npm-version version) (println |Running-latest-version version)
+                  println $ str |New-version- npm-version |-available,-current-one-is- version |.-Please-upgrade!\n\nyarn-global-add-termina\n
+            , &unit
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] 'js-ffi.shared/PromiseHost 'String
+            :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.runtime
-          :require $ js-ffi.node :refer $ env-get path-join path-absolute?
+          :require
+            js-ffi.node :refer $ env-get path-join path-absolute?
+            js-ffi.shared :refer $ PromiseHost
     'app.schema $ %{} 'FileEntry
       :defs $ {}
         'Database $ %{} 'CodeEntry (:doc |)
@@ -2859,18 +2873,6 @@
             ReelState :base @*initial-db :db @*initial-db :records ([]) :merged? false
           :examples $ []
           :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState 'app.schema/Database
-        'StringPromiseHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait StringPromiseHost
-            .then $ :: 'Fn $ {}
-              :args $ [] StringPromiseHost $ :: 'Fn
-                {}
-                  :args $ [] 'String
-                  :return 'Unit
-              :return StringPromiseHost
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
-            :names $ {} $ :then |then
-          :schema $ :: 'Trait
         'check-version! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn check-version! ()
             let
@@ -2886,10 +2888,8 @@
                 package-name $ decode-map-as
                   option:unwrap $ get pkg |name
                   , 'String
-                version-promise $ unsafe-coerce (latest-version package-name) StringPromiseHost
-              .then version-promise $ fn (npm-version)
-                if (= npm-version version) (println |Running-latest-version version)
-                  println $ str |New-version- npm-version |-available,-current-one-is- version |.-Please-upgrade!\n\nyarn-global-add-termina\n
+                version-promise $ js-cast (latest-version package-name) 'js-ffi.shared/PromiseHost
+              report-version! version-promise version
               , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -3083,7 +3083,7 @@
             app.manager :refer $ create-process! kill-process!
             |url-parse :default url-parse
             js-ffi.node :refer $ env-or file-exists? read-text! set-timeout! clear-timeout! set-interval! exit! env-get
-            app.runtime :refer $ read-storage-file parse-port
+            app.runtime :refer $ read-storage-file parse-port report-version!
             js-ffi.shared :refer $ random-uuid
     'app.style $ %{} 'FileEntry
       :defs $ {}

@@ -1,8 +1,33 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 import * as c from "../js-out/calcit.core.mjs";
 import { database, decode_database, encode_database } from "../js-out/app.schema.mjs";
 import { updater } from "../js-out/app.updater.mjs";
+import { report_version_$x_ } from "../js-out/app.runtime.mjs";
+
+test("version reporting checks fulfilled text and preserves Promise rejection", async t => {
+  const messages = [];
+  t.mock.method(console, "log", (...args) => messages.push(args.map(String).join(" ")));
+  assert.equal(report_version_$x_(Promise.resolve("0.1.22"), "0.1.22"), undefined);
+  report_version_$x_(Promise.resolve(":next"), "0.1.22");
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(messages, [
+    "Running-latest-version 0.1.22",
+    String.raw`New-version-:next-available,-current-one-is-0.1.22.-Please-upgrade!\n\nyarn-global-add-termina\n`,
+  ]);
+  const runtimeUrl = new URL("../js-out/app.runtime.mjs", import.meta.url).href;
+  for (const [promise, expected] of [
+    ["Promise.resolve(42)", /expected.*string|string.*expected/i],
+    ["Promise.reject(new Error('synthetic-version-rejection'))", /synthetic-version-rejection/],
+  ]) {
+    const child = spawnSync(process.execPath, ["--unhandled-rejections=strict", "--input-type=module", "-e",
+      `import { report_version_$x_ } from ${JSON.stringify(runtimeUrl)}; report_version_$x_(${promise}, "0.1.22");`,
+    ], { encoding: "utf8", timeout: 5000 });
+    assert.equal(child.status, 1);
+    assert.match(child.stderr, expected);
+  }
+});
 
 const tags = c.init_tags(["sessions", "users", "processes", "histories", "workflows", "user-id", "enlarge-view", "messages", "password", "commands", "code", "name", "content", "alive?", "command"]);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key] ?? key));
