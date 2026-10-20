@@ -15,7 +15,7 @@ TODO: new npm package.
 一个 Node 内置回归覆盖四个合成解析场景。后续仍需类型、协议、隔离运行和独立 CI 验收，不放宽基线。
 
 注意：当前服务模块初始化会读取 HOME 下的数据库，主入口会监听端口并提供执行命令能力。
-本轮只做编译与隔离的纯解析测试，没有加载实际服务入口、读取真实项目配置或启动用户进程；
+本轮只做编译与隔离的解析/投影/路径测试，没有加载实际服务入口、读取真实项目配置或启动用户进程；
 不要用 `node server.mjs` 作为未经隔离的验证命令。本地不执行 Caps，也不发布 npm、合并或部署生产。
 Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru/package.cirru 或提交生成代码。
 
@@ -27,7 +27,21 @@ Snapshot 仅通过官方 query/tree/edit/config 修改，不恢复 compact.cirru
 17 个命名空间的旧 import 标记已通过官方事务规范化。进程管理模块冷检查 10/10 通过；
 命令解析在真实入口检查 `List<String>`，返回 Enum，不再使用 unsafe 强转，
 进程查询按 Option 分支处理，替换已退役的 `join-str`。重新生成解析入口 JS 后，原四个场景回归通过。
-完整 server/page 入口仍有存储、twig、UI 状态与派发类型错误；该局部通过不代表完整 strict 或服务运行验收通过。
+共享 config/runtime/util/twig/manager 的 19 个定义冷检查通过；原路径打印示例改为一项带断言的原生测试，
+保留原七个场景。已核对全部导入及精确代码引用，退休四个未使用的工具函数和对应陈旧导入。
+
+配置现在使用真实 Site；存储路径通过类型化环境/路径适配器读取。
+可用 `TERMINA_STORAGE_FILE` 指定绝对存储路径，未设置时仍使用原 HOME/.config/termina.cirru；
+该参数仅选择数据文件，**不意味着网络隔离**，更不能用它作为直接启动服务的许可。
+现有 WebSocket 依赖尚不能显式绑定回环地址，已向上游提交 [ws-edn #69](https://github.com/mvc-works/ws-edn.calcit/issues/69)。
+正式支持并验收前不启动该服务做网络测试。
+
+修正 nil user-id 被 Option 的 key 存在性误判为已登录、匿名 session 导致成员投影异常，
+并用合成数据验证登录态及密码字段省略；缓存查询按 Option 解包，不把 Option 本身传给 diff。
+服务端 ReelState 保留实际 Db 泛型，持久化保留数字 PID key；定时器改为真实 NodeTimerHost，
+SIGINT 回调按实际零参数合同声明。没有为了通过检查假造 Fn/JsObject 或放宽预算。
+完整 server/page 入口仍有 updater 动态嵌套数据、派发、前端状态/控件等类型错误，且仍有 unsafe 待迁移；
+上述局部通过不代表完整 strict、生产构建或服务运行验收通过。
 
 ### Workflow
 

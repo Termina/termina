@@ -795,7 +795,7 @@
             respo.core :refer $ defcomp >> list-> button <> span div a input
             app.comp.process :refer $ comp-process
             app.comp.process-detail :refer $ comp-process-detail
-            app.util :refer $ join-path map-val
+            app.util :refer $ join-path
             app.style :as style
             app.comp.command :refer $ comp-command-button comp-command-editor
             fuzzy-filter.core :refer $ parse-by-letter
@@ -1111,7 +1111,6 @@
             respo.comp.space :refer $ =<
             respo.core :refer $ defcomp list-> >> <> span div button a
             app.style :as style
-            app.util :refer $ map-with-index
             respo-alerts.core :refer $ comp-alerts
             respo.css :refer $ defstyle
             respo-ui.css :as css
@@ -1374,7 +1373,6 @@
             respo-ui.core :as ui
             respo.core :refer $ defcomp <> >> span div pre list-> code button a input
             respo.comp.space :refer $ =<
-            app.util :refer $ map-with-index
             app.style :as style
             respo.css :refer $ defstyle
             feather.core :refer $ comp-icon
@@ -1678,34 +1676,28 @@
             respo.comp.space :refer $ =<
             clojure.string :as string
             app.style :as style
-            app.util :refer $ map-val
             inflow-popup.comp.popup :refer $ comp-popup
             feather.core :refer $ comp-i comp-icon
             app.comp.command :refer $ comp-command-editor comp-command-row
             respo-alerts.core :refer $ use-confirm comp-modal
     'app.config $ %{} 'FileEntry
       :defs $ {}
-        'cdn? $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def cdn?
-            cond
-                exists? js/window
-                , false
-              (exists? js/process) (= |true js/process.env.cdn)
-              :else false
+        'Site $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Site (:port 'Number) (:title 'String) (:icon 'String) (:dev-ui 'String) (:release-ui 'String) (:cdn-url 'String) (:cdn-folder 'String) (:upload-folder 'String) (:server-folder 'String) (:theme 'String) (:storage-key 'String) (:storage-file 'String)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'StructDef
         'dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def dev?
             let
                 mode $ option:unwrap-or (get-env |mode) |release
               = mode |dev
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Bool
         'site $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def site
-            {} (:port 11014) (:title |Termina) (:icon |http://cdn.tiye.me/logo/termina.png) (:dev-ui |http://localhost:8100/main.css) (:release-ui |http://cdn.tiye.me/favored-fonts/main.css) (:cdn-url |http://cdn.tiye.me/termina/) (:cdn-folder |tiye.me:cdn/termina) (:upload-folder |tiye.me:repo/mvc-works/termina/) (:server-folder |tiye.me:servers/termina) (:theme |#eeeeff) (:storage-key |termina) (:storage-file |termina.cirru)
+            Site :port 11014 :title |Termina :icon |http://cdn.tiye.me/logo/termina.png :dev-ui |http://localhost:8100/main.css :release-ui |http://cdn.tiye.me/favored-fonts/main.css :cdn-url |http://cdn.tiye.me/termina/ :cdn-folder |tiye.me:cdn/termina :upload-folder |tiye.me:repo/mvc-works/termina/ :server-folder |tiye.me:servers/termina :theme |#eeeeff :storage-key |termina :storage-file |termina.cirru
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'app.config/Site
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.manager $ %{} 'FileEntry
@@ -1934,6 +1926,25 @@
         :code $ quote $ ns app.manager
           :require (|child_process :as cp) (|string-argv :default string-argv)
             js-ffi.node :refer $ env-or
+    'app.runtime $ %{} 'FileEntry
+      :defs $ {} $ 'read-storage-file
+        %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn read-storage-file (filename)
+            match (env-get |TERMINA_STORAGE_FILE)
+              (:some override)
+                if (path-absolute? override) override $ raise "|TERMINA_STORAGE_FILE must be an absolute path"
+              (:none)
+                match (env-get |HOME)
+                  (:some home)
+                    path-join (path-join home |.config) filename
+                  (:none) (raise "|HOME is required without TERMINA_STORAGE_FILE")
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'String)
+            :args $ [] 'String
+            :features $ #{} :js-ffi
+      :ns $ %{} 'NsEntry (:doc |)
+        :code $ quote $ ns app.runtime
+          :require $ js-ffi.node :refer $ env-get path-join path-absolute?
     'app.schema $ %{} 'FileEntry
       :defs $ {}
         'command $ %{} 'CodeEntry (:doc |)
@@ -2006,22 +2017,13 @@
           :examples $ []
           :schema $ :: 'Ref $ :: 'Map 'String 'Dynamic
         '*initial-db $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *initial-db
-            let
-                found? $ fs/existsSync storage-file
-                loaded $ if found?
-                  decode-map-as
-                    parse-cirru-edn $ fs/readFileSync storage-file |utf8
-                    :: 'Map 'Tag 'Dynamic
-                  assert-type ({}) (:: 'Map 'Tag 'Dynamic)
-              if found? (println |Found-local-EDN-data) (println |Found-no-data)
-              merge-dynamic schema/database loaded
+          :code $ quote $ defatom *initial-db (load-database!)
           :examples $ []
           :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
         '*loop-trigger $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *loop-trigger 0
+          :code $ quote $ defatom *loop-trigger (Option :none)
           :examples $ []
-          :schema $ :: 'Ref 'Number
+          :schema $ :: 'Ref $ :: 'Option 'js-ffi.node/NodeTimerHost
         '*proxied-dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *proxied-dispatch! dispatch!
           :examples $ []
@@ -2031,12 +2033,12 @@
         '*reader-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *reader-reel @*reel
           :examples $ []
-          :schema $ :: 'Ref 'cumulo-reel.core/ReelState
+          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
         '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *reel
-            struct-with reel-schema (:base @*initial-db) (:db @*initial-db)
+            ReelState :base @*initial-db :db @*initial-db :records ([]) :merged? false
           :examples $ []
-          :schema $ :: 'Ref 'cumulo-reel.core/ReelState
+          :schema $ :: 'Ref $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
         'StringPromiseHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait StringPromiseHost
             .then $ :: 'Fn $ {}
@@ -2090,6 +2092,22 @@
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Dynamic 'String
             :features $ #{} :js-ffi
+        'load-database! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn load-database! ()
+            let
+                found? $ file-exists? storage-file
+                loaded $ if found?
+                  decode-map-as
+                    parse-cirru-edn $ read-text! storage-file
+                    :: 'Map 'Tag 'Dynamic
+                  {}
+              println $ if found? |Found-local-EDN-data |Found-no-data
+              merge-dynamic schema/database loaded
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ []
+            :features $ #{} :js-ffi
+            :return $ :: 'Map 'Tag 'Dynamic
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -2102,37 +2120,36 @@
               println |Server-started.-Open-UI-on- ui-url
             render-loop! *loop-trigger
             js/process.on |SIGINT on-exit!
-            flipped js/setInterval 60000 $ fn () $ persist-db!
+            set-interval!
+              fn () $ persist-db!
+              , 60000
             check-version!
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
             :features $ #{} :js-ffi
         'on-exit! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn on-exit! (code _) (persist-db!)
-            println "|termina exit code is:" $ to-lispy-string code
-            js/process.exit
-            , &unit
+          :code $ quote $ defn on-exit! () (persist-db!) (println "|termina exit code is: 0") (exit! 0) &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic 'Dynamic
+            :args $ []
             :features $ #{} :js-ffi
         'persist-db! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-db! ()
             let
-                file-content $ format-cirru-edn $ ->
-                  assert-type (:db @*reel) (:: 'Map 'Tag 'Dynamic)
-                  assoc :sessions $ {}
-                  update :processes $ fn (processes)
-                    filter-map-kv
-                      unsafe-coerce processes $ :: 'Map 'String 'Dynamic
-                      fn (k v)
-                        hint-fn $ {}
-                          :args $ [] 'String 'Dynamic
-                          :return $ :: 'MapEntryDecision 'String 'Dynamic
-                        %:: MapEntryDecision :keep k $ assoc
-                          unsafe-coerce v $ :: 'Map 'Tag 'Dynamic
-                          , :alive? false
+                db $ :db @*reel
+                processes $ decode-map-as
+                  option:unwrap-or (get db :processes) ({})
+                  :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
+                stopped $ filter-map-kv processes $ fn (pid process)
+                  hint-fn $ {}
+                    :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
+                    :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
+                  %:: MapEntryDecision :keep pid $ assoc process :alive? false
+                file-content $ format-cirru-edn $ assoc
+                  assoc db :sessions $ {}
+                  , :processes stopped
               write-mildly! storage-file file-content
               , &unit
           :examples $ []
@@ -2142,7 +2159,9 @@
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (println "|Code updated.") (clear-twig-caches!) (reset! *proxied-dispatch! dispatch!)
             reset! *reel $ refresh-reel @*reel @*initial-db updater
-            js/clearTimeout @*loop-trigger
+            match @*loop-trigger
+              (:some timer) (clear-timeout! timer)
+              (:none) &unit
             render-loop! *loop-trigger
             sync-clients! @*reader-reel
           :examples $ []
@@ -2155,12 +2174,13 @@
               not $ identical? @*reader-reel @*reel
               reset! *reader-reel @*reel
               sync-clients! @*reader-reel
-            reset! *loop $ unsafe-coerce
-              flipped js/setTimeout 200 $ fn () $ render-loop! *loop
-              , 'Number
+            reset! *loop $ Option :some $ set-timeout!
+              fn () $ render-loop! *loop
+              , 200
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] $ :: 'Ref 'Number
+            :args $ [] $ :: 'Ref (:: 'Option 'js-ffi.node/NodeTimerHost)
             :features $ #{} :js-ffi
         'run-server! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-server! (port)
@@ -2178,21 +2198,25 @@
             :features $ #{} :js-ffi
         'storage-file $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def storage-file
-            path/join js/process.env.HOME |.config $ :storage-file config/site
+            read-storage-file $ :storage-file config/site
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         'sync-clients! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn sync-clients! (reel)
             wss-each! $ fn (sid socket)
+              hint-fn $ {}
+                :args $ [] 'String 'ws-edn.server/NodeWebSocketHost
+                :return 'Unit
+                :features $ #{} :js-ffi
               let
-                  db $ assert-type (:db reel) (:: 'Map 'Tag 'Dynamic)
+                  db $ :db reel
                   records $ :records reel
-                  session $ assert-type
+                  session $ decode-map-as
                     option:unwrap-or
                       get-in db $ [] :sessions sid
                       {}
                     :: 'Map 'Tag 'Dynamic
-                  old-store $ or (get @*client-caches sid) nil
+                  old-store $ option:unwrap-or (get @*client-caches sid) nil
                   new-store $ twig-container db session records
                   changes $ diff-twig old-store new-store $ {} (:key :id)
                 ; when config/dev? $ println "|Changes for" sid |: changes $ count records
@@ -2201,15 +2225,16 @@
                   do
                     wss-send! sid $ {} (:kind :patch) (:data changes)
                     swap! *client-caches assoc sid new-store
+              , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'cumulo-reel.core/ReelState
+            :args $ [] $ :: 'cumulo-reel.core/ReelState (:: 'Map 'Tag 'Dynamic)
             :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
           :require (app.schema :as schema)
             app.updater :refer $ updater
-            cumulo-reel.core :refer $ reel-reducer refresh-reel reel-schema
+            cumulo-reel.core :refer $ ReelState reel-reducer refresh-reel
             |node:fs :as fs
             |child_process :as cp
             |node:path :as path
@@ -2225,7 +2250,8 @@
             app.manager :refer $ create-process! kill-process!
             |url-parse :default url-parse
             |nanoid :refer $ nanoid
-            js-ffi.node :refer $ env-or
+            js-ffi.node :refer $ env-or file-exists? read-text! set-timeout! clear-timeout! set-interval! exit!
+            app.runtime :refer $ read-storage-file
     'app.style $ %{} 'FileEntry
       :defs $ {}
         'button $ %{} 'CodeEntry (:doc |)
@@ -2271,26 +2297,32 @@
           :code $ quote $ defn twig-container (db session records)
             let
                 user-id $ option:unwrap-or (get session :user-id) nil
-                logged-in? $ option:some? $ get session :user-id
-                router $ assert-type
+                logged-in? $ string? user-id
+                router $ decode-map-as
                   option:unwrap-or (get session :router) ({})
                   :: 'Map 'Tag 'Dynamic
                 base-data $ {} (:logged-in? logged-in?) (:session session)
                   :reel-length $ count records
-                workflows $ assert-type
+                workflows $ decode-map-as
                   option:unwrap-or (get db :workflows) ({})
                   :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                processes $ assert-type
+                processes $ decode-map-as
                   option:unwrap-or (get db :processes) ({})
                   :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
-                histories $ assert-type
+                histories $ decode-map-as
                   option:unwrap-or (get db :histories) []
                   :: 'List $ :: 'Map 'Tag 'Dynamic
-              merge-dynamic base-data $ assert-type
+                sessions $ decode-map-as
+                  option:unwrap-or (get db :sessions) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                users $ decode-map-as
+                  option:unwrap-or (get db :users) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              merge-dynamic base-data $ decode-map-as
                 if logged-in?
                   {}
                     :user $ twig-user $ option:unwrap-or
-                      get-in db $ [] :users user-id
+                      get users $ decode-map-as user-id 'String
                       {}
                     :router $ assoc router :data $ case-default
                       option:unwrap-or (get router :name) nil
@@ -2300,25 +2332,19 @@
                       :home $ {} (:processes processes) (:workflows workflows)
                         :enlarge-view $ option:unwrap-or (get session :enlarge-view) false
                       :process $ let
-                          process-id $ assert-type
+                          process-id $ decode-map-as
                             option:unwrap $ get-in router $ [] :params :id
                             , 'Number
                         {}
                           :detail $ option:unwrap-or (get processes process-id)
-                            assert-type ({}) (:: 'Map 'Tag 'Dynamic)
+                            decode-map-as ({}) (:: 'Map 'Tag 'Dynamic)
                           :dict $ filter-map-kv processes $ fn (k v)
                             hint-fn $ {}
                               :args $ [] 'Number $ :: 'Map 'Tag 'Dynamic
                               :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
                             %:: MapEntryDecision :keep k $ dissoc v :content
-                      :profile $ twig-members
-                        assert-type
-                          option:unwrap-or (get db :sessions) ({})
-                          :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                        assert-type
-                          option:unwrap-or (get db :users) ({})
-                          :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                    :count $ count $ option:unwrap-or (get db :sessions) ({})
+                      :profile $ twig-members sessions users
+                    :count $ count sessions
                     :color $ color/randomColor
                   {}
                 :: 'Map 'Tag 'Dynamic
@@ -2330,19 +2356,21 @@
             :return $ :: 'Map 'Tag 'Dynamic
         'twig-members $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn twig-members (sessions users)
-            filter-map-kv sessions $ fn (k session)
+            filter-map-kv sessions $ fn (sid session)
               hint-fn $ {}
                 :args $ [] 'String $ :: 'Map 'Tag 'Dynamic
                 :return $ :: 'MapEntryDecision 'String 'String
-              let
-                  uid $ assert-type
-                    option:unwrap $ get session :user-id
-                    , 'String
-                  user $ option:unwrap $ get users uid
-                  name $ assert-type
-                    option:unwrap-or (get user :name) |unknown
-                    , 'String
-                %:: MapEntryDecision :keep k name
+              match (get session :user-id)
+                (:some raw-id)
+                  if (string? raw-id)
+                    let
+                        user $ option:unwrap-or (get users raw-id) ({})
+                        name $ decode-map-as
+                          option:unwrap-or (get user :name) |unknown
+                          , 'String
+                      %:: MapEntryDecision :keep sid name
+                    %:: MapEntryDecision :drop
+                (:none) (%:: MapEntryDecision :drop)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ []
@@ -2695,9 +2723,7 @@
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.user
-          :require
-            app.util :refer $ find-first
-            |md5 :default md5
+          :require $ |md5 :default md5
     'app.updater.workflow $ %{} 'FileEntry
       :defs $ {}
         'add-command $ %{} 'CodeEntry (:doc |)
@@ -2791,23 +2817,15 @@
           :require $ app.schema :as schema
     'app.util $ %{} 'FileEntry
       :defs $ {}
-        'find-first $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn find-first (f xs)
-            reduce
-              fn (_ x)
-                when (f x) (reduced x)
-              , nil xs
-          :examples $ []
-          :schema $ :: 'Dynamic
         'join-path $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-path (xs ys)
             if
               =
-                option:unwrap-or (first ys) nil
+                option:unwrap-or (first ys) |
                 , |/
               , ys $ let
                   absolute? $ =
-                    option:unwrap-or (first xs) nil
+                    option:unwrap-or (first xs) |
                     , |/
                   new-path $ join-segments ([])
                     concat (split xs |/) (split ys |/)
@@ -2815,6 +2833,15 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] 'String 'String
+          :tests $ [] $ %{} 'TestEntry (:name |existing-path-cases)
+            :code $ quote $ do
+              assert= (join-path | |) |
+              assert= (join-path |/ |) |/
+              assert= (join-path | |/) |/
+              assert= (join-path |a |b) |a/b
+              assert= (join-path |a |../b) |b
+              assert= (join-path |a |./b) |a/b
+              assert= (join-path |a/ |./b) |a/b
         'join-segments $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-segments (acc xs)
             if (empty? xs) (join-string acc |/)
@@ -2830,41 +2857,5 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] (:: 'List 'String) (:: 'List 'String)
-        'log-js! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn log-js! (& args)
-            apply js/console.log $ map
-              fn (x)
-                if (coll? x) (clj->js x) x
-              , args
-          :examples $ []
-          :schema $ :: 'Dynamic
-        'map-val $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn map-val (f xs)
-            assert
-              or (map? xs) (seq? xs)
-              , "|map-val deals maps"
-            ->> xs $ map $ fn
-                [] k x
-              [] k $ f x
-          :examples $ []
-          :schema $ :: 'Dynamic
-        'map-with-index $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn map-with-index (f xs)
-            ->> xs $ map-indexed $ fn (idx x)
-              [] idx $ f x
-          :examples $ []
-          :schema $ :: 'Dynamic
-        'test-join-path! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn test-join-path! ()
-            println $ pr-str $ join-path | |
-            println $ pr-str $ join-path |/ |
-            println $ pr-str $ join-path | |/
-            println $ pr-str $ join-path |a |b
-            println $ pr-str $ join-path |a |../b
-            println $ pr-str $ join-path |a |./b
-            println $ pr-str $ join-path |a/ |./b
-          :examples $ []
-          :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util
-          :require $ clojure.string :as string
