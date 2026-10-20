@@ -2429,7 +2429,7 @@
             :names $ {} $ :on |on
           :schema $ :: 'Trait
         'ProcessHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait ProcessHost (:pid 'Number) (:stdout EventEmitterHost) (:stderr EventEmitterHost)
+          :code $ quote $ deftrait ProcessHost (:pid 'Number) (:stdout 'app.manager/EventEmitterHost) (:stderr 'app.manager/EventEmitterHost)
             .on $ :: 'Fn $ {}
               :args $ [] ProcessHost 'String 'Fn
               :return ProcessHost
@@ -2460,8 +2460,10 @@
                         :command proc-name args envs
                         let
                             p $ unsafe-coerce
-                              cp/spawn (w-js-log proc-name) (w-js-log args)
-                                w-js-log $ js-object (:cwd cwd) (:env envs) (:detached true)
+                              cp/spawn proc-name (to-js-data args)
+                                js-object (:cwd cwd)
+                                  :env $ to-js-data envs
+                                  :detached true
                               , ProcessHost
                           .unref p
                           , p
@@ -2519,18 +2521,14 @@
                 dispatch!
                   :: :process/error $ [] pid $ str err &newline origin
                   , sid
-              .on
-                unsafe-coerce (.-stdout proc) EventEmitterHost
-                , |data $ fn (data)
-                  dispatch!
-                    :: :process/stdout $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
-                    , sid
-              .on
-                unsafe-coerce (.-stderr proc) EventEmitterHost
-                , |data $ fn (data)
-                  dispatch!
-                    :: :process/stderr $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
-                    , sid
+              .on (.-stdout proc) |data $ fn (data)
+                dispatch!
+                  :: :process/stdout $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
+                  , sid
+              .on (.-stderr proc) |data $ fn (data)
+                dispatch!
+                  :: :process/stderr $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
+                  , sid
               , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
