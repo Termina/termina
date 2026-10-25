@@ -7,7 +7,7 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       HOST: 127.0.0.1
       NO_VERSION_CHECK: "1"
@@ -38,63 +38,19 @@ jobs:
           yarn install --immutable
           caps verify --toolchain
           node inspect-formal.mjs
-      - name: Canonical source and original checks
-        id: ordinary
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          original_blob="$(git hash-object calcit.cirru)"
-          calcit edit format
-          test "$(git hash-object calcit.cirru)" = "$original_blob"
-          calcit --check-only --keep-going --format json > acceptance/server-reachable.json
-          calcit --entry page --check-only --keep-going --format json > acceptance/page-reachable.json
-          node inspect-formal.mjs targets
-          for entry in default page; do
-            calcit --entry "$entry" analyze weak-types --only dynamic-method --summary-only --format json > "acceptance/${entry}-dynamic-methods.json"
-            jq -e '.data.summary.findings == 0' "acceptance/${entry}-dynamic-methods.json"
-            calcit --entry "$entry" analyze weak-types --only deprecated-call --summary-only --format json > "acceptance/${entry}-deprecated.json"
-          done
-      - name: Full strict both entries
-        id: strict
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          outcome=0
-          for entry in default page; do
-            calcit --entry "$entry" fix --workflow strict --verify --format json > "acceptance/${entry}-strict.json" 2> "acceptance/${entry}-strict.stderr" || outcome=1
-            jq -e '.data.workflow.status == "passed" and .diagnostics == []' "acceptance/${entry}-strict.json" || outcome=1
-          done
-          exit "$outcome"
-      - name: Original native attached tests
-        id: native
-        continue-on-error: true
-        run: calcit test --require-match --format json > acceptance/native.json
-      - name: Generate both actual graphs and original synthetic Node regressions
-        id: regression
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          yarn compile-server
-          yarn compile-page
-          node --test tests/*.test.mjs > acceptance/node-tests.log
-          yarn release-page
-          node inspect-formal.mjs
-      - name: All original gates must pass
-        env:
-          ORDINARY: ${{ steps.ordinary.outcome }}
-          STRICT: ${{ steps.strict.outcome }}
-          NATIVE: ${{ steps.native.outcome }}
-          REGRESSION: ${{ steps.regression.outcome }}
-        run: |
-          test "$ORDINARY" = success
-          test "$STRICT" = success
-          test "$NATIVE" = success
-          test "$REGRESSION" = success
+      - name: Before migration original tests and all type gates
+        run: bash verify-phase.sh before
+      - name: Official atomic source transaction and complete view guard
+        run: node migrate-source.mjs apply
+      - name: After migration same original tests and all type gates
+        run: bash verify-phase.sh after
       - uses: actions/upload-artifact@v7.0.2
         if: success()
         with:
-          name: accepted-lock
-          path: yarn.lock
+          name: accepted-source
+          path: |
+            calcit.cirru
+            yarn.lock
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.2
         if: always()
