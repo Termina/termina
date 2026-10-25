@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {readFileSync,writeFileSync,readdirSync,statSync,mkdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,readdirSync,statSync,mkdirSync,copyFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 assert.equal(process.env.GITHUB_ACTIONS,'true');assert.equal(process.platform,'linux');
 const run=(exe,args)=>execFileSync(exe,args,{encoding:'utf8',maxBuffer:32e6,stdio:['pipe','pipe','pipe']});
@@ -25,11 +25,14 @@ if(mode==='apply'){
  const files=[];function visit(dir){for(const name of readdirSync(dir).sort()){const path=dir+'/'+name;if(statSync(path).isDirectory())visit(path);else if(path.endsWith('.mjs'))files.push({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')});}}
  visit('js-out');visit('out-page');assert.ok(files.length>0);
  writeFileSync('acceptance/'+mode+'.json',JSON.stringify(files));
+ if(mode==='before-js')for(const f of files){const dest='/tmp/termina-reviewed-before-js/'+f.path;mkdirSync(dest.slice(0,dest.lastIndexOf('/')),{recursive:true});copyFileSync(f.path,dest);}
  if(mode==='after-js'){
   const before=JSON.parse(readFileSync('acceptance/before-js.json'));assert.deepEqual(files.map(f=>f.path),before.map(f=>f.path));
   const changed=files.filter((f,i)=>f.sha256!==before[i].sha256).map(f=>f.path);
+  let diff='';for(const path of changed){try{run('diff',['-u','--label','before/'+path,'--label','after/'+path,'/tmp/termina-reviewed-before-js/'+path,path]);}catch(error){assert.equal(error.status,1);diff+=error.stdout;}}
+  writeFileSync('acceptance/generated-js.diff',diff);
+  writeFileSync('acceptance/generated-js-evidence.json',JSON.stringify({files:files.length,changed,unrelatedFilesIdentical:true}));
   const allowed=new Set(['out-page/app.comp.process-detail.mjs']);
   assert.ok(changed.every(f=>allowed.has(f)),'unexpected generated changes: '+JSON.stringify(changed));
-  writeFileSync('acceptance/generated-js-evidence.json',JSON.stringify({files:files.length,changed,unrelatedFilesIdentical:true}));
  }
 }else throw Error('unknown mode');
