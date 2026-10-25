@@ -73,18 +73,18 @@
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
-            option:unwrap $ respo-browser/query-selector |.app
+            .unwrap $ respo-browser/query-selector |.app
           :examples $ []
           :schema $ :: 'respo.dom/DomElement
         'on-server-data $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-server-data (data)
-            case-default
-              option:unwrap-or (get data :kind) nil
-              println "|unknown server data kind:" data
+            match
+              .unwrap-or (get data :kind) nil
               :patch $ let
-                  changes $ schema/decode-changes $ option:unwrap-or (get data :data) ([])
+                  changes $ schema/decode-changes $ .unwrap-or (get data :data) ([])
                 when config/dev? $ println |Changes changes
                 reset! *store $ patch-twig @*store changes
+              _ $ println "|unknown server data kind:" data
             , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -145,9 +145,9 @@
           :code $ quote $ defn simulate-login! ()
             let
                 raw $ storage-get $ assert-type (:storage-key config/site) 'String
-              if (option:some? raw)
+              if (.some? raw)
                 do (println "|Found storage.")
-                  dispatch! $ :: :user/log-in $ parse-cirru-edn (option:unwrap raw)
+                  dispatch! $ :: :user/log-in $ parse-cirru-edn (.unwrap raw)
                 println "|Found no storage."
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -193,7 +193,7 @@
                   &doseq
                     command $ .to-list $ .distinct-values
                       decode-map-as
-                        option:unwrap-or (get workflow :commands) ({})
+                        .unwrap-or (get workflow :commands) ({})
                         :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
                     d! $ :: :effect/run $ {}
                       :command $ decode-map-as
@@ -206,7 +206,7 @@
                         decode-map-as
                           .unwrap $ get command :path
                           , 'String
-                      :title $ option:unwrap-or (get command :title) nil
+                      :title $ .unwrap-or (get command :title) nil
                   , &unit
               <> $ decode-map-as
                 .unwrap $ get workflow :name
@@ -222,9 +222,9 @@
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   or
-                    option:unwrap-or (get states :data) nil
-                    if (option:some? base-command)
-                      select-keys (option:unwrap base-command) ([] :code :path :title)
+                    .unwrap-or (get states :data) nil
+                    if (.some? base-command)
+                      select-keys (.unwrap base-command) ([] :code :path :title)
                       {} (:title |) (:code |) (:path |./)
                   :: 'Map 'Tag 'String
               div
@@ -320,7 +320,7 @@
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   either
-                    option:unwrap-or (get states :data) nil
+                    .unwrap-or (get states :data) nil
                     {} $ :pop? false
                   :: 'Map 'Tag 'Bool
                 remove-plugin $ use-confirm (>> states :remove) ({})
@@ -333,7 +333,7 @@
                     <>
                       decode-map-as
                         or
-                          option:unwrap-or (get command :title) nil
+                          .unwrap-or (get command :title) nil
                           , |Task
                         , 'String
                       {} $ :font-size 20
@@ -356,7 +356,7 @@
                           :command $ decode-map-as
                             .unwrap $ get command :code
                             , 'String
-                          :title $ option:unwrap-or (get command :title) nil
+                          :title $ .unwrap-or (get command :title) nil
                         , &unit
                   div
                     {} $ :style ui/row-parted
@@ -389,7 +389,7 @@
                             :return 'respo.schema/Component
                           comp-command-editor
                             decode-map-as (>> states :edit-command) (:: 'Map 'Tag 'Dynamic)
-                            %some $ decode-map-as command $ :: 'Map 'Tag 'Dynamic
+                            Option :some $ decode-map-as command $ :: 'Map 'Tag 'Dynamic
                             fn (command-draft d!)
                               hint-fn $ {}
                                 :args $ [] (:: 'Map 'Tag 'String)
@@ -445,7 +445,7 @@
                       .unwrap $ get command :path
                       , 'String
                     {} (:display :inline-block)
-                      :background-color $ hsl 0 0 100 $ %some 0.2
+                      :background-color $ hsl 0 0 100 $ Option :some 0.2
                       :padding "|0 8px"
                   =< 24 nil
                   <>
@@ -453,7 +453,7 @@
                       .unwrap $ get command :code
                       , 'String
                     {}
-                      :background-color $ hsl 0 0 100 $ %some 0.2
+                      :background-color $ hsl 0 0 100 $ Option :some 0.2
                       :padding "|0 8px"
                       :display :inline-block
                       :min-width 320
@@ -464,7 +464,7 @@
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
-              :border $ str "|1px solid " $ hsl 0 0 100 (%some 0.3)
+              :border $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.3)
               :border-radius |4px
               :padding "|8px 8px"
               :width 600
@@ -508,11 +508,10 @@
                     let
                         router $ .unwrap $ :router view
                         router-data $ .unwrap $ get router :data
-                      case-default
+                      match
                         decode-map-as
                           .unwrap $ get router :name
                           , 'Tag
-                        comp-missing router
                         :profile $ comp-profile
                           .unwrap $ :user view
                           decode-map-as router-data $ :: 'Map 'String 'String
@@ -542,6 +541,7 @@
                             comp-process-detail
                               decode-map-as (>> states :detail) (:: 'Map 'Tag 'Dynamic)
                               , process
+                        _ $ comp-missing router
                     comp-login $ decode-map-as (>> states :login) (:: 'Map 'Tag 'Dynamic)
                   comp-status-color $ :color view
                   when dev? $ comp-inspect |Store store $ {} (:bottom 0) (:left 0) (:max-width |100%)
@@ -685,18 +685,18 @@
                     {} (:overflow :auto) (:padding "|16px 0 120px 0")
                   -> histories $ map $ fn (history)
                     []
-                      option:unwrap-or (get history :id) nil
+                      .unwrap-or (get history :id) nil
                       div
                         {} $ :class-name $ str-spaced css/row-middle css-history
                         <>
                           format-date-time $ decode-map-as
-                            option:unwrap-or (get history :started-at) 0
+                            .unwrap-or (get history :started-at) 0
                             , 'Number
                           , css-date-text
                         <>
                           decode-map-as
                             or
-                              option:unwrap-or (get history :title) nil
+                              .unwrap-or (get history :title) nil
                               , |Task
                             , 'String
                           merge style/text $ {} $ :min-width 160
@@ -728,7 +728,7 @@
                 :padding "|4px 8px"
                 :width 960
                 :min-width :max-content
-                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (%some 0.2)
+                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Option :some 0.2)
                 :word-break :break-word
               |&:hover $ {} $ :background-color (hsl 200 40 32)
           :examples $ []
@@ -779,7 +779,7 @@
                   :: 'List 'Dynamic
                 state $ let
                     raw-state $ or
-                      option:unwrap-or (get states :data) nil
+                      .unwrap-or (get states :data) nil
                       {} (:query |) (:pop? false)
                   decode-map-as
                     if (struct? raw-state) (&struct:to-map raw-state) raw-state
@@ -897,7 +897,7 @@
                                 :return 'respo.schema/Component
                               comp-command-editor
                                 decode-map-as (>> states :quick-run) (:: 'Map 'Tag 'Dynamic)
-                                %none
+                                Option :none
                                 fn (draft d!)
                                   hint-fn $ {}
                                     :args $ [] (:: 'Map 'Tag 'String)
@@ -938,7 +938,7 @@
                             &doseq
                               pid $ .to-list $ .keys
                                 decode-map-as
-                                  option:unwrap-or (get router-data :processes) ({})
+                                  .unwrap-or (get router-data :processes) ({})
                                   :: 'Map 'Number $ :: 'Map 'Tag 'Dynamic
                               d! $ :: :effect/kill pid
                             , &unit
@@ -999,9 +999,9 @@
         'css-filter $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-filter
             {} $ |& $ {} (:min-width 60) (:width 60) (:background-color :transparent)
-              :color $ hsl 0 0 100 $ %some 0.8
+              :color $ hsl 0 0 100 $ Option :some 0.8
               :border-width "|0 0 1px 0"
-              :border-bottom $ str "|1px solid " $ hsl 0 0 100 (%some 0.5)
+              :border-bottom $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.5)
               :border-radius 0
               :outline :none
               :line-height |28px
@@ -1058,7 +1058,7 @@
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   or
-                    option:unwrap-or (get states :data) nil
+                    .unwrap-or (get states :data) nil
                     , initial-state
                   :: 'Map 'Tag 'String
               div
@@ -1216,9 +1216,9 @@
           :code $ quote $ defstyle css-nav
             {} $ |& $ merge ui/row-center
               {} (:height 32) (:justify-content :space-between) (:padding "|0 16px") (:font-size 16)
-                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (%some 0.1)
+                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Option :some 0.1)
                 :font-family ui/font-fancy
-                :background-color $ hsl 0 0 0 $ %some 0.04
+                :background-color $ hsl 0 0 0 $ Option :some 0.04
           :examples $ []
           :schema $ :: 'Dynamic
         'render-entry $ %{} 'CodeEntry (:doc |)
@@ -1287,7 +1287,7 @@
                     <>
                       decode-map-as
                         or
-                          option:unwrap-or (get process :title) nil
+                          .unwrap-or (get process :title) nil
                           , |Task
                         , 'String
                       merge style/text $ {} $ :color :black
@@ -1295,7 +1295,7 @@
                     {} $ :class-name css/row-middle
                     button $ {} (:class-name css/button)
                       :style $ {}
-                        :background $ hsl 0 0 0 $ %some 0.1
+                        :background $ hsl 0 0 0 $ Option :some 0.1
                         :color :white
                       :on-click $ fn (e d!)
                         hint-fn $ {}
@@ -1352,7 +1352,7 @@
                             :command $ decode-map-as
                               .unwrap $ get process :command
                               , 'String
-                            :title $ option:unwrap-or (get process :title) nil
+                            :title $ .unwrap-or (get process :title) nil
                           d! $ :: :process/remove-dead $ decode-map-as
                             .unwrap $ get process :pid
                             , 'Number
@@ -1381,7 +1381,7 @@
                               , 'String
                           div
                             {} $ :style $ {} (:margin-top 2) (:display :block)
-                              :background-color $ hsl 0 0 0 $ %some 0.5
+                              :background-color $ hsl 0 0 0 $ Option :some 0.5
                             if-not (empty? urls)
                               list-> ({})
                                 -> urls $ map $ fn (url)
@@ -1394,13 +1394,13 @@
                                 .unwrap $ get chunk :data
                                 , 'String
                               {}
-                                :color $ case-default
+                                :color $ match
                                   decode-map-as
                                     .unwrap $ get chunk :type
                                     , 'Tag
-                                  hsl 60 0 72
                                   :stderr $ hsl 60 80 36
                                   :error $ hsl 0 80 50
+                                  _ $ hsl 60 0 72
                                 :padding 8
                                 :display :block
                                 :white-space :pre-line
@@ -1428,7 +1428,7 @@
           :code $ quote $ defstyle css-process-log
             {} $ |& $ merge ui/row-middle
               {}
-                :background-color $ hsl 0 0 0 $ %some 0.5
+                :background-color $ hsl 0 0 0 $ Option :some 0.5
                 :font-size 10
           :examples $ []
           :schema $ :: 'Dynamic
@@ -1436,7 +1436,7 @@
           :code $ quote $ defstyle css-title-bar
             {} $ |& $ merge ui/row-parted
               {}
-                :background-color $ hsl 0 0 100 $ %some 0.4
+                :background-color $ hsl 0 0 100 $ Option :some 0.4
                 :color :black
                 :padding "|4px 4px"
                 :border-radius |4px
@@ -1471,13 +1471,6 @@
           :code $ quote $ defstruct DetailState (:filter 'String) (:filter? 'Bool) (:wrap? 'Bool) (:all-log? 'Bool) (:hide-thread-info? 'Bool)
           :examples $ []
           :schema $ :: 'List
-        'ScrollElementHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait ScrollElementHost (:scroll-top 'Number) (:scroll-height 'Number)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-            :names $ {} (:scroll-height |scrollHeight) (:scroll-top |scrollTop)
-            :writable $ #{} :scroll-top
-          :schema $ :: 'Trait
         'comp-process-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-process-detail (states process)
             let
@@ -1486,7 +1479,7 @@
                   :: 'List 'Dynamic
                 state $ let
                     raw-state $ either
-                      option:unwrap-or (get states :data) nil
+                      .unwrap-or (get states :data) nil
                       {} (:filter |) (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
                   decode-map-as
                     if (struct? raw-state) (&struct:to-map raw-state) raw-state
@@ -1611,7 +1604,7 @@
                     span $ {}
                       :inner-text $ decode-map-as
                         or
-                          option:unwrap-or (get process :title) nil
+                          .unwrap-or (get process :title) nil
                           , |Task
                         , 'String
                       :class-name css/font-fancy
@@ -1707,7 +1700,7 @@
                               :command $ decode-map-as
                                 .unwrap $ get process :command
                                 , 'String
-                              :title $ option:unwrap-or (get process :title) nil
+                              :title $ .unwrap-or (get process :title) nil
                               :enlarge? true
                             d! $ :: :process/remove-dead $ decode-map-as
                               .unwrap $ get process :pid
@@ -1784,8 +1777,8 @@
             {} $ |& $ merge ui/input
               {}
                 :color $ hsl 0 0 100
-                :background-color $ hsl 0 0 100 $ %some 0
-                :border-color $ hsl 0 0 100 $ %some 0.4
+                :background-color $ hsl 0 0 100 $ Option :some 0
+                :border-color $ hsl 0 0 100 $ Option :some 0.4
           :examples $ []
           :schema $ :: 'Dynamic
         'css-log $ %{} 'CodeEntry (:doc |)
@@ -1797,9 +1790,9 @@
           :code $ quote $ defstyle css-logs-list
             {} $ |& $ merge ui/flex
               {} (:overflow :auto)
-                :border $ str "|1px solid " $ hsl 0 0 100 (%some 0.3)
+                :border $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.3)
                 :padding 8
-                :background-color $ hsl 0 0 0 $ %some 0.5
+                :background-color $ hsl 0 0 0 $ Option :some 0.5
                 :overflow :auto
                 :word-break :break-all
                 :line-height 1.4
@@ -1833,11 +1826,7 @@
           :code $ quote $ defn on-scroll-down! (e d!)
             match (query-selector |.scroll-area)
               (:none) &unit
-              (:some raw-element)
-                let
-                    element $ unsafe-coerce raw-element ScrollElementHost
-                  js-set element :scroll-top $ element :scroll-height
-                  , &unit
+              (:some raw-element) (element-scroll-to-bottom! raw-element)
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -1856,7 +1845,7 @@
             respo-ui.comp :refer $ comp-tabs
             respo-ui.css :as css
             respo-alerts.core :refer $ use-modal-menu use-prompt
-            js-ffi.browser :refer $ query-selector DomElementHost
+            js-ffi.browser :refer $ query-selector DomElementHost element-scroll-to-bottom!
     'app.comp.profile $ %{} 'FileEntry
       :defs $ {}
         'comp-profile $ %{} 'CodeEntry (:doc |)
@@ -1961,7 +1950,7 @@
                   :: 'List 'Dynamic
                 state $ let
                     original-state $ or
-                      option:unwrap-or (get states :data) nil
+                      .unwrap-or (get states :data) nil
                       {} (:focused-id nil) (:base-workflow nil) (:pop? false)
                     state-map $ dissoc
                       if (struct? original-state) (&struct:to-map original-state) original-state
@@ -2011,7 +2000,7 @@
                             :return 'respo.schema/Component
                           comp-workflow-editor
                             decode-map-as (>> states :editor) (:: 'Map 'Tag 'Dynamic)
-                            %none
+                            Option :none
                             , on-close
                       :pop? state
                       fn (d!)
@@ -2056,8 +2045,8 @@
                                           .unwrap $ get workflow :id
                                           , 'String
                                         , focused-id
-                                  hsl 0 0 100 $ %some 0.2
-                                  hsl 0 0 100 $ %some 0
+                                  hsl 0 0 100 $ Option :some 0.2
+                                  hsl 0 0 100 $ Option :some 0
                               :on-click $ fn (e d!)
                                 hint-fn $ {}
                                   :args $ [] (:: 'Map 'Tag 'Dynamic)
@@ -2076,7 +2065,7 @@
                               , 'String
                 div $ {} $ :style
                   {} (:width 1)
-                    :background-color $ hsl 0 0 100 $ %some 0.2
+                    :background-color $ hsl 0 0 100 $ Option :some 0.2
                     :margin 16
                 div
                   {} $ :style $ merge ui/flex
@@ -2112,7 +2101,7 @@
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   either
-                    option:unwrap-or (get states :data) nil
+                    .unwrap-or (get states :data) nil
                     {} (:pop? false) (:edit? false)
                   :: 'Map 'Tag 'Bool
                 remove-plugin $ use-confirm (>> states :remove) ({})
@@ -2175,7 +2164,7 @@
                               :return 'respo.schema/Component
                             comp-command-editor
                               decode-map-as (>> states :add-command) (:: 'Map 'Tag 'Dynamic)
-                              %none
+                              Option :none
                               fn (command-draft d!)
                                 hint-fn $ {}
                                   :args $ [] (:: 'Map 'Tag 'String)
@@ -2224,7 +2213,7 @@
                             :return 'respo.schema/Component
                           comp-workflow-editor
                             decode-map-as (>> states :editor) (:: 'Map 'Tag 'Dynamic)
-                            %some workflow
+                            Option :some workflow
                             , on-close
                       .unwrap $ get state :edit?
                       fn (d!)
@@ -2279,9 +2268,9 @@
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   or
-                    option:unwrap-or (get states :data) nil
-                    if (option:some? base-workflow)
-                      select-keys (option:unwrap base-workflow) ([] :name :base-dir)
+                    .unwrap-or (get states :data) nil
+                    if (.some? base-workflow)
+                      select-keys (.unwrap base-workflow) ([] :name :base-dir)
                       {} (:name |) (:base-dir |./)
                   :: 'Map 'Tag 'String
               div
@@ -2343,10 +2332,10 @@
                           :return 'Unit
                         let
                             data $ select-keys state $ [] :name :base-dir
-                          if (option:some? base-workflow)
+                          if (.some? base-workflow)
                             d! $ :: :workflow/edit $ assoc data :id
-                              option:unwrap-or
-                                get (option:unwrap base-workflow) :id
+                              .unwrap-or
+                                get (.unwrap base-workflow) :id
                                 , nil
                             d! $ :: :workflow/create data
                           d! $ :: :states cursor nil
@@ -2364,7 +2353,7 @@
         'style-workflow-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-workflow-entry
             {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)
-              :border-bottom $ str "|1px solid " $ hsl 0 0 94 (%some 0.1)
+              :border-bottom $ str "|1px solid " $ hsl 0 0 94 (Option :some 0.1)
               :line-height |36px
           :examples $ []
           :schema $ :: 'Dynamic
@@ -2390,7 +2379,7 @@
         'dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def dev?
             let
-                mode $ option:unwrap-or (get-env |mode) |release
+                mode $ .unwrap-or (get-env |mode) |release
               = mode |dev
           :examples $ []
           :schema $ :: 'Bool
@@ -2404,7 +2393,7 @@
     'app.manager $ %{} 'FileEntry
       :defs $ {}
         '*registry $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *registry ({})
+          :code $ quote $ defref *registry ({})
           :examples $ []
           :schema $ :: 'Ref $ :: 'Map 'Number 'app.manager/ProcessHost
         'EventEmitterHost $ %{} 'CodeEntry (:doc |)
@@ -2474,7 +2463,7 @@
                     swap! *registry assoc pid proc
                     dispatch!
                       :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
-                        :title $ option:unwrap-or (get op-data :title) nil
+                        :title $ .unwrap-or (get op-data :title) nil
                       , sid
                     if jump? $ dispatch!
                       :: :router/change $ {} (:name :process)
@@ -2576,7 +2565,7 @@
                     :args $ [] (:: 'List 'String) (:: 'List 'String)
                     :return $ :: 'List 'String
                   if (empty? remaining) found $ let
-                      chunk $ option:unwrap $ first remaining
+                      chunk $ .unwrap $ first remaining
                     if (env-chunk? chunk)
                       recur
                         slice remaining 1 $ count remaining
@@ -2595,13 +2584,13 @@
                       :return $ :: 'Map 'String 'String
                     let
                         parts $ split chunk |=
-                        k $ option:unwrap $ first parts
+                        k $ .unwrap $ first parts
                         v $ join-string
                           slice parts 1 $ count parts
                           , |=
                       assoc acc k v
               :: :command
-                option:unwrap $ nth command-chunks 0
+                .unwrap $ nth command-chunks 0
                 slice command-chunks 1 $ count command-chunks
                 , envs
           :examples $ []
@@ -2871,10 +2860,10 @@
                       , |../package.json
                   :: 'Map 'String 'Dynamic
                 version $ decode-map-as
-                  option:unwrap $ get pkg |version
+                  .unwrap $ get pkg |version
                   , 'String
                 package-name $ decode-map-as
-                  option:unwrap $ get pkg |name
+                  .unwrap $ get pkg |name
                   , 'String
                 version-promise $ js-cast (latest-version package-name) 'js-ffi.shared/PromiseHost
               report-version! version-promise version
@@ -3027,11 +3016,11 @@
                   db $ :db reel
                   records $ :records reel
                   session $ decode-map-as
-                    option:unwrap-or
+                    .unwrap-or
                       get-in (:sessions db) ([] sid)
                       {}
                     :: 'Map 'Tag 'Dynamic
-                  old-store $ option:unwrap-or (get @*client-caches sid) nil
+                  old-store $ .unwrap-or (get @*client-caches sid) nil
                   new-store $ twig-container db session records
                   changes $ diff-twig old-store new-store $ {} (:key :id)
                 ; when config/dev? $ println "|Changes for" sid |: changes $ count records
@@ -3085,7 +3074,7 @@
             {}
               |button$0 $ {} $ :background-color :transparent
               |button$0:hover $ {} $ :background-color
-                hsl 0 0 100 $ %some 0.06
+                hsl 0 0 100 $ Option :some 0.06
           :examples $ []
           :schema $ :: 'Dynamic
         'input $ %{} 'CodeEntry (:doc |)
@@ -3117,10 +3106,10 @@
         'twig-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn twig-container (db session records)
             let
-                user-id $ option:unwrap-or (get session :user-id) nil
+                user-id $ .unwrap-or (get session :user-id) nil
                 logged-in? $ string? user-id
                 router $ decode-map-as
-                  option:unwrap-or (get session :router) ({})
+                  .unwrap-or (get session :router) ({})
                   :: 'Map 'Tag 'Dynamic
                 base-data $ {} (:logged-in? logged-in?) (:session session)
                   :reel-length $ count records
@@ -3132,22 +3121,21 @@
               merge-dynamic base-data $ decode-map-as
                 if logged-in?
                   {}
-                    :user $ twig-user $ option:unwrap-or
+                    :user $ twig-user $ .unwrap-or
                       get users $ decode-map-as user-id 'String
                       {}
-                    :router $ assoc router :data $ case-default
-                      option:unwrap-or (get router :name) nil
-                      {}
+                    :router $ assoc router :data $ match
+                      .unwrap-or (get router :name) nil
                       :history $ {} $ :histories histories
                       :workflows $ {} $ :workflows workflows
                       :home $ {} (:processes processes) (:workflows workflows)
-                        :enlarge-view $ option:unwrap-or (get session :enlarge-view) false
+                        :enlarge-view $ .unwrap-or (get session :enlarge-view) false
                       :process $ let
                           process-id $ decode-map-as
-                            option:unwrap $ get-in router $ [] :params :id
+                            .unwrap $ get-in router $ [] :params :id
                             , 'Number
                         {}
-                          :detail $ option:unwrap-or (get processes process-id)
+                          :detail $ .unwrap-or (get processes process-id)
                             decode-map-as ({}) (:: 'Map 'Tag 'Dynamic)
                           :dict $ filter-map-kv processes $ fn (k v)
                             hint-fn $ {}
@@ -3155,6 +3143,7 @@
                               :return $ :: 'MapEntryDecision 'Number $ :: 'Map 'Tag 'Dynamic
                             MapEntryDecision :keep k $ dissoc v :content
                       :profile $ twig-members sessions users
+                      _ $ {}
                     :count $ count sessions
                     :color $ color/randomColor
                   {}
@@ -3175,9 +3164,9 @@
                 (:some raw-id)
                   if (string? raw-id)
                     let
-                        user $ option:unwrap-or (get users raw-id) ({})
+                        user $ .unwrap-or (get users raw-id) ({})
                         name $ decode-map-as
-                          option:unwrap-or (get user :name) |unknown
+                          .unwrap-or (get user :name) |unknown
                           , 'String
                       MapEntryDecision :keep sid name
                     MapEntryDecision :drop
@@ -3384,7 +3373,7 @@
         'remove-dead $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-dead (db op-data sid op-id op-time)
             if
-              not $ option:unwrap-or
+              not $ .unwrap-or
                 get-in (:processes db) ([] op-data :alive?)
                 , false
               assoc db :processes $ dissoc (:processes db) op-data
@@ -3725,11 +3714,11 @@
           :code $ quote $ defn join-path (xs ys)
             if
               =
-                option:unwrap-or (first ys) |
+                .unwrap-or (first ys) |
                 , |/
               , ys $ let
                   absolute? $ =
-                    option:unwrap-or (first xs) |
+                    .unwrap-or (first xs) |
                     , |/
                   new-path $ join-segments ([])
                     concat (split xs |/) (split ys |/)
@@ -3750,7 +3739,7 @@
           :code $ quote $ defn join-segments (acc xs)
             if (empty? xs) (join-string acc |/)
               let
-                  cursor $ option:unwrap-or (first xs) |
+                  cursor $ .unwrap-or (first xs) |
                   next-acc $ cond
                       = cursor |.
                       , acc

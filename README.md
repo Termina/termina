@@ -10,11 +10,11 @@ TODO: new npm package.
 
 ### 0.30.1 迁移候选（尚未完成）
 
-此分支尚不能发布或部署：完整 strict、整页普通检查和生产构建已通过，但仍需评估剩余宿主边界，尚未验收真实浏览器登录、缓存写入和隔离服务。
-目前使用配对 CLI/procs 0.30.1-alpha.5；正式 0.30.1 的发布资产仍未齐全。模块使用精确正式 tag，
-包括 [Fuzzy Filter 0.0.16](https://github.com/mvc-works/fuzzy-filter/releases/tag/0.0.16)、
-[ws-edn 0.0.44](https://github.com/mvc-works/ws-edn.calcit/releases/tag/0.0.44) 和
-[Cumulo Reel 0.0.60](https://github.com/Cumulo/cumulo-reel.calcit/releases/tag/0.0.60)，不使用 root override 绕过 strict。
+此分支尚不能发布或部署：隔离 Linux CI 已通过迁移前后两入口完整 strict、原测试和生产构建，但尚未验收真实浏览器登录、缓存写入和完整隔离服务。
+目前使用配对的正式 CLI/procs 0.30.1，14 个模块已通过严格 Caps 安装。模块使用精确正式 tag，
+包括 [Fuzzy Filter 0.0.17](https://github.com/mvc-works/fuzzy-filter/tree/0.0.17)、
+[ws-edn 0.0.48](https://github.com/mvc-works/ws-edn.calcit/tree/0.0.48) 和
+[Cumulo Reel 0.0.62](https://github.com/Cumulo/cumulo-reel.calcit/tree/0.0.62)，不使用 root override、main 或提交哈希绕过依赖合同。
 
 用户需要注意：
 
@@ -33,9 +33,9 @@ TODO: new npm package.
 
 当前证据与限制：
 
-- 服务端可达检查 99/99；全部原生测试 4/4（含新增补丁往返）。实际前后端入口重新生成后，Node 回归 25/25，覆盖原命令解析、状态操作、组件、连接地址默认值与真实服务端投影，以及首包/增量补丁跨前后端图的往返。既有合成进程用例同时覆盖真实 spawn 和 exec 管道，复用 stdout/stderr/完成派发断言；spawn 仍检查实际参数和环境，保留失败清理。不存在的合成程序验证会话消息及无 PID 时不污染状态。不执行用户命令或启动服务。
-- 十五个 UI/客户端/配置命名空间公开冷检查 81/81、Node 侧 manager/runtime/server 冷检查 30/30。组件测试使用真实前端 `out-page/`，不再依赖局部引用入口生成。
-- 整页普通检查 372/372、实际前后端 JS 生成及 Vite 生产构建通过；构建仍有包体超过 500 kB 的提示，未提高阈值掩盖。完整 strict 工作流已通过：类型诊断、待迁移写法和源码审阅项均为 0；仍保留 211 项类型债务提示（包含提取操作函数时显式声明的既有异构 store 边界）、1 处滚动宿主 unsafe 需要评估。真实浏览器 Cmd+K、npm 联网版本查询和完整服务端回调尚未单独运行验收；合成进程回归不代表完整服务验收。
+- [官方 Linux 迁移 CI](https://github.com/Termina/termina/actions/runs/40222625770) 在迁移前后均通过全部原生测试 4/4 和 Node 回归 25/25，无跳过项。回归覆盖命令解析、状态操作、组件、连接地址默认值与真实服务端投影，以及首包/增量补丁跨前后端图的往返。既有合成进程用例覆盖真实 spawn 和 exec 管道，检查参数、环境、stdout/stderr/完成派发及失败清理；不执行用户命令或启动完整服务。
+- 全部根定义按实际 Node/browser 目标完整冷检查：迁移前 158 个，移除私有宿主声明后 157 个（Node 60、browser 97），28 个命名空间无遗漏。两入口可达检查、完整 strict 和 dynamic-method=0 均在前后通过；没有放宽原门禁。组件测试使用真实前端 `out-page/`。
+- 实际前后端 JS 生成及 Vite 生产构建通过；422 个生成文件逐一核对前后哈希，406 个完全相同，16 个变化已审阅为 Option 构造及所需 import/tag/source map、滚动 helper 替换和私有类型移除。构建仍有包体超过 500 kB 的提示，未提高阈值掩盖。仍保留显式异构 store 等真实类型边界，不宣称全部类型债务清零。真实浏览器 Cmd+K、滚动、npm 联网版本查询和完整服务端回调尚未单独运行验收；合成回归不代表完整服务验收。
 - 旧 `%:: MapEntryDecision` 改为直接构造器，移除冗余 do；非空进程字典的真实投影回归确认仍保留数字键并去掉 content，不改存档和网络字段。
 - 连接地址修复了无查询参数或只指定 host/port 时拼入 undefined 的问题：缺失键分别使用页面 hostname 和原配置端口；显式值（包括空串）及原 ws:// 协议保持不变。解析使用原 url-parse 包的显式 JS 边界，退休两个自定义 URL 宿主类型。
 - spawn 分支把 Calcit 参数列表和环境 Map 转成真实 JS Array/Object，再调用 Node；否则 Node 会把列表对象当成 options，导致目标程序收不到参数。流字段使用正确的宿主类型声明，不再重复强转；原 detached/unref 行为不变。
@@ -43,7 +43,9 @@ TODO: new npm package.
 - 版本查询改用正式 `PromiseHost` 检查真实 Promise 形状，兑现时解码 String，不再用私有 `StringPromiseHost` 假定返回文本。`app.runtime/report-version!` 保留原比较、提示文本（包括原字面量反斜杠）和 Unit 返回；非 String 明确拒绝，不转字符串或补默认值。不添加 catch，Promise 拒绝仍向外传播。现有状态测试文件用合成 Promise 验证成功文本、冒号文本、非法载荷和拒绝；不导入会读库的 server，不访问 npm 服务。
 - 键盘的原事件检查与注册不变；路由清空操作提取到 `clear-current-route!`，使用实际 Map 输入和单 Enum/Unit 派发合同，Option 缺失分支不补造 PID。原状态测试补充清空后缩短的对象身份断言，组件测试核对实际生成操作；这不替代真实浏览器键盘事件验收。
 - 启动失败而没有 PID 时，改用既有会话消息显示启动错误；不注册进程、不生成假 PID、不跳转或放大。成功启动后仍按原进程生命周期派发；Node 错误使用正式 normalize-error 读取文本。
-- 本地 14 模块视图不替代未来独立 CI 的严格 Caps 安装；不执行本地 Caps、不提交生成代码，不恢复 compact.cirru/package.cirru。
+- 85 处已核对归属的旧写法改为 Option 构造、Option 方法、defref 和字面量 match；保留原缺失值、默认分支和参数求值行为。两处 `hud!` 页面错误提示仍保留，不以 raise 替代。
+- 日志滚动复用 js-ffi 0.2.6 的 `element-scroll-to-bottom!`，删除私有 ScrollElementHost 和最后一处应用层 unsafe。仍只在查到原 `.scroll-area` 时滚动；读取一次 scrollHeight 后立即设置 scrollTop，不改平滑滚动或回退策略。正式 helper 会检查 scrollHeight 为 Number，异常不被吞掉。
+- 正式依赖和源码迁移已在官方 Linux 0.30.1 上验收；不执行本地 Caps、不提交生成代码，不恢复 compact.cirru/package.cirru。临时迁移事务、对照脚本和哈希清单不进入项目。
 - 源码查询入口缺口已汇报 [Calcit #2223](https://github.com/calcit-lang/calcit/issues/2223)；临时只读查询实际依赖 Snapshot，不修改缓存或增加编译器迁移规则。
 - 同型 Option 字段比较的误报已补充至 [Calcit #1989](https://github.com/calcit-lang/calcit/issues/1989#issuecomment-6296044450)；下游用原生 match 比较具体 payload，不抑制诊断。
 - 双生成 core 在同一进程破坏 trait 分发已汇报 [Calcit #2224](https://github.com/calcit-lang/calcit/issues/2224)。投影测试在隔离 Node 测试进程生成原 Cirru EDN，再交给前端图；不混载两份 core 或修改生成代码语义。
