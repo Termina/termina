@@ -1,0 +1,101 @@
+name: Protected Termina formal migration
+on:
+  push:
+    branches: [prepare/termina-formal-0301]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      HOST: 127.0.0.1
+      NO_VERSION_CHECK: "1"
+      TERMINA_STORAGE_FILE: /tmp/termina-ci-synthetic-unused.cirru
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: calcit-lang/setup-calcit@v1.5.0
+        with:
+          tools: calcit,caps
+          deps-file: deps.cirru
+          caps-version: "0.1.1"
+      - name: Official formal dependencies and runtime-only lock update
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance
+          corepack enable
+          corepack prepare yarn@4.18.0 --activate
+          test "$(calcit -v)" = 0.30.1
+          caps --strict --ci
+          YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-builds
+          yarn install --immutable
+          caps verify --toolchain
+          node inspect-formal.mjs
+      - name: Canonical source and original checks
+        id: ordinary
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          original_blob="$(git hash-object calcit.cirru)"
+          calcit edit format
+          test "$(git hash-object calcit.cirru)" = "$original_blob"
+          calcit --check-only --all-defs --format json > acceptance/server-all.json
+          calcit --entry page --check-only --all-defs --format json > acceptance/page-all.json
+          for entry in default page; do
+            calcit --entry "$entry" analyze dynamic-methods --summary-only --format json > "acceptance/${entry}-dynamic-methods.json"
+            calcit --entry "$entry" analyze deprecated --summary-only --format json > "acceptance/${entry}-deprecated.json"
+          done
+      - name: Full strict both entries
+        id: strict
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          outcome=0
+          for entry in default page; do
+            calcit --entry "$entry" fix --workflow strict --verify --format json > "acceptance/${entry}-strict.json" 2> "acceptance/${entry}-strict.stderr" || outcome=1
+            jq -e '.data.workflow.status == "passed" and .diagnostics == []' "acceptance/${entry}-strict.json" || outcome=1
+          done
+          exit "$outcome"
+      - name: Original native attached tests
+        id: native
+        continue-on-error: true
+        run: calcit test --require-match --format json > acceptance/native.json
+      - name: Generate both actual graphs and original synthetic Node regressions
+        id: regression
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          yarn compile-server
+          yarn compile-page
+          node --test tests/*.test.mjs > acceptance/node-tests.log
+          yarn release-page
+          node inspect-formal.mjs
+      - name: All original gates must pass
+        env:
+          ORDINARY: ${{ steps.ordinary.outcome }}
+          STRICT: ${{ steps.strict.outcome }}
+          NATIVE: ${{ steps.native.outcome }}
+          REGRESSION: ${{ steps.regression.outcome }}
+        run: |
+          test "$ORDINARY" = success
+          test "$STRICT" = success
+          test "$NATIVE" = success
+          test "$REGRESSION" = success
+      - uses: actions/upload-artifact@v7.0.2
+        if: success()
+        with:
+          name: accepted-lock
+          path: yarn.lock
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: diagnostics
+          path: acceptance/
+          if-no-files-found: warn
