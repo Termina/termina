@@ -46,11 +46,13 @@ jobs:
           original_blob="$(git hash-object calcit.cirru)"
           calcit edit format
           test "$(git hash-object calcit.cirru)" = "$original_blob"
-          calcit --check-only --all-defs --format json > acceptance/server-all.json
-          calcit --entry page --check-only --all-defs --format json > acceptance/page-all.json
+          calcit --check-only --format json > acceptance/server-reachable.json
+          calcit --entry page --check-only --format json > acceptance/page-reachable.json
+          node inspect-formal.mjs targets
           for entry in default page; do
-            calcit --entry "$entry" analyze dynamic-methods --summary-only --format json > "acceptance/${entry}-dynamic-methods.json"
-            calcit --entry "$entry" analyze deprecated --summary-only --format json > "acceptance/${entry}-deprecated.json"
+            calcit --entry "$entry" analyze weak-types --only dynamic-method --summary-only --format json > "acceptance/${entry}-dynamic-methods.json"
+            jq -e '.data.summary.findings == 0' "acceptance/${entry}-dynamic-methods.json"
+            calcit --entry "$entry" analyze weak-types --only deprecated-call --summary-only --format json > "acceptance/${entry}-deprecated.json"
           done
       - name: Full strict both entries
         id: strict

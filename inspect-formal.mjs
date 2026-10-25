@@ -8,6 +8,16 @@ const q=(...args)=>{const r=JSON.parse(run('calcit',['query',...args,'--format',
 const p=JSON.parse(readFileSync('reviewed-source.json'));mkdirSync('acceptance',{recursive:true});
 for(const [f,s]of Object.entries(p.reviewedManifests))assert.equal(readFileSync(f,'utf8'),s,'manifest changed: '+f);
 if(process.argv[2]==='manifests')process.exit(0);
+if(process.argv[2]==='targets'){
+ const nodeNamespaces=p.before.namespaces.map(n=>n.namespace).filter(n=>n==='app.manager'||n==='app.runtime'||n==='app.server'||n.startsWith('app.twig.')||n==='app.updater'||n.startsWith('app.updater.'));
+ const browserNamespaces=p.before.namespaces.map(n=>n.namespace).filter(n=>!nodeNamespaces.includes(n));
+ const checked=new Set(),counts={};
+ for(const [entry,namespaces]of [['default',nodeNamespaces],['page',browserNamespaces]]){
+  assert.ok(namespaces.length>0);const raw=run('calcit',['--entry',entry,'--check-only',...namespaces.flatMap(ns=>['--ns',ns]),'--format','json']);writeFileSync('acceptance/'+entry+'-namespaces.json',raw);const report=JSON.parse(raw);const rows=report.data.definitions;assert.ok(Array.isArray(rows));
+  const expected=p.before.defs.filter(d=>namespaces.includes(d.id.split('/')[0]));for(const d of expected){const row=rows.find(r=>r.definition===d.id);assert.ok(row,'missing '+d.id);assert.equal(row.status,'passed',d.id);assert.ok(!row.diagnostics.some(d=>d.severity==='error'));checked.add(d.id);}counts[entry]={namespaces,rootDefinitions:expected.length};
+ }
+ assert.deepEqual([...checked].sort(),p.before.defs.map(d=>d.id).sort());writeFileSync('acceptance/target-coverage.json',JSON.stringify({rootDefinitions:checked.size,allOriginalDefinitionsChecked:true,counts}));process.exit(0);
+}
 const nonRuntime=s=>s.replace(/^"(?:@calcit\/(?:procs|finger-vec)|@cirru\/parser\.ts)@[^\n]+":\n(?:  [^\n]*\n|\n)*/gm,'').replace(/"@calcit\/procs": "npm:[^"]+"/g,'"@calcit/procs": "npm:RUNTIME"');
 const oldNonRuntime=nonRuntime(p.originalLock),newLock=readFileSync('yarn.lock','utf8');
 assert.ok(oldNonRuntime.length>1000);assert.equal(nonRuntime(newLock),oldNonRuntime,'unrelated lock change');assert.match(newLock,/"@calcit\/procs@npm:0\.30\.1":/);
