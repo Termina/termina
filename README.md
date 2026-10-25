@@ -10,7 +10,7 @@ TODO: new npm package.
 
 ### 0.30.1 迁移候选（尚未完成）
 
-此分支尚不能发布或部署：隔离 Linux CI 已通过迁移前后两入口完整 strict、原测试和生产构建，但尚未验收真实浏览器登录、缓存写入和完整隔离服务。
+此分支尚不能发布 npm 或生产部署：隔离 Linux CI 已通过迁移前后两入口完整 strict、候选既有测试和生产构建，但尚未验收真实浏览器登录、缓存写入和完整隔离服务。独立 PR 前端预览不代表后端或生产部署已获批准。
 目前使用配对的正式 CLI/procs 0.30.1，14 个模块已通过严格 Caps 安装。模块使用精确正式 tag，
 包括 [Fuzzy Filter 0.0.17](https://github.com/mvc-works/fuzzy-filter/tree/0.0.17)、
 [ws-edn 0.0.48](https://github.com/mvc-works/ws-edn.calcit/tree/0.0.48) 和
@@ -33,9 +33,9 @@ TODO: new npm package.
 
 当前证据与限制：
 
-- [官方 Linux 迁移 CI](https://github.com/Termina/termina/actions/runs/40222625770) 在迁移前后均通过全部原生测试 4/4 和 Node 回归 25/25，无跳过项。回归覆盖命令解析、状态操作、组件、连接地址默认值与真实服务端投影，以及首包/增量补丁跨前后端图的往返。既有合成进程用例覆盖真实 spawn 和 exec 管道，检查参数、环境、stdout/stderr/完成派发及失败清理；不执行用户命令或启动完整服务。
+- [官方 Linux 终验 CI](https://github.com/Termina/termina/actions/runs/40224407876) 在迁移前后均通过候选既有原生测试 4/4 和 Node 回归 25/25，无跳过项。回归覆盖命令解析、状态操作、组件、连接地址默认值与真实服务端投影，以及首包/增量补丁跨前后端图的往返。既有合成进程用例覆盖真实 spawn 和 exec 管道，检查参数、环境、stdout/stderr/完成派发及失败清理；不执行用户命令或启动完整服务。
 - 全部根定义按实际 Node/browser 目标完整冷检查：迁移前 158 个，移除私有宿主声明后 157 个（Node 60、browser 97），28 个命名空间无遗漏。两入口可达检查、完整 strict 和 dynamic-method=0 均在前后通过；没有放宽原门禁。组件测试使用真实前端 `out-page/`。
-- 实际前后端 JS 生成及 Vite 生产构建通过；422 个生成文件逐一核对前后哈希，406 个完全相同，16 个变化已审阅为 Option 构造及所需 import/tag/source map、滚动 helper 替换和私有类型移除。构建仍有包体超过 500 kB 的提示，未提高阈值掩盖。仍保留显式异构 store 等真实类型边界，不宣称全部类型债务清零。真实浏览器 Cmd+K、滚动、npm 联网版本查询和完整服务端回调尚未单独运行验收；合成回归不代表完整服务验收。
+- 实际前后端 JS 生成及 Vite 生产构建通过。两轮源码迁移均逐一核对 422 个 JS 模块：第一轮 16 个变化为 Option 构造及所需 import/tag/source map、滚动 helper 替换和私有类型移除；第二轮 11 个变化仅为 merge/distinct-values 调用名，其余模块在各轮字节相同。构建仍有包体超过 500 kB 的提示，未提高阈值掩盖。仍保留显式异构 store 等真实类型边界，不宣称全部类型债务清零。真实浏览器 Cmd+K、滚动、npm 联网版本查询和完整服务端回调尚未单独运行验收；合成回归不代表完整服务验收。
 - 旧 `%:: MapEntryDecision` 改为直接构造器，移除冗余 do；非空进程字典的真实投影回归确认仍保留数字键并去掉 content，不改存档和网络字段。
 - 连接地址修复了无查询参数或只指定 host/port 时拼入 undefined 的问题：缺失键分别使用页面 hostname 和原配置端口；显式值（包括空串）及原 ws:// 协议保持不变。解析使用原 url-parse 包的显式 JS 边界，退休两个自定义 URL 宿主类型。
 - spawn 分支把 Calcit 参数列表和环境 Map 转成真实 JS Array/Object，再调用 Node；否则 Node 会把列表对象当成 options，导致目标程序收不到参数。流字段使用正确的宿主类型声明，不再重复强转；原 detached/unref 行为不变。
@@ -45,6 +45,8 @@ TODO: new npm package.
 - 启动失败而没有 PID 时，改用既有会话消息显示启动错误；不注册进程、不生成假 PID、不跳转或放大。成功启动后仍按原进程生命周期派发；Node 错误使用正式 normalize-error 读取文本。
 - 85 处已核对归属的旧写法改为 Option 构造、Option 方法、defref 和字面量 match；保留原缺失值、默认分支和参数求值行为。两处 `hud!` 页面错误提示仍保留，不以 raise 替代。
 - 日志滚动复用 js-ffi 0.2.6 的 `element-scroll-to-bottom!`，删除私有 ScrollElementHost 和最后一处应用层 unsafe。仍只在查到原 `.scroll-area` 时滚动；读取一次 scrollHeight 后立即设置 scrollTop，不改平滑滚动或回退策略。正式 helper 会检查 scrollHeight 为 Number，异常不被吞掉。
+- 另清理 6 处 merge-dynamic 和 2 处 vals，保留 Map 从左至右覆盖和 Set 去重语义；两入口废弃调用 8→0。WSS 配置明确声明原有 Map<Tag,Dynamic> 边界，以容纳回调与 host 字符串，不伪称它仍是纯函数值 Map；不改业务数据库类型或放宽门禁。
+- 上传与 npm 发布工作流使用同一组校验内容和正式工具链；PR 仅在独立前缀上传 dist，使用 COS action 内置逐文件校验，不执行生产 rsync。主分支与既有 Release 的前端 rsync 路径不变，不上传或启动后端。COS_BUCKET、COS_SECRET_ID、COS_SECRET_KEY 需在仓库或组织中授权，不在仓库保存凭据。本地构建默认相对资源路径，CI 的 VITE_BASE_URL 只影响前端资源地址。
 - 正式依赖和源码迁移已在官方 Linux 0.30.1 上验收；不执行本地 Caps、不提交生成代码，不恢复 compact.cirru/package.cirru。临时迁移事务、对照脚本和哈希清单不进入项目。
 - 源码查询入口缺口已汇报 [Calcit #2223](https://github.com/calcit-lang/calcit/issues/2223)；临时只读查询实际依赖 Snapshot，不修改缓存或增加编译器迁移规则。
 - 同型 Option 字段比较的误报已补充至 [Calcit #1989](https://github.com/calcit-lang/calcit/issues/1989#issuecomment-6296044450)；下游用原生 match 比较具体 payload，不抑制诊断。

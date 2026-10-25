@@ -2767,7 +2767,7 @@
             :args $ [] 'Dynamic
         'encode-database $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-database (db)
-            merge-dynamic (:extensions db)
+            merge (:extensions db)
               dissoc (&struct:to-map db) :extensions
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -2983,18 +2983,20 @@
         'run-server! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-server! (port)
             let
-                options $ {}
-                  :on-open $ fn (sid socket)
-                    @*proxied-dispatch! (:: :session/connect) (decode-map-as sid 'String)
-                    println "|New client."
-                  :on-data $ fn (sid action)
-                    @*proxied-dispatch! action $ decode-map-as sid 'String
-                  :on-close $ fn (sid event) (println "|Client closed!")
-                    @*proxied-dispatch! (:: :session/disconnect) (decode-map-as sid 'String)
-                  :on-error $ fn (error) (js/console.error error)
+                options $ assert-type
+                  {}
+                    :on-open $ fn (sid socket)
+                      @*proxied-dispatch! (:: :session/connect) (decode-map-as sid 'String)
+                      println "|New client."
+                    :on-data $ fn (sid action)
+                      @*proxied-dispatch! action $ decode-map-as sid 'String
+                    :on-close $ fn (sid event) (println "|Client closed!")
+                      @*proxied-dispatch! (:: :session/disconnect) (decode-map-as sid 'String)
+                    :on-error $ fn (error) (js/console.error error)
+                  :: 'Map 'Tag 'Dynamic
               match (env-get |HOST)
                 (:some host)
-                  wss-serve! port $ merge-dynamic options $ {} (:host host)
+                  wss-serve! port $ merge options $ {} (:host host)
                 (:none) (wss-serve! port options)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'ws-edn.server/NodeWebSocketServerHost)
@@ -3118,7 +3120,7 @@
                 histories $ :histories db
                 sessions $ :sessions db
                 users $ :users db
-              merge-dynamic base-data $ decode-map-as
+              merge base-data $ decode-map-as
                 if logged-in?
                   {}
                     :user $ twig-user $ .unwrap-or
@@ -3343,7 +3345,7 @@
                   , 'String
                 raw-title $ .unwrap-or (get op-data :title) nil
                 title $ if (nil? raw-title) nil $ decode-map-as raw-title 'String
-                process $ merge-dynamic schema/process op-data $ {} (:pid pid) (:command command) (:cwd cwd) (:title title) (:started-at op-time) (:alive? true)
+                process $ merge schema/process op-data $ {} (:pid pid) (:command command) (:cwd cwd) (:title title) (:started-at op-time) (:alive? true)
                 history $ merge schema/history $ {} (:command command) (:cwd cwd) (:started-at op-time) (:id op-id) (:title title)
               assoc
                 assoc db :processes $ assoc (:processes db) pid process
@@ -3507,7 +3509,7 @@
                 username $ .unwrap $ get credentials 0
                 password $ .unwrap $ get credentials 1
                 maybe-user $ find
-                  &set:to-list $ vals $ :users db
+                  &set:to-list $ distinct-values $ :users db
                   fn (user)
                     hint-fn $ {}
                       :args $ [] $ :: 'Map 'Tag 'Dynamic
@@ -3551,7 +3553,7 @@
                 username $ .unwrap $ get credentials 0
                 password $ .unwrap $ get credentials 1
                 maybe-user $ find
-                  &set:to-list $ vals $ :users db
+                  &set:to-list $ distinct-values $ :users db
                   fn (user)
                     hint-fn $ {}
                       :args $ [] $ :: 'Map 'Tag 'Dynamic
@@ -3628,7 +3630,7 @@
                   :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
                 command $ .unwrap-or (get commands command-id) ({})
               assoc db :workflows $ assoc workflows workflow-id $ assoc workflow :commands
-                assoc commands command-id $ merge-dynamic command changes
+                assoc commands command-id $ merge command changes
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
             :args $ [] 'app.schema/Database 'String 'String (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
@@ -3641,7 +3643,7 @@
                 workflow $ .unwrap-or
                   get (:workflows db) id
                   {}
-              assoc db :workflows $ assoc (:workflows db) id $ merge-dynamic workflow changes
+              assoc db :workflows $ assoc (:workflows db) id $ merge workflow changes
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'app.schema/Database)
             :args $ [] 'app.schema/Database (:: 'Map 'Tag 'Dynamic) 'String 'String 'Number
