@@ -34,7 +34,7 @@ jobs:
           test "$(calcit -v)" = 0.30.1
           node inspect-formal.mjs manifests
           caps --strict --ci
-          YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-builds
+          YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-build
           yarn install --immutable
           caps verify --toolchain
           node inspect-formal.mjs
