@@ -3695,7 +3695,7 @@
                     (:none) &unit
                     (:some pid)
                       when
-                        not $ nil? pid
+                        not $ or (nil? pid) (= pid false)
                         dispatch! $ :: :process/shorten-content $ decode-map-as pid 'Number
                 :history $ dispatch! $ :: :process/clear-history nil
                 :process $ match
