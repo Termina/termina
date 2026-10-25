@@ -1,0 +1,78 @@
+name: Protected Termina final acceptance
+on:
+  push:
+    branches: [prepare/termina-final-0301]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      HOST: 127.0.0.1
+      NO_VERSION_CHECK: "1"
+      TERMINA_STORAGE_FILE: /tmp/termina-final-ci-synthetic-unused.cirru
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: calcit-lang/setup-calcit@v1.5.0
+        with:
+          tools: calcit,caps
+          deps-file: deps.cirru
+          caps-version: "0.1.1"
+      - name: Install unchanged exact formal graph
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare yarn@4.18.0 --activate
+          caps --strict --ci
+          yarn install --immutable
+          caps verify --toolchain
+          node inspect-formal.mjs
+      - name: Before migration original tests and all type gates
+        run: bash verify-phase.sh before
+      - name: Confirm published APIs and apply official guarded transaction
+        run: node migrate-source.mjs apply
+      - name: After migration same original tests and all type gates
+        run: bash verify-phase.sh after
+      - name: Execute exact final upload and npm validation body
+        run: node migrate-source.mjs final-gates
+      - name: Check optional CDN base while preserving relative runtime artifact
+        env:
+          VITE_BASE_URL: https://cos-sh.tiye.me/Termina/termina/pr/isolated-ci/${{ github.run_id }}/
+        run: |
+          set -euo pipefail
+          cp -R dist "$RUNNER_TEMP/termina-relative-dist"
+          yarn release-page
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const html=fs.readFileSync("dist/index.html","utf8"),base=process.env.VITE_BASE_URL;const paths=[...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)].map(m=>m[1]).filter(p=>!p.includes("favored-fonts"));assert.equal(paths.length,2);assert.ok(paths.every(p=>p.startsWith(base+"assets/")));fs.writeFileSync("acceptance/cdn-base.json",JSON.stringify({base,paths,passed:true}));'
+          mv dist "$RUNNER_TEMP/termina-cdn-dist"
+          cp -R "$RUNNER_TEMP/termina-relative-dist" dist
+          MIGRATION_PHASE=after node inspect-formal.mjs
+      - uses: actions/upload-artifact@v7.0.2
+        if: success()
+        with:
+          name: accepted-source
+          path: |
+            calcit.cirru
+            yarn.lock
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: success()
+        with:
+          name: accepted-runtime
+          path: |
+            js-out/
+            out-page/
+            dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: diagnostics
+          path: acceptance/
+          if-no-files-found: warn
