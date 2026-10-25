@@ -1,59 +1,121 @@
-name: Try to upload
+name: Validate and upload frontend
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: termina-frontend-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'production' }}
+  cancel-in-progress: false
+  queue: max
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
-
+          package-manager-cache: false
       - name: Enable pinned Yarn
         run: |
           corepack enable
           corepack prepare yarn@4.18.0 --activate
-          yarn --version
-
       - uses: calcit-lang/setup-calcit@ca701be5a471759e442aa053cd100720bbe1f09f # v1.5.0
         with:
           tools: calcit,caps
-
-      - name: Install dependencies
-        run: caps --strict --ci && yarn install --immutable
-
-      - name: Validate Calcit entries and toolchain
+          deps-file: deps.cirru
+          caps-version: "0.1.1"
+      - name: Install dependencies and verify toolchain
         run: |
+          set -euo pipefail
+          caps --strict --ci
+          yarn install --immutable
           caps verify --toolchain
-          calcit calcit.cirru --check-only
-          calcit calcit.cirru --entry page --check-only
-          calcit analyze dynamic-methods --summary-only --format json
-          calcit --entry page analyze dynamic-methods --summary-only --format json
-          calcit analyze deprecated --summary-only --format json
-          calcit --entry page analyze deprecated --summary-only --format json
-
-      - run: yarn compile-server && yarn compile-page && yarn release-page
-
-      - name: Upload web assets
+      - name: Validate source and both entry contracts
+        run: |
+          set -euo pipefail
+          original_blob="$(git hash-object calcit.cirru)"
+          calcit edit format
+          test "$(git hash-object calcit.cirru)" = "$original_blob"
+          test ! -e compact.cirru
+          test ! -e package.cirru
+          for entry in default page; do
+            calcit --entry "$entry" --check-only
+            calcit --entry "$entry" fix --workflow strict --verify --format json | jq -e '.data.workflow.status == "passed" and .diagnostics == []'
+            calcit --entry "$entry" analyze weak-types --only dynamic-method --summary-only --format json | jq -e '.data.summary.findings == 0'
+            calcit --entry "$entry" analyze weak-types --only deprecated-call --summary-only --format json | jq -e '.data.summary.calls == 0'
+          done
+          # Cold-check root definitions in their real target, not browser code under Node.
+          calcit --check-only --ns app.manager --ns app.runtime --ns app.server --ns app.twig.container --ns app.twig.user \
+            --ns app.updater --ns app.updater.process --ns app.updater.router --ns app.updater.session --ns app.updater.user --ns app.updater.workflow
+          calcit --entry page --check-only --ns 'app.$meta' --ns app.client --ns app.comp.command --ns app.comp.container \
+            --ns app.comp.history --ns app.comp.home --ns app.comp.login --ns app.comp.missing --ns app.comp.navigation \
+            --ns app.comp.process --ns app.comp.process-detail --ns app.comp.profile --ns app.comp.workflow \
+            --ns app.config --ns app.schema --ns app.style --ns app.util
+          calcit test --require-match
+      - name: Select isolated CDN asset path
+        id: asset-path
+        env:
+          CDN_ORIGIN: https://cos-sh.tiye.me
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            asset_prefix="${GITHUB_REPOSITORY}/pr/${PR_NUMBER}/${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}/"
+          else
+            asset_prefix="${GITHUB_REPOSITORY}/"
+          fi
+          echo "VITE_BASE_URL=${CDN_ORIGIN}/${asset_prefix}" >> "$GITHUB_ENV"
+          echo "prefix=${asset_prefix}" >> "$GITHUB_OUTPUT"
+          echo "base-url=${CDN_ORIGIN}/${asset_prefix}" >> "$GITHUB_OUTPUT"
+      - name: Build both graphs and run original Node regressions
+        run: |
+          set -euo pipefail
+          yarn compile-server
+          yarn compile-page
+          node --test tests/*.test.mjs
+          yarn release-page
+      - name: Save successful build for isolated acceptance
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: termina-build-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            js-out/
+            out-page/
+            dist/
+      - name: Upload frontend with built-in per-file verification
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' && github.actor != 'dependabot[bot]')
+        uses: worktools/cos-upload-action@06d6027dcca6413c5936e04a9b6e9f0d5ef71ba0 # v1.2.0
+        with:
+          source-dir: dist
+          bucket: ${{ secrets.COS_BUCKET }}
+          region: ap-shanghai
+          prefix: ${{ steps.asset-path.outputs.prefix }}
+          public-base-url: ${{ steps.asset-path.outputs.base-url }}
+          secret-id: ${{ secrets.COS_SECRET_ID }}
+          secret-key: ${{ secrets.COS_SECRET_KEY }}
+      - name: Upload web assets to original frontend path
         id: deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: Pendect/action-rsyncer@b7f90f4f8ed893d4e3f852f7a73180631f63d4bd # v2.0.0
         env:
-          DEPLOY_KEY: ${{secrets.rsync_private_key}}
+          DEPLOY_KEY: ${{ secrets.rsync_private_key }}
         with:
           flags: '-avzr --progress'
           options: ''
           ssh_options: ''
           src: 'dist/*'
           dest: 'rsync-user@tiye.me:/web-assets/repo/${{ github.repository }}'
-
-      - name: Display status from deploy
+      - name: Display deploy status
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: echo "${{ steps.deploy.outputs.status }}"
