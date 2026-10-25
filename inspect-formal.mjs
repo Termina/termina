@@ -14,7 +14,7 @@ if(process.argv[2]==='targets'){
  const checked=new Set(),counts={};
  for(const [entry,namespaces]of [['default',nodeNamespaces],['page',browserNamespaces]]){
   assert.ok(namespaces.length>0);const raw=run('calcit',['--entry',entry,'--check-only',...namespaces.flatMap(ns=>['--ns',ns]),'--format','json']);writeFileSync('acceptance/'+entry+'-namespaces.json',raw);const report=JSON.parse(raw);const rows=report.data.definitions;assert.ok(Array.isArray(rows));
-  const expected=p.before.defs.filter(d=>namespaces.includes(d.id.split('/')[0]));for(const d of expected){const row=rows.find(r=>r.definition===d.id);assert.ok(row,'missing '+d.id);assert.equal(row.status,'passed',d.id);assert.ok(!row.diagnostics.some(d=>d.severity==='error'));checked.add(d.id);}counts[entry]={namespaces,rootDefinitions:expected.length};
+  const expected=p.before.defs.filter(d=>namespaces.includes(d.id.split('/')[0]));assert.deepEqual([...report.data.checked_definition_ids].sort(),expected.map(d=>d.id).sort());assert.ok(!report.diagnostics.some(d=>d.severity==='error'));for(const d of expected){const row=rows.find(r=>r.id===d.id);assert.ok(row,'missing '+d.id);assert.equal(row.status,'passed',d.id);checked.add(d.id);}counts[entry]={namespaces,rootDefinitions:expected.length};
  }
  assert.deepEqual([...checked].sort(),p.before.defs.map(d=>d.id).sort());writeFileSync('acceptance/target-coverage.json',JSON.stringify({rootDefinitions:checked.size,allOriginalDefinitionsChecked:true,counts}));process.exit(0);
 }
