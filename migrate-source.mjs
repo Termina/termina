@@ -10,7 +10,7 @@ const schema=n=>Array.isArray(n)?n[0]==='{}'?['{}',...n.slice(1).map(pair=>pair.
 assert.equal(readFileSync('yarn.lock','utf8'),p.originalLock);
 const mode=process.argv[2];mkdirSync('acceptance',{recursive:true});
 if(mode==='apply'){
- assert.equal(blob(),p.blob);run('node',['inspect-formal.mjs']);assert.equal(m.operations.length,8);
+ assert.equal(blob(),p.blob);run('node',['inspect-formal.mjs']);assert.equal(m.operations.length,9);
  for(const [name,expected]of Object.entries(m.core)){
   const raw=run('calcit',['query','def','calcit.core/'+name,'--format','json']),result=JSON.parse(raw);assert.deepEqual(result.diagnostics,[]);assert.deepEqual(result.data.code,expected.code);assert.deepEqual(schema(result.data.schema),schema(expected.schema));writeFileSync('acceptance/core-'+name+'.json',raw);
  }
