@@ -31,8 +31,11 @@ if(mode==='apply'){
   const changed=files.filter((f,i)=>f.sha256!==before[i].sha256).map(f=>f.path);
   let diff='';for(const path of changed){try{run('diff',['-u','--label','before/'+path,'--label','after/'+path,'/tmp/termina-reviewed-before-js/'+path,path]);}catch(error){assert.equal(error.status,1);diff+=error.stdout;}}
   writeFileSync('acceptance/generated-js.diff',diff);
-  writeFileSync('acceptance/generated-js-evidence.json',JSON.stringify({files:files.length,changed,unrelatedFilesIdentical:true}));
-  const allowed=new Set(['out-page/app.comp.process-detail.mjs']);
-  assert.ok(changed.every(f=>allowed.has(f)),'unexpected generated changes: '+JSON.stringify(changed));
+  const reviewed=JSON.parse(readFileSync('reviewed-js.json'));
+  assert.equal(createHash('sha256').update(readFileSync('reviewed-migration.json')).digest('hex'),reviewed.planSha256);
+  assert.equal(p.blob,reviewed.sourceBefore);assert.equal(blob(),reviewed.sourceAfter);
+  assert.deepEqual(before,reviewed.before);assert.deepEqual(files,reviewed.after);assert.deepEqual(changed,reviewed.changed);
+  assert.equal(createHash('sha256').update(diff).digest('hex'),reviewed.reviewedDiffSha256);
+  writeFileSync('acceptance/generated-js-evidence.json',JSON.stringify({files:files.length,changed,unrelatedFilesIdentical:true,allBeforeAfterHashesMatchReviewed:true,exactReviewedDiff:true}));
  }
 }else throw Error('unknown mode');
