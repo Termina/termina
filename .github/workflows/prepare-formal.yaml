@@ -46,8 +46,8 @@ jobs:
           original_blob="$(git hash-object calcit.cirru)"
           calcit edit format
           test "$(git hash-object calcit.cirru)" = "$original_blob"
-          calcit --check-only --format json > acceptance/server-reachable.json
-          calcit --entry page --check-only --format json > acceptance/page-reachable.json
+          calcit --check-only --keep-going --format json > acceptance/server-reachable.json
+          calcit --entry page --check-only --keep-going --format json > acceptance/page-reachable.json
           node inspect-formal.mjs targets
           for entry in default page; do
             calcit --entry "$entry" analyze weak-types --only dynamic-method --summary-only --format json > "acceptance/${entry}-dynamic-methods.json"
