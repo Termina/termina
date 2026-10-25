@@ -19,3 +19,5 @@ out-page/
 dist/
 .calcit-error.cirru
 .calcit/
+tests/
+vite.config.mjs

@@ -34,7 +34,7 @@ TODO: new npm package.
 当前证据与限制：
 
 - [官方 Linux 终验 CI](https://github.com/Termina/termina/actions/runs/40224407876) 在迁移前后均通过候选既有原生测试 4/4 和 Node 回归 25/25，无跳过项。回归覆盖命令解析、状态操作、组件、连接地址默认值与真实服务端投影，以及首包/增量补丁跨前后端图的往返。既有合成进程用例覆盖真实 spawn 和 exec 管道，检查参数、环境、stdout/stderr/完成派发及失败清理；不执行用户命令或启动完整服务。
-- 全部根定义按实际 Node/browser 目标完整冷检查：迁移前 158 个，移除私有宿主声明后 157 个（Node 60、browser 97），28 个命名空间无遗漏。两入口可达检查、完整 strict 和 dynamic-method=0 均在前后通过；没有放宽原门禁。组件测试使用真实前端 `out-page/`。
+- 原 main 有 148 个定义，完整迁移后的候选有 157 个。后续 typed 候选清理阶段的独立 CI 对照为 158→157（移除私有宿主声明），不是原 main 的计数。全部 28 个命名空间按实际 Node/browser 目标完整冷检查，最终 Node 60、browser 97；两入口可达检查、完整 strict 和 dynamic-method=0 均通过。三份 Node 业务回归是迁移候选新增，不是原 main 已有测试；组件测试使用真实前端 `out-page/`。
 - 实际前后端 JS 生成及 Vite 生产构建通过。两轮源码迁移均逐一核对 422 个 JS 模块：第一轮 16 个变化为 Option 构造及所需 import/tag/source map、滚动 helper 替换和私有类型移除；第二轮 11 个变化仅为 merge/distinct-values 调用名，其余模块在各轮字节相同。构建仍有包体超过 500 kB 的提示，未提高阈值掩盖。仍保留显式异构 store 等真实类型边界，不宣称全部类型债务清零。真实浏览器 Cmd+K、滚动、npm 联网版本查询和完整服务端回调尚未单独运行验收；合成回归不代表完整服务验收。
 - 旧 `%:: MapEntryDecision` 改为直接构造器，移除冗余 do；非空进程字典的真实投影回归确认仍保留数字键并去掉 content，不改存档和网络字段。
 - 连接地址修复了无查询参数或只指定 host/port 时拼入 undefined 的问题：缺失键分别使用页面 hostname 和原配置端口；显式值（包括空串）及原 ws:// 协议保持不变。解析使用原 url-parse 包的显式 JS 边界，退休两个自定义 URL 宿主类型。

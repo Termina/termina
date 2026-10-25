@@ -7,6 +7,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: termina-frontend-production
+  cancel-in-progress: false
+  queue: max
+
 jobs:
   publish-npm:
     runs-on: ubuntu-24.04
@@ -55,7 +60,7 @@ jobs:
             --ns app.comp.process --ns app.comp.process-detail --ns app.comp.profile --ns app.comp.workflow \
             --ns app.config --ns app.schema --ns app.style --ns app.util
           calcit test --require-match
-      - name: Build both graphs and run original Node regressions
+      - name: Build both graphs and run candidate Node regressions
         env:
           VITE_BASE_URL: https://cos-sh.tiye.me/${{ github.repository }}/
         run: |

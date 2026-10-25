@@ -76,7 +76,7 @@ jobs:
           echo "VITE_BASE_URL=${CDN_ORIGIN}/${asset_prefix}" >> "$GITHUB_ENV"
           echo "prefix=${asset_prefix}" >> "$GITHUB_OUTPUT"
           echo "base-url=${CDN_ORIGIN}/${asset_prefix}" >> "$GITHUB_OUTPUT"
-      - name: Build both graphs and run original Node regressions
+      - name: Build both graphs and run candidate Node regressions
         run: |
           set -euo pipefail
           yarn compile-server

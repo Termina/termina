@@ -31,6 +31,9 @@ test('clear shortcut operations retain wire payloads and omit absent process IDs
   :session $ {} (:enlarge-view nil)`, [':: :process/clear nil']],
     [`{}
   :router $ {} (:name :home)
+  :session $ {} (:enlarge-view false)`, [':: :process/clear nil']],
+    [`{}
+  :router $ {} (:name :home)
   :session $ {} (:enlarge-view 0)`, [':: :process/clear nil', ':: :process/shorten-content 0']],
     [`{}
   :router $ {} (:name :history)`, [':: :process/clear-history nil']],
