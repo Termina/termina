@@ -52,7 +52,8 @@ test("session and account transitions keep message and login behavior", () => {
   state = apply(state, ":: :session/enlarge 42");
   assert.equal(read(read(read(wire(state), "sessions"), "s1"), "enlarge-view"), 42);
   state = apply(state, ":: :session/enlarge nil");
-  assert.equal(read(read(read(wire(state), "sessions"), "s1"), "enlarge-view"), null);
+  // Clearing the enlarged view now removes the field instead of storing nil.
+  assert.equal(c.option_$o_some_$q_(c.get(read(read(wire(state), "sessions"), "s1"), "enlarge-view")), false);
   state = apply(state, ":: :user/sign-up $ [] |Ada |synthetic-password", "user1");
   assert.equal(read(read(read(wire(state), "sessions"), "s1"), "user-id"), "user1");
   const stored = read(read(wire(state), "users"), "user1");
