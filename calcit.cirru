@@ -170,7 +170,7 @@
                   :color $ hsl 0 0 40
                 :on-click $ fn (e d!)
                   hint-fn $ Fn respo.schema/RespoEvent
-                    Fn AnyEnum $ -> Unit
+                    Fn app.schema/Op $ -> Unit
                     -> Unit
                   &doseq
                     command $ .to-list $ .distinct-values
@@ -219,7 +219,7 @@
                   :placeholder |title...
                   :on-input $ fn (e d!)
                     hint-fn $ Fn respo.schema/RespoEvent
-                      Fn AnyEnum $ -> Unit
+                      Fn app.schema/Op $ -> Unit
                       -> Unit
                     d! $ app.schema/Op :states cursor $ assoc state :title (app.schema/event-value e)
                     , &unit
@@ -230,7 +230,7 @@
                   :placeholder "|Command code"
                   :on-input $ fn (e d!)
                     hint-fn $ Fn respo.schema/RespoEvent
-                      Fn AnyEnum $ -> Unit
+                      Fn app.schema/Op $ -> Unit
                       -> Unit
                     d! $ app.schema/Op :states cursor $ assoc state :code (app.schema/event-value e)
                     , &unit
@@ -241,7 +241,7 @@
                   :placeholder "|Command path"
                   :on-input $ fn (e d!)
                     hint-fn $ Fn respo.schema/RespoEvent
-                      Fn AnyEnum $ -> Unit
+                      Fn app.schema/Op $ -> Unit
                       -> Unit
                     d! $ app.schema/Op :states cursor $ assoc state :path (app.schema/event-value e)
                     , &unit
@@ -2087,6 +2087,11 @@
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
             :names $ {} $ :on |on
           :schema $ quote Trait
+        'ParsedCommand $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defenum ParsedCommand
+            :command String (List String) (Map String String)
+          :examples $ []
+          :schema $ quote EnumDef
         'ProcessHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait ProcessHost
             :pid $ JsNullish Number
@@ -2250,12 +2255,12 @@
                         k $ .unwrap $ first parts
                         v $ join-string (slice parts 1) |=
                       assoc acc k v
-              :: :command
+              ParsedCommand :command
                 .unwrap $ nth command-chunks 0
                 slice command-chunks 1
                 , envs
           :examples $ []
-          :schema $ quote $ Fn String (-> AnyEnum) (:features :js-ffi)
+          :schema $ quote $ Fn String (-> app.manager/ParsedCommand) (:features :js-ffi)
         'read-bool-field-or $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-bool-field-or (data key fallback)
             match (get data key)

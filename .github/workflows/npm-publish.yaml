@@ -28,7 +28,7 @@ jobs:
         run: |
           corepack enable
           corepack prepare yarn@4.18.0 --activate
-      - uses: calcit-lang/setup-calcit@ca701be5a471759e442aa053cd100720bbe1f09f # v1.5.0
+      - uses: calcit-lang/setup-calcit@4a5130ea981278fd4f624f2c2cf64e6776742c01 # v1.5.1
         with:
           tools: calcit,caps
           deps-file: deps.cirru
@@ -70,7 +70,7 @@ jobs:
           node --test tests/*.test.mjs
           yarn release-page
       - name: Upload frontend with built-in per-file verification
-        uses: worktools/cos-upload-action@06d6027dcca6413c5936e04a9b6e9f0d5ef71ba0 # v1.2.0
+        uses: worktools/cos-upload-action@8c4f3d09a4478b0d4c8698ffb94759b41831cba8 # v1.3.0
         with:
           source-dir: dist
           bucket: ${{ secrets.COS_BUCKET }}
