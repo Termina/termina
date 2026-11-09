@@ -34,7 +34,9 @@ test("command fields retain actual text and explicit false, with fallback only f
 
 test("spawn and exec preserve synthetic stdout/stderr and completion", { timeout: 5000 }, async t => {
   const tags = c.init_tags(["command", "cwd", "pid"]);
-  const source = "process.stdout.write(process.env.TERMINA_SYNTHETIC);process.stderr.write('合成-stderr');";
+  const source = "const bytes=Buffer.from(process.env.TERMINA_SYNTHETIC);"
+    + "process.stdout.write(bytes.subarray(0,2));"
+    + "setTimeout(()=>{process.stdout.write(bytes.subarray(2));process.stderr.write('合成-stderr');},50);";
   const command = `TERMINA_SYNTHETIC=:合成 ${JSON.stringify(process.execPath)} -e ${JSON.stringify(source)}`;
   const forward = "process.stdin.on('data', chunk => process.stdout.write(chunk));";
   for (const input of [command, `${command} | ${JSON.stringify(process.execPath)} -e ${JSON.stringify(forward)}`]) {
