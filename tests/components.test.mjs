@@ -98,9 +98,13 @@ test('workflow button preserves command paths and dispatches one Enum without ru
 });
 
 test('command editor preserves legacy draft values, edits each field and submits two arguments', () => {
-  const cursor = parse('[] :editor 7');
+  const cursor = parse('[] :editor |command 7');
   const state = parse('{} (:title |合成🐈) (:code |never-run) (:path |./sandbox)');
-  const states = c.parse_cirru_edn('{} (:cursor $ [] :editor 7) (:data $ {} (:title |合成🐈) (:code |never-run) (:path |./sandbox))');
+  const states = c.parse_cirru_edn('{} (:cursor $ [] :editor |command 7) (:data $ {} (:title |合成🐈) (:code |never-run) (:path |./sandbox))');
+  assert.throws(
+    () => comp_command_editor(parse('{} (:cursor $ [] true)'), parse(':: :none'), () => {}),
+    /decode-map-as/,
+  );
   const calls = [], submissions = [];
   const dispatch = (...args) => calls.push(args);
   const nodes = elements(comp_command_editor(states, parse(':: :none'), (...args) => submissions.push(args)));
