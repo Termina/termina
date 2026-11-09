@@ -50,6 +50,10 @@
                     , s
                   Map Tag Dynamic
               (:effect/connect) (connect!)
+              (:process/clear)
+                ws-send! $ app.schema/op-to-wire $ app.schema/Op :process/clear
+              (:process/clear-history)
+                ws-send! $ app.schema/op-to-wire $ app.schema/Op :process/clear-history
               _ $ ws-send! op
             , &unit
           :examples $ []
@@ -587,7 +591,7 @@
                     hint-fn $ Fn respo.schema/RespoEvent
                       Fn *dispatch-op $ -> Unit
                       -> Unit
-                    d! $ app.schema/Op :process/clear-history nil
+                    d! $ app.schema/Op :process/clear-history
                     , &unit
               space-y 16
               if (empty? histories)
@@ -831,7 +835,7 @@
                               hint-fn $ Fn respo.schema/RespoEvent
                                 Fn *dispatch-op $ -> Unit
                                 -> Unit
-                              d! $ app.schema/Op :process/clear nil
+                              d! $ app.schema/Op :process/clear
                               , &unit
                           <> |Clear
                     list->
@@ -2343,8 +2347,8 @@
             :effect/kill Number
             :effect/run Dynamic
             :process/change-command Dynamic Dynamic
-            :process/clear Nil
-            :process/clear-history Nil
+            :process/clear
+            :process/clear-history
             :process/create Dynamic
             :process/error Dynamic
             :process/finish Dynamic
@@ -2489,9 +2493,12 @@
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
         'op-to-wire $ %{} 'CodeEntry
-          :doc "|Preserve the anonymous enum WebSocket representation used by the keyboard shortcut."
+          :doc "|Encode anonymous WebSocket operations. Older Termina servers require a nil argument for the two payload-free clear operations."
           :code $ quote $ defn op-to-wire (op)
-            :: (&enum:nth op 0) & $ &enum:params op
+            match op
+              (:process/clear) (:: :process/clear nil)
+              (:process/clear-history) (:: :process/clear-history nil)
+              _ $ :: (&enum:nth op 0) & $ &enum:params op
           :examples $ []
           :schema $ quote $ Fn app.schema/Op (-> AnyEnum) (:open :reflect)
         'page $ %{} 'CodeEntry (:doc |)
@@ -3367,14 +3374,14 @@
                     session $ decode-map-as
                       .unwrap-or (get store :session) ({})
                       Map Tag Dynamic
-                  dispatch! $ app.schema/Op :process/clear nil
+                  dispatch! $ app.schema/Op :process/clear
                   match (get session :enlarge-view)
                     (:none) &unit
                     (:some pid)
                       when
                         not $ or (nil? pid) (= pid false)
                         dispatch! $ app.schema/Op :process/shorten-content $ decode-map-as pid 'Number
-                :history $ dispatch! $ app.schema/Op :process/clear-history nil
+                :history $ dispatch! $ app.schema/Op :process/clear-history
                 :process $ match
                   get-in router $ [] :params :id
                   (:err _error) &unit
