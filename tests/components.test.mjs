@@ -48,6 +48,7 @@ test('clear shortcut operations retain wire payloads and omit absent process IDs
     assert.equal(calls.length, expected.length);
     expected.forEach((operation, index) => {
       assert.equal(c.option_$o_unwrap(c.enum_definition(calls[index])), Op);
+      if (operation.endsWith(' nil')) assert.equal(calls[index].extra.length, 0);
       assert.equal(c.format_cirru_edn(op_to_wire(calls[index])), c.format_cirru_edn(parse(operation)));
     });
   }
@@ -246,7 +247,8 @@ test('nonempty history renders its actual fields and clear retains the existing 
   read(read(clear, 'event'), 'click')(parse('{}'), (...args) => calls.push(args));
   assert.equal(calls.length, 1);
   assert.equal(calls[0].length, 1);
-  assert.ok(c._$n__$e_(calls[0][0], parse(':: :process/clear-history nil')));
+  assert.ok(c._$n__$e_(calls[0][0], parse(':: :process/clear-history')));
+  assert.ok(c._$n__$e_(op_to_wire(calls[0][0]), parse(':: :process/clear-history nil')));
 });
 
 function workflowsFixture() {
