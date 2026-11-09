@@ -12,7 +12,7 @@ import { comp_history, format_date_time } from '../out-page/app.comp.history.mjs
 import dayjs from 'dayjs';
 import { comp_workflow_container, comp_workflow_editor } from '../out-page/app.comp.workflow.mjs';
 import { comp_container, decode_view } from '../out-page/app.comp.container.mjs';
-import { decode_changes } from '../out-page/app.schema.mjs';
+import { Op, decode_changes, op_to_wire } from '../out-page/app.schema.mjs';
 import { patch_twig } from '../out-page/recollect.patch.mjs';
 import { websocket_url, clear_current_route_$x_ } from '../out-page/app.util.mjs';
 
@@ -46,7 +46,10 @@ test('clear shortcut operations retain wire payloads and omit absent process IDs
     const calls = [];
     assert.equal(clear_current_route_$x_(parse(input), operation => { calls.push(operation); }), undefined);
     assert.equal(calls.length, expected.length);
-    expected.forEach((operation, index) => assert.ok(c._$n__$e_(calls[index], parse(operation))));
+    expected.forEach((operation, index) => {
+      assert.equal(c.option_$o_unwrap(c.enum_definition(calls[index])), Op);
+      assert.equal(c.format_cirru_edn(op_to_wire(calls[index])), c.format_cirru_edn(parse(operation)));
+    });
   }
 });
 
