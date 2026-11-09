@@ -95,7 +95,8 @@
                   decode-map-as
                     or @*store $ {}
                     Map Tag Dynamic
-                  , dispatch!
+                  fn (op)
+                    dispatch! $ app.schema/op-to-wire op
             , &unit
           :examples $ []
           :schema $ quote $ Fn js-ffi.browser/EventHost (-> Unit) (:features :js-ffi)
@@ -2342,8 +2343,8 @@
             :effect/kill Number
             :effect/run Dynamic
             :process/change-command Dynamic Dynamic
-            :process/clear Dynamic
-            :process/clear-history Dynamic
+            :process/clear Nil
+            :process/clear-history Nil
             :process/create Dynamic
             :process/error Dynamic
             :process/finish Dynamic
@@ -2487,6 +2488,12 @@
             {} (:id nil) (:pid 0) (:started-at 0) (:cwd |) (:command |)
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
+        'op-to-wire $ %{} 'CodeEntry
+          :doc "|Preserve the anonymous enum WebSocket representation used by the keyboard shortcut."
+          :code $ quote $ defn op-to-wire (op)
+            :: (&enum:nth op 0) & $ &enum:params op
+          :examples $ []
+          :schema $ quote $ Fn app.schema/Op (-> AnyEnum) (:open :reflect)
         'page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def page
             {} (:id nil) (:title |) (:time nil)
@@ -2950,7 +2957,7 @@
                 let
                     event $ schema/decode-log-event d
                   process/error db (:pid event) (:data event) sid op-id op-time
-              (:process/clear d) (process/clear db d sid op-id op-time)
+              (:process/clear _) (process/clear db)
               (:process/finish d)
                 process/finish db (decode-map-as d 'Number) sid op-id op-time
               (:process/change-command pid next)
@@ -2958,7 +2965,7 @@
               (:process/remove-dead d)
                 process/remove-dead db (decode-map-as d 'Number) sid op-id op-time
               (:process/shorten-content d)
-                process/shorten-content db (decode-map-as d 'Number) sid op-id op-time
+                process/shorten-content db $ decode-map-as d 'Number
               (:workflow/create d)
                 workflow/create-workflow db
                   decode-map-as d $ Map Tag Dynamic
@@ -2998,7 +3005,7 @@
                 workflow/edit-workflow db
                   decode-map-as d $ Map Tag Dynamic
                   , sid op-id op-time
-              (:process/clear-history d) (process/clear-history db d sid op-id op-time)
+              (:process/clear-history _) (process/clear-history db)
               _ $ do (println "|Unknown op:" op) db
           :examples $ []
           :schema $ quote $ Fn app.schema/Database Dynamic String String Number (-> app.schema/Database)
@@ -3013,7 +3020,7 @@
           :examples $ []
           :schema $ quote $ Fn app.schema/Database Number String String String Number (-> app.schema/Database)
         'clear $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn clear (db op-data sid op-id op-time)
+          :code $ quote $ defn clear (db)
             assoc db :processes $ filter-map-kv (:processes db)
               fn (pid process)
                 hint-fn $ Fn Number (Map Tag Dynamic)
@@ -3025,12 +3032,12 @@
                   MapEntryDecision :keep pid process
                   MapEntryDecision :drop
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Dynamic String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn app.schema/Database (-> app.schema/Database)
         'clear-history $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn clear-history (db op-data sid op-id op-time)
+          :code $ quote $ defn clear-history (db)
             assoc db :histories $ []
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Dynamic String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn app.schema/Database (-> app.schema/Database)
         'create $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create (db op-data sid op-id op-time)
             let
@@ -3077,7 +3084,7 @@
           :examples $ []
           :schema $ quote $ Fn app.schema/Database Number String String Number (-> app.schema/Database)
         'shorten-content $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn shorten-content (db op-data sid op-id op-time)
+          :code $ quote $ defn shorten-content (db op-data)
             let
                 processes $ :processes db
               match (get processes op-data)
@@ -3085,7 +3092,7 @@
                 (:some process)
                   assoc db :processes $ assoc processes op-data $ assoc process :content ([])
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn app.schema/Database Number (-> app.schema/Database)
         'stderr $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn stderr (db pid data sid op-id op-time)
             let
@@ -3360,26 +3367,26 @@
                     session $ decode-map-as
                       .unwrap-or (get store :session) ({})
                       Map Tag Dynamic
-                  dispatch! $ :: :process/clear nil
+                  dispatch! $ app.schema/Op :process/clear nil
                   match (get session :enlarge-view)
                     (:none) &unit
                     (:some pid)
                       when
                         not $ or (nil? pid) (= pid false)
-                        dispatch! $ :: :process/shorten-content $ decode-map-as pid 'Number
-                :history $ dispatch! $ :: :process/clear-history nil
+                        dispatch! $ app.schema/Op :process/shorten-content $ decode-map-as pid 'Number
+                :history $ dispatch! $ app.schema/Op :process/clear-history nil
                 :process $ match
                   get-in router $ [] :params :id
                   (:err _error) &unit
                   (:ok pid)
                     when
                       not $ nil? pid
-                      dispatch! $ :: :process/shorten-content $ decode-map-as pid 'Number
+                      dispatch! $ app.schema/Op :process/shorten-content $ decode-map-as pid 'Number
                 _ $ println "|no thing to clear in" router-name
             , &unit
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic)
-            Fn AnyEnum $ -> Unit
+            Fn app.schema/Op $ -> Unit
             -> Unit
         'join-path $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-path (xs ys)
