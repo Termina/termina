@@ -46,7 +46,7 @@
               (:states cursor s)
                 reset! *states $ decode-map-as
                   update-states @*states
-                    decode-map-as cursor $ List Dynamic
+                    decode-map-as cursor $ List app.schema/StateKey
                     , s
                   Map Tag Dynamic
               (:effect/connect) (connect!)
@@ -200,7 +200,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ decode-map-as
                   or (app.schema/field-or states :data nil)
                     if (.some? base-command)
@@ -271,7 +271,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ decode-map-as
                   either (app.schema/field-or states :data nil)
                     {} $ :pop? false
@@ -686,7 +686,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ let
                     raw-state $ or (app.schema/field-or states :data nil)
                       {} (:query |) (:pop? false)
@@ -929,7 +929,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ decode-map-as
                   or (app.schema/field-or states :data nil) initial-state
                   Map Tag String
@@ -1305,7 +1305,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ let
                     raw-state $ either (app.schema/field-or states :data nil)
                       {} (:filter |) (:filter? true) (:wrap? true) (:all-log? false) (:hide-thread-info? false)
@@ -1707,7 +1707,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ let
                     original-state $ or (app.schema/field-or states :data nil)
                       {} (:focused-id nil) (:base-workflow nil) (:pop? false)
@@ -1842,7 +1842,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ decode-map-as
                   either (app.schema/field-or states :data nil)
                     {} (:pop? false) (:edit? false)
@@ -1971,7 +1971,7 @@
             let
                 cursor $ decode-map-as
                   .unwrap $ get states :cursor
-                  List Dynamic
+                  List app.schema/StateKey
                 state $ decode-map-as
                   or (app.schema/field-or states :data nil)
                     if (.some? base-workflow)
@@ -2334,7 +2334,7 @@
         'Op $ %{} 'CodeEntry
           :doc "|Operations dispatched by page components. Most are forwarded to the server."
           :code $ quote $ defenum Op
-            :states (List Dynamic) Dynamic
+            :states (List app.schema/StateKey) Dynamic
             :effect/connect
             :session/connect
             :session/disconnect
@@ -2366,6 +2366,10 @@
             :command Dynamic
           :examples $ []
           :schema $ quote EnumDef
+        'StateKey $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion StateKey Tag String Number
+          :examples $ []
+          :schema $ quote UnionDef
         'command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def command
             {} (:id nil) (:title |) (:path |.) (:code |)
