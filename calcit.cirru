@@ -2082,10 +2082,13 @@
           :schema $ quote $ Ref (Map Number app.manager/ProcessHost)
         'EventEmitterHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait EventEmitterHost
-            .on $ Fn EventEmitterHost String AnyFn $ -> EventEmitterHost
+            .on $ Fn EventEmitterHost String
+              Fn String $ -> Unit
+              -> EventEmitterHost
+            .set-encoding! $ Fn EventEmitterHost String $ -> EventEmitterHost
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
-            :names $ {} $ :on |on
+            :names $ {} (:on |on) (:set-encoding! |setEncoding)
           :schema $ quote Trait
         'ParsedCommand $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum ParsedCommand
@@ -2097,11 +2100,17 @@
             :pid $ JsNullish Number
             :stdout 'app.manager/EventEmitterHost
             :stderr 'app.manager/EventEmitterHost
-            .on $ Fn ProcessHost String AnyFn $ -> ProcessHost
+            .on-error! $ Fn ProcessHost String
+              Fn JsObject $ -> Unit
+              -> ProcessHost
+            .on-exit! $ Fn ProcessHost String
+              Fn (JsNullish Number) (JsNullish String) (-> Unit)
+              -> ProcessHost
             .unref $ Fn ProcessHost $ -> Unit
             .kill $ Fn ProcessHost String $ -> Bool
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :node)
+            :names $ {} (:on-error! |on) (:on-exit! |on)
           :schema $ quote Trait
         'create-process! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create-process! (op-data dispatch! sid)
@@ -2132,7 +2141,8 @@
                 js-nullish->option $ .-pid proc
                 (:none)
                   do
-                    .on proc |error $ fn (event)
+                    .on-error! proc |error $ fn (event)
+                      hint-fn $ Fn JsObject $ -> Unit
                       dispatch!
                         :: :session/add-message $ str "|Unable to start command: " command "| — " $ :message (normalize-error event)
                         , sid
@@ -2151,57 +2161,38 @@
                         :params $ {} $ :id pid
                       , sid
                     if enlarge? $ dispatch! (:: :session/enlarge pid) sid
-                    .on proc |exit $ fn (code _e) (js/console.warn |[EXIT] code _e)
+                    .on-exit! proc |exit $ fn (code signal)
+                      hint-fn $ Fn (JsNullish Number) (JsNullish String) (-> Unit)
+                      js/console.warn |[EXIT] code signal
                       dispatch!
-                        :: :process/error $ [] pid $ str &newline "|exit: " code
+                        :: :process/error $ [] pid $ str &newline
+                          if (js-nullish? code) (str "|signal: " signal) (str "|exit: " code)
                         , sid
                       dispatch! (:: :process/finish pid) sid
                       swap! *registry dissoc pid
-                    .on proc |SIGINT $ fn (sig)
-                      dispatch!
-                        :: :process/error $ [] pid $ str-spaced |SIGINT sig
-                        , sid
-                    .on proc |SIGTERM $ fn (sig)
-                      dispatch!
-                        :: :process/error $ [] pid $ str-spaced |SIGTERM sig
-                        , sid
-                    .on proc |SIGKILL $ fn (sig)
-                      dispatch!
-                        :: :process/error $ [] pid $ str-spaced |SIGKILL sig
-                        , sid
-                    .on proc |error $ fn (event)
+                      , &unit
+                    .on-error! proc |error $ fn (event)
+                      hint-fn $ Fn JsObject $ -> Unit
                       dispatch!
                         :: :process/error $ [] pid $ str-spaced |error: (str event)
                         , sid
                       ; dispatch! (:: :process/finish pid) sid
                       js/console.error "|[TERMINA] process error" event
-                    .on proc |disconnect $ fn (event)
-                      dispatch!
-                        :: :process/error $ [] pid $ str-spaced |disconntect: (str event)
-                        , sid
-                      ; dispatch! (:: :process/finish pid) sid
-                      js/console.error "|[TERMINA] process error" event
-                    .on proc |uncaughtExceptionMonitor $ fn (err origin)
-                      dispatch!
-                        :: :process/error $ [] pid $ str err &newline origin
-                        , sid
-                    .on proc |uncaughtException $ fn (err origin)
-                      dispatch!
-                        :: :process/error $ [] pid $ str |uncaughtException: err &newline origin
-                        , sid
-                    .on proc |unhandledRejection $ fn (err origin)
-                      dispatch!
-                        :: :process/error $ [] pid $ str err &newline origin
-                        , sid
+                      , &unit
+                    .set-encoding! (.-stdout proc) |utf8
                     .on (.-stdout proc) |data $ fn (data)
+                      hint-fn $ Fn String $ -> Unit
                       dispatch!
-                        :: :process/stdout $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
-                        , sid
-                    .on (.-stderr proc) |data $ fn (data)
-                      dispatch!
-                        :: :process/stderr $ [] pid $ if (js/Buffer.isBuffer data) (.!toString data) data
+                        :: :process/stdout $ [] pid data
                         , sid
                     , &unit
+                      .set-encoding! (.-stderr proc) |utf8
+                      .on (.-stderr proc) |data $ fn (data)
+                        hint-fn $ Fn String $ -> Unit
+                        dispatch!
+                          :: :process/stderr $ [] pid data
+                          , sid
+                      , &unit &unit
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic)
             Fn Dynamic String $ -> Unit
