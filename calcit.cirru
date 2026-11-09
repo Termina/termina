@@ -294,7 +294,7 @@
                         :color $ hsl 200 80 70
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :effect/run $ {}
                           :cwd $ decode-map-as
@@ -311,7 +311,7 @@
                       &{} :font-size 14 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :pop? true
                         , &unit
@@ -342,7 +342,7 @@
                       .unwrap $ get state :pop?
                       fn (d!)
                         hint-fn $ Fn
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :pop? false
                         , &unit
@@ -1736,7 +1736,7 @@
                         :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :pop? true
                         , &unit
@@ -1757,7 +1757,7 @@
                       :pop? state
                       fn (d!)
                         hint-fn $ Fn
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :pop? false
                         , &unit
@@ -1797,7 +1797,7 @@
                                   hsl 0 0 100 $ Option :some 0
                               :on-click $ fn (e d!)
                                 hint-fn $ Fn respo.schema/RespoEvent
-                                  Fn AnyEnum $ -> Unit
+                                  Fn app.schema/Op $ -> Unit
                                   -> Unit
                                 d! $ app.schema/Op :states cursor $ assoc state :focused-id
                                   Option :some $ decode-map-as
@@ -1871,14 +1871,14 @@
                       &{} :font-size 16 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :pop? true
                         , &unit
                     let
                         on-close $ fn (d!)
                           hint-fn $ Fn
-                            Fn AnyEnum $ -> Unit
+                            Fn app.schema/Op $ -> Unit
                             -> Unit
                           d! $ app.schema/Op :states cursor $ assoc state :pop? false
                           , &unit
@@ -1914,7 +1914,7 @@
                       &{} :font-size 14 :color (hsl 200 80 60) :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :edit? true
                         , &unit
@@ -1935,7 +1935,7 @@
                       .unwrap $ get state :edit?
                       fn (d!)
                         hint-fn $ Fn
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         d! $ app.schema/Op :states cursor $ assoc state :edit? false
                         , &unit
@@ -1991,7 +1991,7 @@
                     :value $ .unwrap $ get state :name
                     :on-input $ fn (e d!)
                       hint-fn $ Fn respo.schema/RespoEvent
-                        Fn AnyEnum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
                       d! $ app.schema/Op :states cursor $ assoc state :name (app.schema/event-value e)
                       , &unit
@@ -2003,7 +2003,7 @@
                     :value $ .unwrap $ get state :base-dir
                     :on-input $ fn (e d!)
                       hint-fn $ Fn respo.schema/RespoEvent
-                        Fn AnyEnum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
                       d! $ app.schema/Op :states cursor $ assoc state :base-dir (app.schema/event-value e)
                       , &unit
@@ -2348,7 +2348,7 @@
             :session/connect
             :session/disconnect
             :user/log-out
-            :effect/kill Dynamic
+            :effect/kill Number
             :effect/run Dynamic
             :process/change-command Dynamic Dynamic
             :process/clear Dynamic
@@ -2356,13 +2356,13 @@
             :process/create Dynamic
             :process/error Dynamic
             :process/finish Dynamic
-            :process/remove-dead Dynamic
-            :process/shorten-content Dynamic
+            :process/remove-dead Number
+            :process/shorten-content Number
             :process/stderr Dynamic
             :process/stdout Dynamic
             :router/change Dynamic
             :session/add-message Dynamic
-            :session/enlarge Dynamic
+            :session/enlarge Number
             :session/remove-message Dynamic
             :user/log-in Dynamic
             :user/sign-up Dynamic
@@ -2370,7 +2370,7 @@
             :workflow/create Dynamic
             :workflow/edit Dynamic
             :workflow/edit-command Dynamic
-            :workflow/remove Dynamic
+            :workflow/remove String
             :workflow/remove-command Dynamic
             :command Dynamic
           :examples $ []
