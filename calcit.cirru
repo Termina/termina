@@ -534,12 +534,12 @@
             {} $ |& $ {}
               :color $ hsl 0 0 70
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-status $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-status
             {} $ |& $ {} (:width 24) (:height 24) (:position :absolute) (:bottom 60) (:left 8) (:border-radius |50%) (:opacity 0.6) (:pointer-events :none)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'decode-view $ %{} 'CodeEntry (:doc "|在页面入口检查原 Map 投影，只选择实际读取的字段；未展示字段仍留在客户端原始 Store。")
           :code $ quote $ defn decode-view (raw)
             decode-map-as
@@ -639,7 +639,7 @@
               {} (:font-size 12)
                 :color $ hsl 0 0 70
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-history
             {}
@@ -652,13 +652,13 @@
                 :word-break :break-word
               |&:hover $ {} $ :background-color (hsl 200 40 32)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-history-page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-history-page
             {} $ |& $ merge ui/flex ui/column
               {} (:padding "|16px 16px") (:font-family ui/font-code) (:overflow :auto)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'format-date-time $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn format-date-time (timestamp) (raise "|Date formatting requires JavaScript")
           :examples $ []
@@ -892,18 +892,18 @@
               :font-family ui/font-normal
               :padding "|0 8px"
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-home $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-home
             {} $ |& $ merge ui/flex ui/column
               {} (:padding "|8px 0px") (:overflow :auto)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-process-list $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-process-list
             {} $ |& $ {} (:overflow :auto) (:flex-wrap :wrap) (:padding-bottom 120) (:align-items :flex-start) (:gap |8px) (:grid-template-columns "|repeat(auto-fit, minmax(560px, 1fr))") (:grid-auto-flow :dense) (:display :grid) (:padding-bottom 120) (:margin "|0 8px") (:overflow :auto)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'lower-case $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn lower-case (text)
             decode-map-as
@@ -1073,7 +1073,7 @@
                 :font-family ui/font-fancy
                 :background-color $ hsl 0 0 0 $ Option :some 0.04
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'render-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-entry (router router-name title)
             div
@@ -1248,19 +1248,19 @@
           :code $ quote $ defstyle css-content-list
             {} $ |& $ {} (:font-family ui/font-code) (:white-space :pre) (:font-size 12) (:line-height |1.5em) (:max-height 240) (:overflow :auto) (:border-radius |4px)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-link-kill $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-link-kill
             {} $ |& $ merge style/link
               {} (:color :red) (:border-color :red)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-process $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-process
             {} $ |& $ merge
               {} (:font-family ui/font-code) (:border-radius |4px) (:display :inline-block) (:vertical-align :top)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-process-log $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-process-log
             {} $ |& $ merge ui/row-middle
@@ -1268,7 +1268,7 @@
                 :background-color $ hsl 0 0 0 $ Option :some 0.5
                 :font-size 10
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-title-bar $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-title-bar
             {} $ |& $ merge ui/row-parted
@@ -1278,7 +1278,7 @@
                 :padding "|4px 4px"
                 :border-radius |4px
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'find-urls $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn find-urls (text)
             let
@@ -1553,7 +1553,7 @@
               |& $ {} (:opacity 0.8) (:cursor :pointer)
               |&:hover $ {} $ :opacity 1
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-filter $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-filter
             {} $ |& $ merge ui/input
@@ -1562,12 +1562,12 @@
                 :background-color $ hsl 0 0 100 $ Option :some 0
                 :border-color $ hsl 0 0 100 $ Option :some 0.4
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-log $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-log
             {} $ |& $ {} (:font-size 12) (:margin |0) (:font-family ui/font-code) (:line-height |20px)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-logs-list $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-logs-list
             {} $ |& $ merge ui/flex
@@ -1579,19 +1579,19 @@
                 :word-break :break-all
                 :line-height 1.4
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-process $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-process
             {} $ |& $ merge ui/flex ui/column
               {} (; :padding "|8px 16px") (:overflow :auto) (:color |#aaa)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-toolbar $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-toolbar
             {} $ |& $ merge ui/row-middle
               {} $ :font-family ui/font-code
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'hide-thread-info $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn hide-thread-info (text)
             decode-map-as
@@ -2806,7 +2806,7 @@
               |button$0:hover $ {} $ :background-color
                 hsl 0 0 100 $ Option :some 0.06
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote String
         'input $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def input
             merge ui/input $ {} $ :width 320
