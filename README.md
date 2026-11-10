@@ -10,7 +10,7 @@ TODO: new npm package.
 
 ### 迁移状态
 
-升级后请使用正式 Calcit / `@calcit/procs` 0.40.0 重新生成客户端与服务端 JS。依赖图配对 Respo 0.19.5、Cumulo Reel 0.3.2 和 Fuzzy Filter 0.0.19。命令的输入、执行协议和存档格式保持。
+升级后请使用正式 Calcit / `@calcit/procs` 0.41.0 重新生成客户端与服务端 JS。依赖图配对 Respo 0.19.5、Cumulo Reel 0.3.2 和 Fuzzy Filter 0.0.19。命令的输入、执行协议和存档格式保持。
 
 命令解析使用具名的 `ParsedCommand`，命令编辑器和按钮回调传递应用的 `Op`。插件仍通过现有开放入口接收操作。
 
