@@ -258,7 +258,7 @@
                     {} (:style style/button)
                       :on-click $ fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         on-submit state d!
                         d! $ app.schema/Op :states cursor nil
@@ -268,7 +268,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Option $ Map Tag Dynamic
             Fn (Map Tag String)
-              Fn AnyEnum $ -> Unit
+              Fn app.schema/Op $ -> Unit
               -> Unit
             -> respo.schema/Component
         'comp-command-row $ %{} 'CodeEntry (:doc |)
@@ -327,7 +327,7 @@
                         :render $ fn (on-close)
                           hint-fn $ Fn
                             Fn
-                              Fn AnyEnum $ -> Unit
+                              Fn app.schema/Op $ -> Unit
                               -> Unit
                             -> respo.schema/Component
                           comp-command-editor
@@ -335,7 +335,7 @@
                             Option :some $ decode-map-as command $ Map Tag Dynamic
                             fn (command-draft d!)
                               hint-fn $ Fn (Map Tag String)
-                                Fn AnyEnum $ -> Unit
+                                Fn app.schema/Op $ -> Unit
                                 -> Unit
                               d! $ app.schema/Op :workflow/edit-command $ [] workflow-id
                                 decode-map-as
@@ -356,7 +356,7 @@
                       &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         .show remove-plugin d! $ fn ()
                           hint-fn $ Fn $ -> Unit
@@ -1752,7 +1752,7 @@
                         :render $ fn (on-close)
                           hint-fn $ Fn
                             Fn
-                              Fn AnyEnum $ -> Unit
+                              Fn app.schema/Op $ -> Unit
                               -> Unit
                             -> respo.schema/Component
                           comp-workflow-editor
@@ -1894,7 +1894,7 @@
                           :render $ fn (on-close)
                             hint-fn $ Fn
                               Fn
-                                Fn AnyEnum $ -> Unit
+                                Fn app.schema/Op $ -> Unit
                                 -> Unit
                               -> respo.schema/Component
                             comp-command-editor
@@ -1902,7 +1902,7 @@
                               Option :none
                               fn (command-draft d!)
                                 hint-fn $ Fn (Map Tag String)
-                                  Fn AnyEnum $ -> Unit
+                                  Fn app.schema/Op $ -> Unit
                                   -> Unit
                                 d! $ app.schema/Op :workflow/add-command $ {}
                                   :workflow-id $ decode-map-as
@@ -1930,7 +1930,7 @@
                         :render $ fn (on-close)
                           hint-fn $ Fn
                             Fn
-                              Fn AnyEnum $ -> Unit
+                              Fn app.schema/Op $ -> Unit
                               -> Unit
                             -> respo.schema/Component
                           comp-workflow-editor
@@ -1949,7 +1949,7 @@
                       &{} :font-size 18 :color (hsl 0 80 60) :cursor :pointer
                       fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         .show remove-plugin d! $ fn ()
                           hint-fn $ Fn $ -> Unit
@@ -2020,7 +2020,7 @@
                     {} (:style style/button)
                       :on-click $ fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
-                          Fn AnyEnum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         let
                             data $ select-keys state $ [] :name :base-dir
@@ -2036,7 +2036,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Option $ Map Tag Dynamic
             Fn
-              Fn AnyEnum $ -> Unit
+              Fn app.schema/Op $ -> Unit
               -> Unit
             -> respo.schema/Component
         'style-workflow-entry $ %{} 'CodeEntry (:doc |)
