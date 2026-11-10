@@ -212,12 +212,24 @@ test('log detail preserves duplicate lines with distinct keys and restores typed
   assert.equal(filtered.filter(node => attr(node, 'inner-text') === 'other').length, 0);
 });
 
-test('profile renders typed member names without erasing the key/value relation', () => {
+test('profile renders typed member names and encodes payload-free logout for the existing server', () => {
   const nodes = elements(comp_profile(parse('{} (:name |合成🐈)'), parse('{} (|s1 |甲) (|s2 |乙)')));
   const texts = nodes.map(node => attr(node, 'inner-text'));
   assert.ok(texts.includes('Hello! 合成🐈'));
   assert.ok(texts.includes('甲'));
   assert.ok(texts.includes('乙'));
+  const logout = nodes.find(node => read(node, 'name').value === 'button' &&
+    c.listToArray(read(node, 'children')).some(child => {
+      const text = read(child, 'node');
+      return c.option_$o_some_$q_(text) && attr(part(c.option_$o_unwrap(text), 1), 'inner-text') === 'Log out';
+    }));
+  assert.ok(logout);
+  const calls = [];
+  read(read(logout, 'event'), 'click')(parse('{}'), operation => calls.push(operation));
+  assert.equal(calls.length, 1);
+  assert.equal(c.option_$o_unwrap(c.enum_definition(calls[0])), Op);
+  assert.equal(calls[0].extra.length, 0);
+  assert.ok(c._$n__$e_(op_to_wire(calls[0]), parse(':: :user/log-out nil')));
 });
 
 test('String FFI boundaries retain colon-prefixed text, Unicode and the original local date format', () => {

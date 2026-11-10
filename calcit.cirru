@@ -54,6 +54,8 @@
                 ws-send! $ app.schema/op-to-wire $ app.schema/Op :process/clear
               (:process/clear-history)
                 ws-send! $ app.schema/op-to-wire $ app.schema/Op :process/clear-history
+              (:user/log-out)
+                ws-send! $ app.schema/op-to-wire $ app.schema/Op :user/log-out
               _ $ ws-send! op
             , &unit
           :examples $ []
@@ -1672,7 +1674,7 @@
                       hint-fn $ Fn respo.schema/RespoEvent
                         Fn *dispatch-op $ -> Unit
                         -> Unit
-                      dispatch! $ :: :user/log-out nil
+                      dispatch! $ app.schema/Op :user/log-out
                       storage-remove! $ :storage-key config/site
                       , &unit
                   <> "|Log out"
@@ -2493,11 +2495,12 @@
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
         'op-to-wire $ %{} 'CodeEntry
-          :doc "|Encode anonymous WebSocket operations. Older Termina servers require a nil argument for the two payload-free clear operations."
+          :doc "|Encode anonymous WebSocket operations. The legacy protocol keeps a nil argument for the payload-free clear and logout operations."
           :code $ quote $ defn op-to-wire (op)
             match op
               (:process/clear) (:: :process/clear nil)
               (:process/clear-history) (:: :process/clear-history nil)
+              (:user/log-out) (:: :user/log-out nil)
               _ $ :: (&enum:nth op 0) & $ &enum:params op
           :examples $ []
           :schema $ quote $ Fn app.schema/Op (-> AnyEnum) (:open :reflect)
@@ -2943,7 +2946,7 @@
                 user/sign-up db
                   decode-map-as d $ List String
                   , sid op-id op-time
-              (:user/log-out d) (user/log-out db d sid op-id op-time)
+              (:user/log-out _) (user/log-out db sid)
               (:router/change d)
                 router/change db
                   decode-map-as d $ Map Tag Dynamic
@@ -3235,10 +3238,10 @@
           :examples $ []
           :schema $ quote $ Fn app.schema/Database (List String) String String Number (-> app.schema/Database)
         'log-out $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn log-out (db op-data sid op-id op-time)
+          :code $ quote $ defn log-out (db sid)
             assoc db :sessions $ assoc-in (:sessions db) ([] sid :user-id) nil
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Dynamic String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn app.schema/Database String (-> app.schema/Database)
         'sign-up $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn sign-up (db credentials sid op-id op-time)
             assert "|Signup requires username and password" $ = (count credentials) 2
