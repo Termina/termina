@@ -2374,6 +2374,11 @@
           :code $ quote $ defunion StateKey Tag String Number
           :examples $ []
           :schema $ quote UnionDef
+        'TextInputEvent $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion TextInputEvent respo.schema/RespoEvent
+            Map Tag $ JsNullish String
+          :examples $ []
+          :schema $ quote UnionDef
         'command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def command
             {} (:id nil) (:title |) (:path |.) (:code |)
@@ -2468,15 +2473,18 @@
         'event-value $ %{} 'CodeEntry
           :doc "|Text value of an input event. Respo passes a RespoEvent struct; tests and legacy callers pass a map."
           :code $ quote $ defn event-value (event)
-            let
-                fields $ if (struct? event) (&struct:to-map event)
-                  decode-map-as event $ Map Tag Dynamic
-              match (get fields :value)
-                (:some value)
+            match event
+              (respo.schema/RespoEvent input)
+                let
+                    value $ :value input
                   if (nil? value) | $ decode-map-as value 'String
-                (:none) |
+              (Map fields)
+                match (get fields :value)
+                  (:some value)
+                    if (js-nullish? value) | $ decode-map-as value 'String
+                  (:none) |
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> String)
+          :schema $ quote $ Fn TextInputEvent (-> String) (:features :js-ffi)
         'field-or $ %{} 'CodeEntry
           :doc "|Read an optional wire field. A missing or nil field gives the fallback."
           :code $ quote $ defn field-or (fields field fallback)
