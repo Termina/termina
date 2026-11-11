@@ -2746,14 +2746,14 @@
               hint-fn $ Fn String ws-edn.server/NodeWebSocketHost (-> Unit) (:features :js-ffi)
               let
                   db $ :db reel
-                  records $ :records reel
+                  reel-length $ .len $ :records reel
                   session $ decode-map-as
                     app.schema/field-or (:sessions db) sid $ {}
                     Map Tag Dynamic
                   old-store $ app.schema/field-or @*client-caches sid nil
-                  new-store $ twig-container db session records
+                  new-store $ twig-container db session reel-length
                   changes $ diff-twig old-store new-store $ {} (:key :id)
-                ; when config/dev? $ println "|Changes for" sid |: changes $ count records
+                ; when config/dev? $ println "|Changes for" sid |: changes reel-length
                 if
                   not $ empty? changes
                   do
@@ -2835,15 +2835,14 @@
     'app.twig.container $ %{} 'FileEntry
       :defs $ {}
         'twig-container $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn twig-container (db session records)
+          :code $ quote $ defn twig-container (db session reel-length)
             let
                 user-id $ app.schema/field-or session :user-id nil
                 logged-in? $ string? user-id
                 router $ decode-map-as
                   .unwrap-or (get session :router) ({})
                   Map Tag Dynamic
-                base-data $ {} (:logged-in? logged-in?) (:session session)
-                  :reel-length $ count records
+                base-data $ {} (:logged-in? logged-in?) (:session session) (:reel-length reel-length)
                 workflows $ :workflows db
                 processes $ :processes db
                 histories $ :histories db
@@ -2878,8 +2877,7 @@
                   {}
                 Map Tag Dynamic
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic)
-            List $ List Dynamic
+          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic) Number
             -> $ Map Tag Dynamic
             :features :js-ffi
         'twig-members $ %{} 'CodeEntry (:doc |)

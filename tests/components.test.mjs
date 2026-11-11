@@ -364,7 +364,7 @@ function storeFixture(route, loggedIn = true) {
     const fixture = c.parse_cirru_edn(process.argv[1]);
     const db = decode_database(c.option_$o_unwrap(c.get(fixture, tags.db)));
     const session = c.option_$o_unwrap(c.get(fixture, tags.session));
-    const store = twig_container(db, session, c.parse_cirru_edn('[]'));
+    const store = twig_container(db, session, 0);
     const old = c.assoc(store, c.init_tags(['histories']).histories, c.parse_cirru_edn('[] |old'));
     const options = c.parse_cirru_edn('{} (:key :id)');
     console.log(c.format_cirru_edn(c._$L_(store, diff_twig(null, store, options), old, diff_twig(old, store, options))));
