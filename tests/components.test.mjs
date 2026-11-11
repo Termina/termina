@@ -15,6 +15,7 @@ import { comp_container, decode_view } from '../out-page/app.comp.container.mjs'
 import { Op, decode_changes, op_to_wire } from '../out-page/app.schema.mjs';
 import { patch_twig } from '../out-page/recollect.patch.mjs';
 import { websocket_url, clear_current_route_$x_ } from '../out-page/app.util.mjs';
+import { event__GT_edn } from '../out-page/respo.util.format.mjs';
 
 const tags = c.init_tags(['tree', 'children', 'node', 'key', 'name', 'attrs', 'event', 'input', 'click', 'value', 'inner-text', 'title', 'code', 'path', 'command', 'cwd', 'router', 'count', 'color']);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, tags[key]));
@@ -115,7 +116,10 @@ test('command editor preserves legacy draft values, edits each field and submits
   const inputs = nodes.filter(node => read(node, 'name').value === 'input');
   assert.deepEqual(values(inputs), ['合成🐈', 'never-run', './sandbox']);
   for (const [index, field] of ['title', 'code', 'path'].entries()) {
-    read(read(inputs[index], 'event'), 'input')(parse('{} (:value |更新🌱)'), dispatch);
+    const event = index === 0
+      ? event__GT_edn({ type: 'input', target: { value: '更新🌱', checked: false } })
+      : parse('{} (:value |更新🌱)');
+    read(read(inputs[index], 'event'), 'input')(event, dispatch);
     const args = calls.at(-1);
     assert.equal(args.length, 1);
     assert.equal(part(args[0], 0).value, 'states');
