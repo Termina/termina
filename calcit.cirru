@@ -1098,10 +1098,12 @@
             , Tag String (-> respo.schema/Element)
         'style-logo $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-logo
-            {} (:cursor :pointer)
-              :color $ hsl 0 0 60
+            decode-map-as
+              {} (:cursor :pointer)
+                :color $ hsl 0 0 60
+              Map Tag respo-ui.schema/StyleValue
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.navigation
           :require
@@ -2036,11 +2038,13 @@
             -> respo.schema/Component
         'style-workflow-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-workflow-entry
-            {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)
-              :border-bottom $ str "|1px solid " $ hsl 0 0 94 (Some 0.1)
-              :line-height |36px
+            decode-map-as
+              {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)
+                :border-bottom $ str "|1px solid " $ hsl 0 0 94 (Some 0.1)
+                :line-height |36px
+              Map Tag respo-ui.schema/StyleValue
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.workflow
           :require
@@ -2791,7 +2795,7 @@
           :code $ quote $ def button
             merge ui/button $ {} $ :background-color :transparent
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
         'css-button $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-button
             {}
@@ -2804,20 +2808,24 @@
           :code $ quote $ def input
             merge ui/input $ {} $ :width 320
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
         'link $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def link
-            {} (:text-decoration :underline) (:cursor :pointer)
-              :color $ hsl 240 80 80
-              :font-family ui/font-fancy
-              :margin "|0 8px"
+            decode-map-as
+              {} (:text-decoration :underline) (:cursor :pointer)
+                :color $ hsl 240 80 80
+                :font-family ui/font-fancy
+                :margin "|0 8px"
+              Map Tag respo-ui.schema/StyleValue
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
         'text $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def text
-            {} (:padding "|0 8px") (:line-height |24px) (:min-height 24) (:display :inline-block) (:color :white)
+            decode-map-as
+              {} (:padding "|0 8px") (:line-height |24px) (:min-height 24) (:display :inline-block) (:color :white)
+              Map Tag respo-ui.schema/StyleValue
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.style
           :require
