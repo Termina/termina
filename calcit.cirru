@@ -44,11 +44,7 @@
               println |Dispatch op
             match op
               (:states cursor s)
-                reset! *states $ decode-map-as
-                  update-states @*states
-                    decode-map-as cursor $ List app.schema/StateKey
-                    , s
-                  Map Tag Dynamic
+                reset! *states $ decode-map-as (update-states @*states cursor s) (Map Tag Dynamic)
               (:effect/connect) (connect!)
               (:process/clear)
                 ws-send! $ app.schema/op-to-wire $ app.schema/Op :process/clear
@@ -59,7 +55,7 @@
               _ $ ws-send! op
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Unit)
+          :schema $ quote $ Fn schema/Op (-> Unit)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             if config/dev? $ load-console-formatter!
@@ -102,10 +98,11 @@
                     or @*store $ {}
                     Map Tag Dynamic
                   fn (op)
-                    dispatch! $ app.schema/op-to-wire op
+                    ws-send! $ app.schema/op-to-wire op
+                    , &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn js-ffi.browser/EventHost (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn EventHost (-> Unit) (:features :js-ffi)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if
@@ -138,10 +135,11 @@
         'simulate-login! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn simulate-login! ()
             let
-                raw $ storage-get $ assert-type (:storage-key config/site) 'String
+                raw $ storage-get $ assert-type (:storage-key config/site) String
               if (.some? raw)
                 do (println "|Found storage.")
-                  dispatch! $ :: :user/log-in $ parse-cirru-edn (.unwrap raw)
+                  ws-send! $ :: :user/log-in $ parse-cirru-edn (.unwrap raw)
+                  , &unit
                 println "|Found no storage."
           :examples $ []
           :schema $ quote $ Fn (-> Unit)
@@ -334,16 +332,18 @@
                             -> respo.schema/Component
                           comp-command-editor
                             decode-map-as (>> states :edit-command) (Map Tag Dynamic)
-                            Option :some $ decode-map-as command $ Map Tag Dynamic
+                            Some $ decode-map-as command $ Map Tag Dynamic
                             fn (command-draft d!)
                               hint-fn $ Fn (Map Tag String)
                                 Fn app.schema/Op $ -> Unit
                                 -> Unit
-                              d! $ app.schema/Op :workflow/edit-command $ [] workflow-id
-                                decode-map-as
-                                  .unwrap $ get command :id
-                                  , 'String
-                                , command-draft
+                              d! $ app.schema/Op :workflow/edit-command $ assert-type
+                                [] workflow-id
+                                  decode-map-as
+                                    .unwrap $ get command :id
+                                    , 'String
+                                  , command-draft
+                                Tuple String String $ Map Tag String
                               on-close d!
                               , &unit
                       .unwrap $ get state :pop?
@@ -376,7 +376,7 @@
                       .unwrap $ get command :path
                       , 'String
                     {} (:display :inline-block)
-                      :background-color $ hsl 0 0 100 $ Option :some 0.2
+                      :background-color $ hsl 0 0 100 $ Some 0.2
                       :padding "|0 8px"
                   space-x 24
                   <>
@@ -384,7 +384,7 @@
                       .unwrap $ get command :code
                       , 'String
                     {}
-                      :background-color $ hsl 0 0 100 $ Option :some 0.2
+                      :background-color $ hsl 0 0 100 $ Some 0.2
                       :padding "|0 8px"
                       :display :inline-block
                       :min-width 320
@@ -394,7 +394,7 @@
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
-              :border $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.3)
+              :border $ str "|1px solid " $ hsl 0 0 100 (Some 0.3)
               :border-radius |4px
               :padding "|8px 8px"
               :width 600
@@ -402,7 +402,7 @@
               :margin "|16px 8px"
               :color :white
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.command
           :require
@@ -475,8 +475,8 @@
                     comp-login $ decode-map-as (>> states :login) (Map Tag Dynamic)
                   comp-status-color $ :color view
                   if dev?
-                    Option :some $ comp-inspect |Store store $ {} (:bottom 0) (:left 0) (:max-width |100%)
-                    Option :none
+                    Some $ comp-inspect |Store store $ {} (:bottom 0) (:left 0) (:max-width |100%)
+                    , None
                   comp-messages
                     decode-map-as
                       .unwrap-or
@@ -485,14 +485,14 @@
                       Map String Dynamic
                     {}
                     fn (info d!)
-                      hint-fn $ Fn Dynamic
+                      hint-fn $ Fn (Map Tag Dynamic)
                         Fn *dispatch-op $ -> Unit
                         -> Unit
                       d! $ app.schema/Op :session/remove-message info
                       , &unit
                   if dev?
-                    Option :some $ comp-reel (:reel-length view) ({})
-                    Option :none
+                    Some $ comp-reel (:reel-length view) ({})
+                    , None
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic) Dynamic (-> respo.schema/Component)
         'comp-offline $ %{} 'CodeEntry (:doc |)
@@ -552,12 +552,12 @@
                       .includes? (#{} :router :user :count :color) key
               , StoreView
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> app.comp.container/StoreView)
+          :schema $ quote $ Fn Dynamic (-> StoreView)
         'style-body $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-body
             {} $ :padding "|8px 16px"
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -648,7 +648,7 @@
                 :padding "|4px 8px"
                 :width 960
                 :min-width :max-content
-                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Option :some 0.2)
+                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Some 0.2)
                 :word-break :break-word
               |&:hover $ {} $ :background-color (hsl 200 40 32)
           :examples $ []
@@ -709,8 +709,7 @@
                 raw-enlarge-view $ app.schema/field-or router-data :enlarge-view nil
                 enlarge-view $ if
                   or (nil? raw-enlarge-view) (= raw-enlarge-view false)
-                  Option :none
-                  Option :some $ decode-map-as raw-enlarge-view 'Number
+                  , None $ Some (decode-map-as raw-enlarge-view 'Number)
               div
                 {} $ :class-name $ str-spaced css/expand css/column css-home
                 space-y 8
@@ -797,8 +796,7 @@
                                 -> respo.schema/Component
                               comp-command-editor
                                 decode-map-as (>> states :quick-run) (Map Tag Dynamic)
-                                Option :none
-                                fn (draft d!)
+                                , None $ fn (draft d!)
                                   hint-fn $ Fn (Map Tag String)
                                     Fn *dispatch-op $ -> Unit
                                     -> Unit
@@ -847,7 +845,7 @@
                           filter
                             .to-list $ .keys processes
                             fn (pid)
-                              not= (Option :some pid) enlarge-view
+                              not= (Some pid) enlarge-view
                           fn (left-id right-id)
                             let
                                 left-process $ .unwrap $ get processes left-id
@@ -882,9 +880,9 @@
         'css-filter $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-filter
             {} $ |& $ {} (:min-width 60) (:width 60) (:background-color :transparent)
-              :color $ hsl 0 0 100 $ Option :some 0.8
+              :color $ hsl 0 0 100 $ Some 0.8
               :border-width "|0 0 1px 0"
-              :border-bottom $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.5)
+              :border-bottom $ str "|1px solid " $ hsl 0 0 100 (Some 0.5)
               :border-radius 0
               :outline :none
               :line-height |28px
@@ -1069,9 +1067,9 @@
           :code $ quote $ defstyle css-nav
             {} $ |& $ merge ui/row-center
               {} (:height 32) (:justify-content :space-between) (:padding "|0 16px") (:font-size 16)
-                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Option :some 0.1)
+                :border-bottom $ str "|1px solid " $ hsl 0 0 0 (Some 0.1)
                 :font-family ui/font-fancy
-                :background-color $ hsl 0 0 0 $ Option :some 0.04
+                :background-color $ hsl 0 0 0 $ Some 0.04
           :examples $ []
           :schema $ quote String
         'render-entry $ %{} 'CodeEntry (:doc |)
@@ -1144,7 +1142,7 @@
                     {} $ :class-name css/row-middle
                     button $ {} (:class-name css/button)
                       :style $ {}
-                        :background $ hsl 0 0 0 $ Option :some 0.1
+                        :background $ hsl 0 0 0 $ Some 0.1
                         :color :white
                       :on-click $ fn (e d!)
                         hint-fn $ Fn respo.schema/RespoEvent
@@ -1208,40 +1206,38 @@
                     decode-map-as
                       merge style/text $ {} $ :color (hsl 0 0 60)
                       , respo.schema/TextStyle
-                if (empty? content) (Option :none)
-                  Option :some $ list->
-                    {} $ :class-name css-content-list
-                    -> content (take-last 4)
-                      map-indexed $ fn (idx chunk)
-                        [] idx $ let
-                            urls $ find-urls $ decode-map-as
+                if (empty? content) None $ Some $ list->
+                  {} $ :class-name css-content-list
+                  -> content (take-last 4)
+                    map-indexed $ fn (idx chunk)
+                      [] idx $ let
+                          urls $ find-urls $ decode-map-as
+                            .unwrap $ get chunk :data
+                            , 'String
+                        div
+                          {} $ :style $ {} (:margin-top 2) (:display :block)
+                            :background-color $ hsl 0 0 0 $ Some 0.5
+                          if (empty? urls) None $ Some $ list-> ({})
+                            -> urls $ map $ fn (url)
+                              [] url $ a $ {} (:inner-text url) (:target |_blank) (:href url)
+                                :style $ {}
+                                  :color $ hsl 200 80 70
+                                  :margin "|0 8px"
+                          <>
+                            decode-map-as
                               .unwrap $ get chunk :data
                               , 'String
-                          div
-                            {} $ :style $ {} (:margin-top 2) (:display :block)
-                              :background-color $ hsl 0 0 0 $ Option :some 0.5
-                            if (empty? urls) (Option :none)
-                              Option :some $ list-> ({})
-                                -> urls $ map $ fn (url)
-                                  [] url $ a $ {} (:inner-text url) (:target |_blank) (:href url)
-                                    :style $ {}
-                                      :color $ hsl 200 80 70
-                                      :margin "|0 8px"
-                            <>
-                              decode-map-as
-                                .unwrap $ get chunk :data
-                                , 'String
-                              {}
-                                :color $ match
-                                  decode-map-as
-                                    .unwrap $ get chunk :type
-                                    , 'Tag
-                                  :stderr $ hsl 60 80 36
-                                  :error $ hsl 0 80 50
-                                  _ $ hsl 60 0 72
-                                :padding 8
-                                :display :block
-                                :white-space :pre-line
+                            {}
+                              :color $ match
+                                decode-map-as
+                                  .unwrap $ get chunk :type
+                                  , 'Tag
+                                :stderr $ hsl 60 80 36
+                                :error $ hsl 0 80 50
+                                _ $ hsl 60 0 72
+                              :padding 8
+                              :display :block
+                              :white-space :pre-line
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
         'css-content-list $ %{} 'CodeEntry (:doc |)
@@ -1265,7 +1261,7 @@
           :code $ quote $ defstyle css-process-log
             {} $ |& $ merge ui/row-middle
               {}
-                :background-color $ hsl 0 0 0 $ Option :some 0.5
+                :background-color $ hsl 0 0 0 $ Some 0.5
                 :font-size 10
           :examples $ []
           :schema $ quote String
@@ -1273,7 +1269,7 @@
           :code $ quote $ defstyle css-title-bar
             {} $ |& $ merge ui/row-parted
               {}
-                :background-color $ hsl 0 0 100 $ Option :some 0.4
+                :background-color $ hsl 0 0 100 $ Some 0.4
                 :color :black
                 :padding "|4px 4px"
                 :border-radius |4px
@@ -1371,19 +1367,18 @@
                       {} (:font-size 14) (:class-name css-down-icon)
                         :color $ hsl 0 0 80
                       , on-scroll-down!
-                    if (empty? content) (Option :none)
-                      Option :some $ a
-                        {}
-                          :on-click $ fn (e d!)
-                            hint-fn $ Fn respo.schema/RespoEvent
-                              Fn *dispatch-op $ -> Unit
-                              -> Unit
-                            d! $ app.schema/Op :process/shorten-content $ decode-map-as
-                              .unwrap $ get process :pid
-                              , 'Number
-                            , &unit
-                          :style style/link
-                        <> |Clear
+                    if (empty? content) None $ Some $ a
+                      {}
+                        :on-click $ fn (e d!)
+                          hint-fn $ Fn respo.schema/RespoEvent
+                            Fn *dispatch-op $ -> Unit
+                            -> Unit
+                          d! $ app.schema/Op :process/shorten-content $ decode-map-as
+                            .unwrap $ get process :pid
+                            , 'Number
+                          , &unit
+                        :style style/link
+                      <> |Clear
                     space-x 8
                     input $ {} (:type |checkbox)
                       :style $ {} (:cursor :pointer) (:opacity 0.8)
@@ -1510,7 +1505,7 @@
                   {} $ :class-name $ str-spaced |scroll-area css-logs-list
                   if
                     not $ empty? process
-                    Option :some $ list->
+                    Some $ list->
                       {} $ :style $ {}
                         :white-space $ if (:wrap? state) |pre-wrap |pre
                       -> content
@@ -1542,7 +1537,7 @@
                                   .unwrap $ get chunk :data
                                   , 'String
                               ; .!replace (app.schema/field-or chunk :data nil) &newline $ str &newline &newline
-                    Option :none
+                    , None
                   space-y 200
                 .render command-plugin
           :examples $ []
@@ -1559,8 +1554,8 @@
             {} $ |& $ merge ui/input
               {}
                 :color $ hsl 0 0 100
-                :background-color $ hsl 0 0 100 $ Option :some 0
-                :border-color $ hsl 0 0 100 $ Option :some 0.4
+                :background-color $ hsl 0 0 100 $ Some 0
+                :border-color $ hsl 0 0 100 $ Some 0.4
           :examples $ []
           :schema $ quote String
         'css-log $ %{} 'CodeEntry (:doc |)
@@ -1572,9 +1567,9 @@
           :code $ quote $ defstyle css-logs-list
             {} $ |& $ merge ui/flex
               {} (:overflow :auto)
-                :border $ str "|1px solid " $ hsl 0 0 100 (Option :some 0.3)
+                :border $ str "|1px solid " $ hsl 0 0 100 (Some 0.3)
                 :padding 8
-                :background-color $ hsl 0 0 0 $ Option :some 0.5
+                :background-color $ hsl 0 0 0 $ Some 0.5
                 :overflow :auto
                 :word-break :break-all
                 :line-height 1.4
@@ -1759,8 +1754,7 @@
                             -> respo.schema/Component
                           comp-workflow-editor
                             decode-map-as (>> states :editor) (Map Tag Dynamic)
-                            Option :none
-                            , on-close
+                            , None on-close
                       :pop? state
                       fn (d!)
                         hint-fn $ Fn
@@ -1800,14 +1794,14 @@
                                           .unwrap $ get workflow :id
                                           , 'String
                                         , focused-id
-                                  hsl 0 0 100 $ Option :some 0.2
-                                  hsl 0 0 100 $ Option :some 0
+                                  hsl 0 0 100 $ Some 0.2
+                                  hsl 0 0 100 $ Some 0
                               :on-click $ fn (e d!)
                                 hint-fn $ Fn respo.schema/RespoEvent
                                   Fn app.schema/Op $ -> Unit
                                   -> Unit
                                 d! $ app.schema/Op :states cursor $ assoc state :focused-id
-                                  Option :some $ decode-map-as
+                                  Some $ decode-map-as
                                     .unwrap $ get workflow :id
                                     , 'String
                                 , &unit
@@ -1816,7 +1810,7 @@
                               , 'String
                 div $ {} $ :style
                   {} (:width 1)
-                    :background-color $ hsl 0 0 100 $ Option :some 0.2
+                    :background-color $ hsl 0 0 100 $ Some 0.2
                     :margin 16
                 div
                   {} $ :style $ merge ui/flex
@@ -1901,8 +1895,7 @@
                               -> respo.schema/Component
                             comp-command-editor
                               decode-map-as (>> states :add-command) (Map Tag Dynamic)
-                              Option :none
-                              fn (command-draft d!)
+                              , None $ fn (command-draft d!)
                                 hint-fn $ Fn (Map Tag String)
                                   Fn app.schema/Op $ -> Unit
                                   -> Unit
@@ -1937,7 +1930,7 @@
                             -> respo.schema/Component
                           comp-workflow-editor
                             decode-map-as (>> states :editor) (Map Tag Dynamic)
-                            Option :some workflow
+                            Some workflow
                             , on-close
                       .unwrap $ get state :edit?
                       fn (d!)
@@ -2044,7 +2037,7 @@
         'style-workflow-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-workflow-entry
             {} (:cursor :pointer) (:padding "|0 8px") (:min-width 40) (:min-height 20)
-              :border-bottom $ str "|1px solid " $ hsl 0 0 94 (Option :some 0.1)
+              :border-bottom $ str "|1px solid " $ hsl 0 0 94 (Some 0.1)
               :line-height |36px
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
@@ -2078,7 +2071,7 @@
           :code $ quote $ def site
             Site :port 11014 :title |Termina :icon |http://cdn.tiye.me/logo/termina.png :dev-ui |http://localhost:8100/main.css :release-ui |http://cdn.tiye.me/favored-fonts/main.css :cdn-url |http://cdn.tiye.me/termina/ :cdn-folder |tiye.me:cdn/termina :upload-folder |tiye.me:repo/mvc-works/termina/ :server-folder |tiye.me:servers/termina :theme |#eeeeff :storage-key |termina :storage-file |termina.cirru
           :examples $ []
-          :schema $ quote app.config/Site
+          :schema $ quote Site
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.manager $ %{} 'FileEntry
@@ -2086,7 +2079,7 @@
         '*registry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *registry ({})
           :examples $ []
-          :schema $ quote $ Ref (Map Number app.manager/ProcessHost)
+          :schema $ quote $ Ref (Map Number ProcessHost)
         'EventEmitterHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait EventEmitterHost
             .on $ Fn EventEmitterHost String
@@ -2258,7 +2251,7 @@
                 slice command-chunks 1
                 , envs
           :examples $ []
-          :schema $ quote $ Fn String (-> app.manager/ParsedCommand) (:features :js-ffi)
+          :schema $ quote $ Fn String (-> ParsedCommand) (:features :js-ffi)
         'read-bool-field-or $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-bool-field-or (data key fallback)
             match (get data key)
@@ -2316,7 +2309,7 @@
                   println $ str |New-version- npm-version |-available,-current-one-is- version |.-Please-upgrade!\n\nyarn-global-add-termina\n
             , &unit
           :examples $ []
-          :schema $ quote $ Fn js-ffi.shared/PromiseHost String (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn PromiseHost String (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.runtime
           :require
@@ -2348,28 +2341,28 @@
             :user/log-out
             :effect/kill Number
             :effect/run Dynamic
-            :process/change-command Dynamic Dynamic
+            :process/change-command Number String
             :process/clear
             :process/clear-history
             :process/create Dynamic
-            :process/error Dynamic
-            :process/finish Dynamic
+            :process/error $ Tuple Number String
+            :process/finish Number
             :process/remove-dead Number
             :process/shorten-content Number
-            :process/stderr Dynamic
-            :process/stdout Dynamic
+            :process/stderr $ Tuple Number String
+            :process/stdout $ Tuple Number String
             :router/change Dynamic
-            :session/add-message Dynamic
+            :session/add-message String
             :session/enlarge Number
-            :session/remove-message Dynamic
-            :user/log-in Dynamic
-            :user/sign-up Dynamic
+            :session/remove-message $ Map Tag Dynamic
+            :user/log-in $ List String
+            :user/sign-up $ List String
             :workflow/add-command Dynamic
             :workflow/create Dynamic
             :workflow/edit Dynamic
-            :workflow/edit-command Dynamic
+            :workflow/edit-command $ Tuple String String $ Map Tag String
             :workflow/remove String
-            :workflow/remove-command Dynamic
+            :workflow/remove-command $ List String
             :command Dynamic
           :examples $ []
           :schema $ quote EnumDef
@@ -2386,7 +2379,7 @@
           :code $ quote $ def database
             Database :sessions ({}) :users ({}) :workflows ({}) :processes ({}) :histories ([]) :extensions $ {}
           :examples $ []
-          :schema $ quote app.schema/Database
+          :schema $ quote Database
         'decode-changes $ %{} 'CodeEntry (:doc "|网络差量的真实检查边界，保留递归 change-op 与有意开放的业务 payload。")
           :code $ quote $ defn decode-changes (raw) (recollect.schema/decode-changes raw)
           :examples $ []
@@ -2430,7 +2423,7 @@
                           List $ Map Tag Dynamic
                         , :extensions $ -> data (dissoc :sessions) (dissoc :users) (dissoc :workflows) (dissoc :processes) (dissoc :histories)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> app.schema/Database)
+          :schema $ quote $ Fn Dynamic (-> Database)
           :tests $ [] $ %{} 'TestEntry (:name |legacy-map-roundtrip)
             :code $ quote $ let
                 raw $ {}
@@ -2460,13 +2453,13 @@
                   .unwrap $ get items 1
                   , 'String
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> app.schema/LogEvent)
+          :schema $ quote $ Fn Dynamic (-> LogEvent)
         'encode-database $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-database (db)
             merge (:extensions db)
               dissoc (&struct:to-map db) :extensions
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database
+          :schema $ quote $ Fn Database
             -> $ Map Tag Dynamic
         'event-value $ %{} 'CodeEntry
           :doc "|Text value of an input event. Respo passes a RespoEvent struct; tests and legacy callers pass a map."
@@ -2503,7 +2496,7 @@
               (:user/log-out) (:: :user/log-out nil)
               _ $ :: (&enum:nth op 0) & $ &enum:params op
           :examples $ []
-          :schema $ quote $ Fn app.schema/Op (-> AnyEnum) (:open :reflect)
+          :schema $ quote $ Fn Op (-> AnyEnum) (:open :reflect)
         'page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def page
             {} (:id nil) (:title |) (:time nil)
@@ -2583,9 +2576,9 @@
         '*initial-db $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *initial-db (load-database!)
           :examples $ []
-          :schema $ quote $ Ref app.schema/Database
+          :schema $ quote $ Ref schema/Database
         '*loop-trigger $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defref *loop-trigger (Option :none)
+          :code $ quote $ defref *loop-trigger None
           :examples $ []
           :schema $ quote $ Ref (Option js-ffi.node/NodeTimerHost)
         '*proxied-dispatch! $ %{} 'CodeEntry (:doc |)
@@ -2596,12 +2589,12 @@
         '*reader-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *reader-reel @*reel
           :examples $ []
-          :schema $ quote $ Ref (cumulo-reel.core/ReelState app.schema/Database)
+          :schema $ quote $ Ref (ReelState schema/Database)
         '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *reel
             ReelState :base @*initial-db :db @*initial-db :records ([]) :merged? false
           :examples $ []
-          :schema $ quote $ Ref (cumulo-reel.core/ReelState app.schema/Database)
+          :schema $ quote $ Ref (ReelState schema/Database)
         'check-version! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn check-version! ()
             let
@@ -2651,7 +2644,7 @@
                 schema/decode-database $ parse-cirru-edn $ read-text! storage-file
                 , schema/database
           :examples $ []
-          :schema $ quote $ Fn (-> app.schema/Database) (:features :js-ffi)
+          :schema $ quote $ Fn (-> schema/Database) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -2709,7 +2702,7 @@
               not $ identical? @*reader-reel @*reel
               reset! *reader-reel @*reel
               sync-clients! @*reader-reel
-            reset! *loop $ Option :some $ set-timeout!
+            reset! *loop $ Some $ set-timeout!
               fn () $ render-loop! *loop
               , 200
             , &unit
@@ -2764,12 +2757,12 @@
                     swap! *client-caches assoc sid new-store
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (cumulo-reel.core/ReelState app.schema/Database) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (ReelState schema/Database) (-> Unit) (:features :js-ffi)
         'updater-from-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater-from-record (db op sid op-id op-time)
             updater db op (decode-map-as sid 'String) (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Dynamic Dynamic Dynamic Dynamic (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Dynamic Dynamic Dynamic Dynamic (-> schema/Database)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
           :require (app.schema :as schema)
@@ -2804,7 +2797,7 @@
             {}
               |button$0 $ {} $ :background-color :transparent
               |button$0:hover $ {} $ :background-color
-                hsl 0 0 100 $ Option :some 0.06
+                hsl 0 0 100 $ Some 0.06
           :examples $ []
           :schema $ quote String
         'input $ %{} 'CodeEntry (:doc |)
@@ -2935,8 +2928,7 @@
                   , sid op-id op-time
               (:session/enlarge d)
                 session/enlarge db
-                  if (nil? d) (Option :none)
-                    Option :some $ decode-map-as d 'Number
+                  if (nil? d) None $ Some $ decode-map-as d 'Number
                   , sid op-id op-time
               (:user/log-in d)
                 user/log-in db
@@ -3018,7 +3010,7 @@
               (:process/clear-history _) (process/clear-history db)
               _ $ do (println "|Unknown op:" op) db
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Dynamic String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Dynamic String String Number (-> schema/Database)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require (app.updater.session :as session) (app.updater.user :as user) (app.updater.router :as router) (app.schema :as schema) (app.updater.process :as process) (app.updater.workflow :as workflow)
@@ -3028,7 +3020,7 @@
           :code $ quote $ defn change-command (db pid next sid op-id op-time)
             assoc db :processes $ assoc-in (:processes db) ([] pid :command) next
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String String Number (-> schema/Database)
         'clear $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn clear (db)
             assoc db :processes $ filter-map-kv (:processes db)
@@ -3042,12 +3034,12 @@
                   MapEntryDecision :keep pid process
                   MapEntryDecision :drop
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (-> schema/Database)
         'clear-history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn clear-history (db)
             assoc db :histories $ []
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (-> schema/Database)
         'create $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create (db op-data sid op-id op-time)
             let
@@ -3067,7 +3059,7 @@
                 assoc db :processes $ assoc (:processes db) pid process
                 , :histories $ conj (:histories db) history
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (Map Tag Dynamic) String String Number (-> schema/Database)
         'error $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn error (db pid data sid op-id op-time)
             let
@@ -3079,12 +3071,12 @@
               assoc db :processes $ assoc processes pid $ assoc process :content
                 conj content $ {} (:type :error) (:data data)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String String Number (-> schema/Database)
         'finish $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn finish (db op-data sid op-id op-time)
             assoc db :processes $ assoc-in (:processes db) ([] op-data :alive?) false
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String Number (-> schema/Database)
         'remove-dead $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-dead (db op-data sid op-id op-time)
             if
@@ -3092,7 +3084,7 @@
               assoc db :processes $ dissoc (:processes db) op-data
               , db
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String Number (-> schema/Database)
         'shorten-content $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shorten-content (db op-data)
             let
@@ -3102,7 +3094,7 @@
                 (:some process)
                   assoc db :processes $ assoc processes op-data $ assoc process :content ([])
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number (-> schema/Database)
         'stderr $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn stderr (db pid data sid op-id op-time)
             let
@@ -3114,7 +3106,7 @@
               assoc db :processes $ assoc processes pid $ assoc process :content
                 conj content $ {} (:type :stderr) (:data data)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String String Number (-> schema/Database)
         'stdout $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn stdout (db pid data sid op-id op-time)
             let
@@ -3126,7 +3118,7 @@
               assoc db :processes $ assoc processes pid $ assoc process :content
                 conj content $ {} (:type :stdout) (:data data)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database Number String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database Number String String String Number (-> schema/Database)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.process
           :require $ app.schema :as schema
@@ -3152,13 +3144,13 @@
               assoc db :sessions $ assoc sessions sid $ assoc session :messages
                 assoc messages message-id $ {} (:id message-id) (:text text)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String String (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String String (-> schema/Database)
         'connect $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn connect (db sid op-id op-time)
             assoc db :sessions $ assoc-in (:sessions db) ([] sid)
               merge schema/session $ {} $ :id sid
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String Number (-> schema/Database)
         'disconnect $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn disconnect (db sid op-id op-time)
             assoc db :sessions $
@@ -3169,7 +3161,7 @@
                 dissoc session sid
               :sessions db
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String Number (-> schema/Database)
         'enlarge $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn enlarge (db target sid op-id op-time)
             assoc db :sessions $ match target
@@ -3178,7 +3170,7 @@
               (:none)
                 dissoc-in (:sessions db) ([] sid :enlarge-view)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Option Number) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (Option Number) String String Number (-> schema/Database)
         'remove-message $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-message (db message-id sid op-id op-time)
             let
@@ -3189,7 +3181,7 @@
                   Map String $ Map Tag Dynamic
               assoc db :sessions $ assoc sessions sid $ assoc session :messages (dissoc messages message-id)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String String Number (-> schema/Database)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.session
           :require $ app.schema :as schema
@@ -3295,7 +3287,7 @@
               assoc db :workflows $ assoc workflows id $ assoc workflow :commands
                 assoc commands op-id $ assoc draft :id op-id
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (Map Tag Dynamic) String String Number (-> schema/Database)
         'create-workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn create-workflow (db op-data sid op-id op-time)
             let
@@ -3310,7 +3302,7 @@
                   :commands $ {} $ op-id command
               assoc db :workflows $ assoc (:workflows db) op-id workflow
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (Map Tag Dynamic) String String Number (-> schema/Database)
         'edit-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn edit-command (db workflow-id command-id changes sid op-id op-time)
             let
@@ -3323,7 +3315,7 @@
               assoc db :workflows $ assoc workflows workflow-id $ assoc workflow :commands
                 assoc commands command-id $ merge command changes
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String (Map Tag Dynamic) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String (Map Tag Dynamic) String String Number (-> schema/Database)
         'edit-workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn edit-workflow (db changes sid op-id op-time)
             let
@@ -3335,7 +3327,7 @@
                   {}
               assoc db :workflows $ assoc (:workflows db) id $ merge workflow changes
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database (Map Tag Dynamic) String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database (Map Tag Dynamic) String String Number (-> schema/Database)
         'remove-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-command (db workflow-id command-id sid op-id op-time)
             let
@@ -3346,7 +3338,7 @@
                   Map String $ Map Tag Dynamic
               assoc db :workflows $ assoc workflows workflow-id $ assoc workflow :commands (dissoc commands command-id)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String String String Number (-> schema/Database)
         'remove-workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-workflow (db op-data sid op-id op-time)
             let
@@ -3359,7 +3351,7 @@
                   dissoc workflows workflow-id
                 :workflows db
           :examples $ []
-          :schema $ quote $ Fn app.schema/Database String String String Number (-> app.schema/Database)
+          :schema $ quote $ Fn schema/Database String String String Number (-> schema/Database)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater.workflow
           :require $ app.schema :as schema
