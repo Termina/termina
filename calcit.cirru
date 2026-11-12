@@ -32,7 +32,7 @@
                 :on-data on-server-data
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when
@@ -55,7 +55,7 @@
               _ $ ws-send! op
             , &unit
           :examples $ []
-          :schema $ quote $ Fn schema/Op (-> Unit)
+          :schema $ quote $ Fn schema/Op (-> Unit) (:features :io :state)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             if config/dev? $ load-console-formatter!
@@ -68,7 +68,7 @@
             on-page-touch $ fn () $ if (nil? @*store) (connect!) &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
             .unwrap $ respo-browser/query-selector |.app
@@ -84,7 +84,7 @@
               _ $ println "|unknown server data kind:" data
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit)
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit) (:features :io :state)
         'on-window-keydown $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-window-keydown (event)
             let
@@ -102,7 +102,7 @@
                     , &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn EventHost (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn EventHost (-> Unit) (:features :io :js-ffi :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if
@@ -114,7 +114,7 @@
                 println "|Code updated."
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render! mount-target
@@ -125,7 +125,7 @@
                 , @*store
               , dispatch!
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'resolve-websocket-url $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn resolve-websocket-url ()
             app.util/websocket-url (location-href)
@@ -142,7 +142,7 @@
                   , &unit
                 println "|Found no storage."
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.client
           :require
@@ -433,7 +433,14 @@
                   view $ decode-view store
                 div
                   {} $ :class-name $ str-spaced css/global css/fullscreen css/column css-container
-                  comp-navigation (:logged-in? view) (:router view) (:count view)
+                  comp-navigation (:logged-in? view)
+                    match (:router view)
+                      (:none) None
+                      (:some router)
+                        Some $ decode-map-as
+                          .unwrap $ get router :name
+                          , Tag
+                    :count view
                   if (:logged-in? view)
                     let
                         router $ .unwrap $ :router view
@@ -494,7 +501,7 @@
                     Some $ comp-reel (:reel-length view) ({})
                     , None
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) Dynamic (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) Dynamic (-> respo.schema/Component) (:features :io)
         'comp-offline $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-offline ()
             div
@@ -1059,10 +1066,7 @@
                   (:none) |
                   (:some n) (to-string n)
           :examples $ []
-          :schema $ quote $ Fn Bool
-            Option $ Map Tag Dynamic
-            Option Number
-            -> respo.schema/Component
+          :schema $ quote $ Fn Bool (Option Tag) (Option Number) (-> respo.schema/Component)
         'css-nav $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-nav
             {} $ |& $ merge ui/row-center
@@ -1079,10 +1083,7 @@
                 :style $ merge style-logo $ if
                   match router
                     (:none) false
-                    (:some data)
-                      = router-name $ decode-map-as
-                        .unwrap $ get data :name
-                        , 'Tag
+                    (:some active-route) (= router-name active-route)
                   {} $ :color :white
                   {}
                 :on-click $ fn (e d!)
@@ -1093,9 +1094,7 @@
                   , &unit
               <> title
           :examples $ []
-          :schema $ quote $ Fn
-            Option $ Map Tag Dynamic
-            , Tag String (-> respo.schema/Element)
+          :schema $ quote $ Fn (Option Tag) Tag String (-> respo.schema/Element)
         'style-logo $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-logo
             decode-map-as
@@ -1676,7 +1675,7 @@
                       , &unit
                   <> "|Log out"
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map String String) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map String String) (-> respo.schema/Component) (:features :io)
         'refresh-page! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-page! ()
             let
@@ -1685,7 +1684,7 @@
               location-replace! $ str (:protocol url) |// (:host url) |?time= now
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.profile
           :require
@@ -2200,7 +2199,7 @@
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic)
             Fn Dynamic String $ -> Unit
-            , String (-> Unit) (:features :js-ffi)
+            , String (-> Unit) (:features :js-ffi :state)
         'env-chunk? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn env-chunk? (chunk) (raise "|Command classification requires JavaScript")
           :examples $ []
@@ -2219,7 +2218,7 @@
           :examples $ []
           :schema $ quote $ Fn Number
             Fn Dynamic String $ -> Unit
-            , String (-> Unit) (:features :js-ffi)
+            , String (-> Unit) (:features :io :js-ffi :state)
         'parse-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn parse-command (command)
             let
@@ -2313,7 +2312,7 @@
                   println $ str |New-version- npm-version |-available,-current-one-is- version |.-Please-upgrade!\n\nyarn-global-add-termina\n
             , &unit
           :examples $ []
-          :schema $ quote $ Fn PromiseHost String (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn PromiseHost String (-> Unit) (:features :io :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.runtime
           :require
@@ -2515,7 +2514,7 @@
                 if (nil? value) fallback value
               (:err _error) fallback
           :examples $ []
-          :schema $ quote $ Fn Dynamic (List Dynamic) Dynamic (-> Dynamic)
+          :schema $ quote $ Fn Dynamic (List StateKey) Dynamic (-> Dynamic)
         'process $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def process
             {} (:title |) (:pid 0)
@@ -2619,7 +2618,7 @@
               report-version! version-promise version
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op sid)
             let
@@ -2639,7 +2638,7 @@
                 fn (error) (js/console.error error)
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic String (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn Dynamic String (-> Unit) (:features :io :js-ffi :state)
         'load-database! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-database! ()
             let
@@ -2649,7 +2648,7 @@
                 schema/decode-database $ parse-cirru-edn $ read-text! storage-file
                 , schema/database
           :examples $ []
-          :schema $ quote $ Fn (-> schema/Database) (:features :js-ffi)
+          :schema $ quote $ Fn (-> schema/Database) (:features :io :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -2669,11 +2668,11 @@
               check-version!
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'on-exit! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-exit! () (persist-db!) (println "|termina exit code is: 0") (exit! 0) &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'persist-db! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-db! ()
             let
@@ -2690,7 +2689,7 @@
               write-mildly! storage-file file-content
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (println "|Code updated.") (clear-twig-caches!) (reset! *proxied-dispatch! dispatch!)
             reset! *reel $ refresh-reel @*reel @*initial-db updater-from-record
@@ -2700,7 +2699,7 @@
             render-loop! *loop-trigger
             sync-clients! @*reader-reel
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'render-loop! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-loop! (*loop)
             when
@@ -2715,7 +2714,7 @@
           :schema $ quote $ Fn
             Ref $ Option js-ffi.node/NodeTimerHost
             -> Unit
-            :features :js-ffi
+            :features :js-ffi :state
         'run-server! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-server! (port)
             let
@@ -2735,7 +2734,7 @@
                   wss-serve! port $ merge options $ {} (:host host)
                 (:none) (wss-serve! port options)
           :examples $ []
-          :schema $ quote $ Fn Number (-> ws-edn.server/NodeWebSocketServerHost) (:features :js-ffi)
+          :schema $ quote $ Fn Number (-> ws-edn.server/NodeWebSocketServerHost) (:features :io :js-ffi :state)
         'storage-file $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def storage-file
             read-storage-file $ :storage-file config/site
@@ -2762,12 +2761,12 @@
                     swap! *client-caches assoc sid new-store
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (ReelState schema/Database) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (ReelState schema/Database) (-> Unit) (:features :js-ffi :state)
         'updater-from-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater-from-record (db op sid op-id op-time)
             updater db op (decode-map-as sid 'String) (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
           :examples $ []
-          :schema $ quote $ Fn schema/Database Dynamic Dynamic Dynamic Dynamic (-> schema/Database)
+          :schema $ quote $ Fn schema/Database Dynamic Dynamic Dynamic Dynamic (-> schema/Database) (:features :io)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
           :require (app.schema :as schema)
@@ -3017,7 +3016,7 @@
               (:process/clear-history _) (process/clear-history db)
               _ $ do (println "|Unknown op:" op) db
           :examples $ []
-          :schema $ quote $ Fn schema/Database Dynamic String String Number (-> schema/Database)
+          :schema $ quote $ Fn schema/Database Dynamic String String Number (-> schema/Database) (:features :io)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require (app.updater.session :as session) (app.updater.user :as user) (app.updater.router :as router) (app.schema :as schema) (app.updater.process :as process) (app.updater.workflow :as workflow)
@@ -3397,6 +3396,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Fn app.schema/Op $ -> Unit
             -> Unit
+            :features :io
         'join-path $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-path (xs ys)
             if
