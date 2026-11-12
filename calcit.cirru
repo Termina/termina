@@ -2147,7 +2147,7 @@
                     .on-error! proc |error $ fn (event)
                       hint-fn $ Fn JsObject $ -> Unit
                       dispatch!
-                        :: :session/add-message $ str "|Unable to start command: " command "| — " $ :message (normalize-error event)
+                        app.schema/Op :session/add-message $ str "|Unable to start command: " command "| — " $ :message (normalize-error event)
                         , sid
                       , &unit
                     , &unit
@@ -2156,49 +2156,52 @@
                       pid $ decode-map-as raw-pid 'Number
                     swap! *registry assoc pid proc
                     dispatch!
-                      :: :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
+                      app.schema/Op :process/create $ {} (:pid pid) (:command command) (:cwd cwd)
                         :title $ app.schema/field-or op-data :title nil
                       , sid
                     if jump? $ dispatch!
-                      :: :router/change $ {} (:name :process)
+                      app.schema/Op :router/change $ {} (:name :process)
                         :params $ {} $ :id pid
                       , sid
-                    if enlarge? $ dispatch! (:: :session/enlarge pid) sid
+                    if enlarge? $ dispatch! (app.schema/Op :session/enlarge pid) sid
                     .on-exit! proc |exit $ fn (code signal)
                       hint-fn $ Fn (JsNullish Number) (JsNullish String) (-> Unit)
                       js/console.warn |[EXIT] code signal
                       dispatch!
-                        :: :process/error $ [] pid $ str &newline
-                          if (js-nullish? code) (str "|signal: " signal) (str "|exit: " code)
+                        app.schema/Op :process/error $ assert-type
+                          [] pid $ str &newline $ if (js-nullish? code) (str "|signal: " signal) (str "|exit: " code)
+                          Tuple Number String
                         , sid
-                      dispatch! (:: :process/finish pid) sid
+                      dispatch! (app.schema/Op :process/finish pid) sid
                       swap! *registry dissoc pid
                       , &unit
                     .on-error! proc |error $ fn (event)
                       hint-fn $ Fn JsObject $ -> Unit
                       dispatch!
-                        :: :process/error $ [] pid $ str-spaced |error: (str event)
+                        app.schema/Op :process/error $ assert-type
+                          [] pid $ str-spaced |error: $ str event
+                          Tuple Number String
                         , sid
-                      ; dispatch! (:: :process/finish pid) sid
+                      ; dispatch! (app.schema/Op :process/finish pid) sid
                       js/console.error "|[TERMINA] process error" event
                       , &unit
                     .set-encoding! (.-stdout proc) |utf8
                     .on (.-stdout proc) |data $ fn (data)
                       hint-fn $ Fn String $ -> Unit
                       dispatch!
-                        :: :process/stdout $ [] pid data
+                        app.schema/Op :process/stdout $ assert-type ([] pid data) (Tuple Number String)
                         , sid
                     , &unit
                       .set-encoding! (.-stderr proc) |utf8
                       .on (.-stderr proc) |data $ fn (data)
                         hint-fn $ Fn String $ -> Unit
                         dispatch!
-                          :: :process/stderr $ [] pid data
+                          app.schema/Op :process/stderr $ assert-type ([] pid data) (Tuple Number String)
                           , sid
                       , &unit &unit
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic)
-            Fn Dynamic String $ -> Unit
+            Fn app.schema/Op String $ -> Unit
             , String (-> Unit) (:features :js-ffi :state)
         'env-chunk? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn env-chunk? (chunk) (raise "|Command classification requires JavaScript")
@@ -2213,11 +2216,11 @@
                 do (eprintln "|[kill] process" proc) (.!kill proc |SIGTERM)
               (:none)
                 do (eprintln "|[warn] process not found in registry:" pid @*registry)
-                  dispatch! (:: :process/finish pid) sid
+                  dispatch! (app.schema/Op :process/finish pid) sid
             , &unit
           :examples $ []
           :schema $ quote $ Fn Number
-            Fn Dynamic String $ -> Unit
+            Fn app.schema/Op String $ -> Unit
             , String (-> Unit) (:features :io :js-ffi :state)
         'parse-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn parse-command (command)
@@ -2501,6 +2504,10 @@
               _ $ :: (&enum:nth op 0) & $ &enum:params op
           :examples $ []
           :schema $ quote $ Fn Op (-> AnyEnum) (:open :reflect)
+          :tests $ [] $ %{} 'TestEntry (:name |keeps-legacy-process-output-payload)
+            :code $ quote $ assert=
+              :: :process/stdout $ [] 42 |ready
+              op-to-wire $ Op :process/stdout $ assert-type ([] 42 |ready) (Tuple Number String)
         'page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def page
             {} (:id nil) (:title |) (:time nil)
@@ -2631,14 +2638,20 @@
                   (:effect/run d)
                     create-process!
                       decode-map-as d $ Map Tag Dynamic
-                      , dispatch! sid
+                      , dispatch-process! sid
                   (:effect/kill d)
-                    kill-process! (decode-map-as d 'Number) dispatch! sid
+                    kill-process! (decode-map-as d 'Number) dispatch-process! sid
                   _ $ reset! *reel $ reel-reducer @*reel updater op sid op-id op-time config/dev?
                 fn (error) (js/console.error error)
             , &unit
           :examples $ []
           :schema $ quote $ Fn Dynamic String (-> Unit) (:features :io :js-ffi :state)
+        'dispatch-process! $ %{} 'CodeEntry
+          :doc "|Send typed manager events through the same anonymous operation representation stored in the reel."
+          :code $ quote $ defn dispatch-process! (op sid)
+            dispatch! (schema/op-to-wire op) sid
+          :examples $ []
+          :schema $ quote $ Fn schema/Op String (-> Unit) (:features :io :js-ffi :state)
         'load-database! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-database! ()
             let
