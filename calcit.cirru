@@ -2451,16 +2451,9 @@
               assert= true $ .some? $ get (:processes decoded) 42
         'decode-log-event $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-log-event (raw)
-            let
-                items $ decode-map-as raw $ List Dynamic
-              assert "|Log event requires PID and text" $ = (count items) 2
-              LogEvent :pid
-                decode-map-as
-                  .unwrap $ get items 0
-                  , 'Number
-                , :data $ decode-map-as
-                  .unwrap $ get items 1
-                  , 'String
+            let[] (pid text)
+              decode-map-as raw $ Tuple Number String
+              LogEvent :pid pid :data text
           :examples $ []
           :schema $ quote $ Fn Dynamic (-> LogEvent)
         'encode-database $ %{} 'CodeEntry (:doc |)
