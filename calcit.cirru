@@ -2485,7 +2485,7 @@
                 if (nil? value) fallback value
               (:none) fallback
           :examples $ []
-          :schema $ quote $ Fn (Map K Dynamic) K Dynamic (-> Dynamic) (:generics K)
+          :schema $ quote $ Fn (Map K V) K V (-> V) (:generics K V)
         'history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def history
             {} (:id nil) (:pid 0) (:started-at 0) (:cwd |) (:command |)
