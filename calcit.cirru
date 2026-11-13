@@ -993,7 +993,7 @@
           :code $ quote $ def initial-state
             {} (:username |) (:password |)
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag String
         'on-submit $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-submit (username password signup?)
             fn (e dispatch!)
@@ -2488,7 +2488,7 @@
                 if (nil? value) fallback value
               (:none) fallback
           :examples $ []
-          :schema $ quote $ Fn (Map K Dynamic) K Dynamic (-> Dynamic) (:generics K)
+          :schema $ quote $ Fn (Map K V) K V (-> V) (:generics K V)
         'history $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def history
             {} (:id nil) (:pid 0) (:started-at 0) (:cwd |) (:command |)
