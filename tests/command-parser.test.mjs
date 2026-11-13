@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as c from "../js-out/calcit.core.mjs";
 import { parse_command, read_string_field, read_bool_field_or, create_process_$x_, _$s_registry } from "../js-out/app.manager.mjs";
-import { database, encode_database } from "../js-out/app.schema.mjs";
+import { database, encode_database, op_to_wire } from "../js-out/app.schema.mjs";
 import { updater } from "../js-out/app.updater.mjs";
 
 test("only leading assignments are environment and values retain equals signs", () => {
@@ -52,7 +52,7 @@ test("spawn and exec preserve synthetic stdout/stderr and completion", { timeout
     await new Promise(resolve => {
       create_process_$x_(data, (operation, sid) => {
         const kind = c._$n_enum_$o_nth(operation, 0).value;
-        events.push({ kind, payload: c._$n_enum_$o_nth(operation, 1), sid });
+        events.push({ kind, payload: c._$n_enum_$o_nth(op_to_wire(operation), 1), sid });
         if (["process/stdout", "process/stderr", "process/finish"].every(expected => events.some(event => event.kind === expected))) resolve();
         return;
       }, "synthetic-session");
