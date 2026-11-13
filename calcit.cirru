@@ -2511,9 +2511,17 @@
           :examples $ []
           :schema $ quote $ Fn Op (-> AnyEnum) (:open :reflect)
           :tests $ [] $ %{} 'TestEntry (:name |keeps-legacy-process-output-payload)
-            :code $ quote $ assert=
-              :: :process/stdout $ [] 42 |ready
-              op-to-wire $ Op :process/stdout $ LogEvent :pid 42 :data |ready
+            :code $ quote $ let
+                event $ LogEvent :pid 42 :data "|日志🐈"
+              assert=
+                :: :process/stdout $ [] 42 "|日志🐈"
+                op-to-wire $ Op :process/stdout event
+              assert=
+                :: :process/stderr $ [] 42 "|日志🐈"
+                op-to-wire $ Op :process/stderr event
+              assert=
+                :: :process/error $ [] 42 "|日志🐈"
+                op-to-wire $ Op :process/error event
         'page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def page
             {} (:id nil) (:title |) (:time nil)
