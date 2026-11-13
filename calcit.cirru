@@ -2171,9 +2171,8 @@
                       hint-fn $ Fn (JsNullish Number) (JsNullish String) (-> Unit)
                       js/console.warn |[EXIT] code signal
                       dispatch!
-                        app.schema/Op :process/error $ assert-type
-                          [] pid $ str &newline $ if (js-nullish? code) (str "|signal: " signal) (str "|exit: " code)
-                          Tuple Number String
+                        app.schema/Op :process/error $ app.schema/LogEvent :pid pid :data $ str &newline
+                          if (js-nullish? code) (str "|signal: " signal) (str "|exit: " code)
                         , sid
                       dispatch! (app.schema/Op :process/finish pid) sid
                       swap! *registry dissoc pid
@@ -2181,9 +2180,7 @@
                     .on-error! proc |error $ fn (event)
                       hint-fn $ Fn JsObject $ -> Unit
                       dispatch!
-                        app.schema/Op :process/error $ assert-type
-                          [] pid $ str-spaced |error: $ str event
-                          Tuple Number String
+                        app.schema/Op :process/error $ app.schema/LogEvent :pid pid :data $ str-spaced |error: (str event)
                         , sid
                       ; dispatch! (app.schema/Op :process/finish pid) sid
                       js/console.error "|[TERMINA] process error" event
@@ -2192,14 +2189,14 @@
                     .on (.-stdout proc) |data $ fn (data)
                       hint-fn $ Fn String $ -> Unit
                       dispatch!
-                        app.schema/Op :process/stdout $ assert-type ([] pid data) (Tuple Number String)
+                        app.schema/Op :process/stdout $ app.schema/LogEvent :pid pid :data data
                         , sid
                     , &unit
                       .set-encoding! (.-stderr proc) |utf8
                       .on (.-stderr proc) |data $ fn (data)
                         hint-fn $ Fn String $ -> Unit
                         dispatch!
-                          app.schema/Op :process/stderr $ assert-type ([] pid data) (Tuple Number String)
+                          app.schema/Op :process/stderr $ app.schema/LogEvent :pid pid :data data
                           , sid
                       , &unit &unit
           :examples $ []
@@ -2354,12 +2351,12 @@
             :process/clear
             :process/clear-history
             :process/create Dynamic
-            :process/error $ Tuple Number String
+            :process/error app.schema/LogEvent
             :process/finish Number
             :process/remove-dead Number
             :process/shorten-content Number
-            :process/stderr $ Tuple Number String
-            :process/stdout $ Tuple Number String
+            :process/stderr app.schema/LogEvent
+            :process/stdout app.schema/LogEvent
             :router/change Dynamic
             :session/add-message String
             :session/enlarge Number
@@ -2504,13 +2501,19 @@
               (:process/clear) (:: :process/clear nil)
               (:process/clear-history) (:: :process/clear-history nil)
               (:user/log-out) (:: :user/log-out nil)
+              (:process/error event)
+                :: :process/error $ [] (:pid event) (:data event)
+              (:process/stderr event)
+                :: :process/stderr $ [] (:pid event) (:data event)
+              (:process/stdout event)
+                :: :process/stdout $ [] (:pid event) (:data event)
               _ $ :: (&enum:nth op 0) & $ &enum:params op
           :examples $ []
           :schema $ quote $ Fn Op (-> AnyEnum) (:open :reflect)
           :tests $ [] $ %{} 'TestEntry (:name |keeps-legacy-process-output-payload)
             :code $ quote $ assert=
               :: :process/stdout $ [] 42 |ready
-              op-to-wire $ Op :process/stdout $ assert-type ([] 42 |ready) (Tuple Number String)
+              op-to-wire $ Op :process/stdout $ LogEvent :pid 42 :data |ready
         'page $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def page
             {} (:id nil) (:title |) (:time nil)
