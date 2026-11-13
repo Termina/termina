@@ -1605,7 +1605,10 @@
               (:some raw-element) (element-scroll-to-bottom! raw-element)
           :examples $ []
           :ffi $ {} (:backend :js) (:target :browser)
-          :schema $ quote $ Fn Dynamic Dynamic (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn respo.schema/RespoEvent
+            Fn *dispatch-op $ -> Unit
+            -> Unit
+            :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.process-detail
           :require
