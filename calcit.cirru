@@ -2794,7 +2794,7 @@
           :code $ quote $ defn updater-from-record (db op sid op-id op-time)
             updater db op (decode-map-as sid 'String) (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
           :examples $ []
-          :schema $ quote $ Fn schema/Database Dynamic Dynamic Dynamic Dynamic (-> schema/Database) (:features :io)
+          :schema $ quote $ Fn schema/Database Op SessionId OpId Time (-> schema/Database) (:generics Op SessionId OpId Time) (:features :io)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.server
           :require (app.schema :as schema)
