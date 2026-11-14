@@ -2586,7 +2586,7 @@
           :code $ quote $ def user
             {} (:name nil) (:id nil) (:nickname nil) (:avatar nil) (:password nil)
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag Nil
         'workflow $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def workflow
             {} (:id nil) (:name nil) (:base-dir |~/)
