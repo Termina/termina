@@ -2528,15 +2528,6 @@
             {} (:id nil) (:title |) (:time nil)
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
-        'path-or $ %{} 'CodeEntry
-          :doc "|Read an optional nested wire field. A missing path, wrong shape or nil value gives the fallback."
-          :code $ quote $ defn path-or (base path fallback)
-            match (get-in base path)
-              (:ok value)
-                if (nil? value) fallback value
-              (:err _error) fallback
-          :examples $ []
-          :schema $ quote $ Fn Dynamic (List StateKey) Dynamic (-> Dynamic)
         'process $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def process
             {} (:title |) (:pid 0)
@@ -2547,6 +2538,17 @@
               :command |
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
+        'read-path $ %{} 'CodeEntry
+          :doc "|Read an optional nested wire field. Missing paths and nil values return None."
+          :code $ quote $ defn read-path (base path)
+            match (get-in base path)
+              (:ok value)
+                if (nil? value) None $ Some value
+              (:err _) None
+          :examples $ []
+          :schema $ quote $ Fn Input (List StateKey)
+            -> $ Option Dynamic
+            :generics Input
         'router $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def router
             {} (:name nil) (:title nil)
@@ -2889,7 +2891,7 @@
                         :enlarge-view $ .unwrap-or (get session :enlarge-view) false
                       :process $ let
                           process-id $ decode-map-as
-                            app.schema/path-or router ([] :params :id) nil
+                            .unwrap $ app.schema/read-path router $ [] :params :id
                             , 'Number
                         {}
                           :detail $ .unwrap-or (get processes process-id)
@@ -3114,7 +3116,9 @@
         'remove-dead $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-dead (db op-data sid op-id op-time)
             if
-              not $ app.schema/path-or (:processes db) ([] op-data :alive?) false
+              not $ .unwrap-or
+                app.schema/read-path (:processes db) ([] op-data :alive?)
+                , false
               assoc db :processes $ dissoc (:processes db) op-data
               , db
           :examples $ []
