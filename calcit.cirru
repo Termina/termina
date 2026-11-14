@@ -559,7 +559,7 @@
                       .includes? (#{} :router :user :count :color) key
               , StoreView
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> StoreView)
+          :schema $ quote $ Fn Input (-> StoreView) (:generics Input)
         'style-body $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-body
             {} $ :padding "|8px 16px"
@@ -2394,8 +2394,9 @@
         'decode-changes $ %{} 'CodeEntry (:doc "|网络差量的真实检查边界，保留递归 change-op 与有意开放的业务 payload。")
           :code $ quote $ defn decode-changes (raw) (recollect.schema/decode-changes raw)
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ List recollect.schema/change-op
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |wire-replace)
             :code $ quote $ let
                 expected $ {} $ :text |:VALUE
@@ -2434,7 +2435,7 @@
                           List $ Map Tag Dynamic
                         , :extensions $ -> data (dissoc :sessions) (dissoc :users) (dissoc :workflows) (dissoc :processes) (dissoc :histories)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Database)
+          :schema $ quote $ Fn Input (-> Database) (:generics Input)
           :tests $ [] $ %{} 'TestEntry (:name |legacy-map-roundtrip)
             :code $ quote $ let
                 raw $ {}
@@ -2457,7 +2458,7 @@
               decode-map-as raw $ Tuple Number String
               LogEvent :pid pid :data text
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> LogEvent)
+          :schema $ quote $ Fn Input (-> LogEvent) (:generics Input)
         'encode-database $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-database (db)
             merge (:extensions db)
