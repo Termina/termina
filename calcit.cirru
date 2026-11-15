@@ -179,9 +179,10 @@
                     -> Unit
                   &doseq
                     command $ .to-list $ .distinct-values
-                      decode-map-as
-                        .unwrap-or (get workflow :commands) ({})
-                        Map String $ Map Tag Dynamic
+                      match (get workflow :commands)
+                        (:some value)
+                          decode-map-as value $ Map String $ Map Tag Dynamic
+                        (:none) ({})
                     d! $ app.schema/Op :effect/run $ {}
                       :command $ decode-map-as
                         .unwrap $ get command :code
@@ -199,7 +200,7 @@
                 .unwrap $ get workflow :name
                 , 'String
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag V) (-> respo.schema/Component) (:generics V)
         'comp-command-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-command-editor (states base-command on-submit)
             let
@@ -1031,7 +1032,7 @@
                 {} $ :style $ {} (:font-family ui/font-code)
                 <> $ str router
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag V) (-> respo.schema/Component) (:generics V)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.missing
           :require
@@ -1678,7 +1679,7 @@
                       , &unit
                   <> "|Log out"
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map String String) (-> respo.schema/Component) (:features :io)
+          :schema $ quote $ Fn (Map Tag V) (Map String String) (-> respo.schema/Component) (:generics V) (:features :io)
         'refresh-page! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-page! ()
             let

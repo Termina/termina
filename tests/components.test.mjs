@@ -85,6 +85,19 @@ function elements(component) {
 const values = nodes => nodes.map(node => c.listToArray(read(node, 'attrs')).map(c.listToArray).find(([key]) => key.value === 'value')[1]);
 const attr = (node, name) => c.listToArray(read(node, 'attrs')).map(c.listToArray).find(([key]) => key.value === name)?.[1];
 
+test('workflow button treats absent commands as empty and rejects invalid commands', () => {
+  for (const [workflow, valid] of [
+    [parse('{} (:name |Demo) (:base-dir |/synthetic)'), true],
+    [parse('{} (:name |Demo) (:base-dir |/synthetic) (:commands nil)'), false],
+  ]) {
+    const button = elements(comp_command_button(workflow))[0];
+    const calls = [];
+    const click = () => read(read(button, 'event'), 'click')(parse('{}'), op => calls.push(op));
+    if (valid) assert.doesNotThrow(click); else assert.throws(click);
+    assert.equal(calls.length, 0);
+  }
+});
+
 test('workflow button preserves command paths and dispatches one Enum without running commands', () => {
   const workflow = parse(`{}
   :name |合成工作流
