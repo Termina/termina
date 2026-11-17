@@ -142,7 +142,7 @@
                   , &unit
                 println "|Found no storage."
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :io)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.client
           :require
@@ -227,7 +227,7 @@
                     hint-fn $ Fn respo.schema/RespoEvent
                       Fn app.schema/Op $ -> Unit
                       -> Unit
-                    d! $ app.schema/Op :states cursor $ assoc state :title (app.schema/event-value e)
+                    d! $ app.schema/Op :states cursor $ assoc state :title (app.util/event-value e)
                     , &unit
                 space-y 8
                 input $ {}
@@ -238,7 +238,7 @@
                     hint-fn $ Fn respo.schema/RespoEvent
                       Fn app.schema/Op $ -> Unit
                       -> Unit
-                    d! $ app.schema/Op :states cursor $ assoc state :code (app.schema/event-value e)
+                    d! $ app.schema/Op :states cursor $ assoc state :code (app.util/event-value e)
                     , &unit
                 space-y 8
                 input $ {}
@@ -249,7 +249,7 @@
                     hint-fn $ Fn respo.schema/RespoEvent
                       Fn app.schema/Op $ -> Unit
                       -> Unit
-                    d! $ app.schema/Op :states cursor $ assoc state :path (app.schema/event-value e)
+                    d! $ app.schema/Op :states cursor $ assoc state :path (app.util/event-value e)
                     , &unit
                 space-y 16
                 div
@@ -391,7 +391,7 @@
                       :min-width 320
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component) (:features :state)
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
@@ -502,7 +502,7 @@
                     Some $ comp-reel (:reel-length view) ({})
                     , None
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) Dynamic (-> respo.schema/Component) (:features :io)
+          :schema $ quote $ Fn (Map Tag Dynamic) Dynamic (-> respo.schema/Component) (:features :io :state)
         'comp-offline $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-offline ()
             div
@@ -745,7 +745,7 @@
                             hint-fn $ Fn respo.schema/RespoEvent
                               Fn *dispatch-op $ -> Unit
                               -> Unit
-                            d! $ app.schema/Op :states cursor $ assoc state :query (app.schema/event-value e)
+                            d! $ app.schema/Op :states cursor $ assoc state :query (app.util/event-value e)
                             , &unit
                         list->
                           {}
@@ -884,7 +884,7 @@
                         fn (pid)
                           [] pid $ comp-process $ .unwrap (get processes pid)
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :io :state)
         'css-filter $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-filter
             {} $ |& $ {} (:min-width 60) (:width 60) (:background-color :transparent)
@@ -959,7 +959,7 @@
                           hint-fn $ Fn respo.schema/RespoEvent
                             Fn *dispatch-op $ -> Unit
                             -> Unit
-                          d! $ app.schema/Op :states cursor $ assoc state :username (app.schema/event-value e)
+                          d! $ app.schema/Op :states cursor $ assoc state :username (app.util/event-value e)
                           , &unit
                     space-y 8
                     div ({})
@@ -970,7 +970,7 @@
                           hint-fn $ Fn respo.schema/RespoEvent
                             Fn *dispatch-op $ -> Unit
                             -> Unit
-                          d! $ app.schema/Op :states cursor $ assoc state :password (app.schema/event-value e)
+                          d! $ app.schema/Op :states cursor $ assoc state :password (app.util/event-value e)
                           , &unit
                   space-y 8
                   div
@@ -1350,7 +1350,7 @@
                           hint-fn $ Fn respo.schema/RespoEvent
                             Fn *dispatch-op $ -> Unit
                             -> Unit
-                          d! $ app.schema/Op :states cursor $ assoc state :filter (app.schema/event-value e)
+                          d! $ app.schema/Op :states cursor $ assoc state :filter (app.util/event-value e)
                           , &unit
                         :placeholder |filter...
                       <> |Filter...
@@ -1543,7 +1543,7 @@
                   space-y 200
                 .render command-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :io :state)
         'css-down-icon $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-down-icon
             {}
@@ -1843,6 +1843,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Map String $ Map Tag Dynamic
             -> respo.schema/Component
+            :features :state
         'comp-workflow-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-detail (states workflow)
             let
@@ -1970,7 +1971,7 @@
                           , 'String
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :state)
         'comp-workflow-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-editor (states base-workflow on-toggle)
             let
@@ -1998,7 +1999,7 @@
                       hint-fn $ Fn respo.schema/RespoEvent
                         Fn app.schema/Op $ -> Unit
                         -> Unit
-                      d! $ app.schema/Op :states cursor $ assoc state :name (app.schema/event-value e)
+                      d! $ app.schema/Op :states cursor $ assoc state :name (app.util/event-value e)
                       , &unit
                 space-y 8
                 div ({})
@@ -2010,7 +2011,7 @@
                       hint-fn $ Fn respo.schema/RespoEvent
                         Fn app.schema/Op $ -> Unit
                         -> Unit
-                      d! $ app.schema/Op :states cursor $ assoc state :base-dir (app.schema/event-value e)
+                      d! $ app.schema/Op :states cursor $ assoc state :base-dir (app.util/event-value e)
                       , &unit
                 space-y 16
                 div
@@ -2202,8 +2203,8 @@
                       , &unit &unit
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic)
-            Fn app.schema/Op String $ -> Unit
-            , String (-> Unit) (:features :js-ffi :state)
+            Fn app.schema/Op String (-> Unit) (:features :io :state)
+            , String (-> Unit) (:features :io :js-ffi :state)
         'env-chunk? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn env-chunk? (chunk) (raise "|Command classification requires JavaScript")
           :examples $ []
@@ -2221,7 +2222,7 @@
             , &unit
           :examples $ []
           :schema $ quote $ Fn Number
-            Fn app.schema/Op String $ -> Unit
+            Fn app.schema/Op String (-> Unit) (:features :io :state)
             , String (-> Unit) (:features :io :js-ffi :state)
         'parse-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn parse-command (command)
@@ -2377,11 +2378,6 @@
           :code $ quote $ defunion StateKey Tag String Number
           :examples $ []
           :schema $ quote UnionDef
-        'TextInputEvent $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defunion TextInputEvent respo.schema/RespoEvent
-            Map Tag $ JsNullish String
-          :examples $ []
-          :schema $ quote UnionDef
         'command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def command
             {} (:id nil) (:title |) (:path |.) (:code |)
@@ -2467,21 +2463,6 @@
           :examples $ []
           :schema $ quote $ Fn Database
             -> $ Map Tag Dynamic
-        'event-value $ %{} 'CodeEntry
-          :doc "|Text value of an input event. Respo passes a RespoEvent struct; tests and legacy callers pass a map."
-          :code $ quote $ defn event-value (event)
-            match event
-              (respo.schema/RespoEvent input)
-                let
-                    value $ :value input
-                  if (nil? value) | $ decode-map-as value 'String
-              (Map fields)
-                match (get fields :value)
-                  (:some value)
-                    if (js-nullish? value) | $ decode-map-as value 'String
-                  (:none) |
-          :examples $ []
-          :schema $ quote $ Fn TextInputEvent (-> String) (:features :js-ffi)
         'field-or $ %{} 'CodeEntry
           :doc "|Read an optional wire field. A missing or nil field gives the fallback."
           :code $ quote $ defn field-or (fields field fallback)
@@ -2614,7 +2595,7 @@
           :code $ quote $ defref *proxied-dispatch! dispatch!
           :examples $ []
           :schema $ quote $ Ref
-            Fn Dynamic String $ -> Unit
+            Fn Dynamic String (-> Unit) (:features :io :js-ffi :state)
         '*reader-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *reader-reel @*reel
           :examples $ []
@@ -2720,7 +2701,7 @@
               write-mildly! storage-file file-content
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi :state)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (println "|Code updated.") (clear-twig-caches!) (reset! *proxied-dispatch! dispatch!)
             reset! *reel $ refresh-reel @*reel @*initial-db updater-from-record
@@ -3396,6 +3377,11 @@
           :require $ app.schema :as schema
     'app.util $ %{} 'FileEntry
       :defs $ {}
+        'TextInputEvent $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion TextInputEvent respo.schema/RespoEvent
+            Map Tag $ JsNullish String
+          :examples $ []
+          :schema $ quote UnionDef
         'clear-current-route! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn clear-current-route! (store dispatch!)
             let
@@ -3430,6 +3416,21 @@
             Fn app.schema/Op $ -> Unit
             -> Unit
             :features :io
+        'event-value $ %{} 'CodeEntry
+          :doc "|Text value of an input event. Respo passes a RespoEvent struct; tests and legacy callers pass a map."
+          :code $ quote $ defn event-value (event)
+            match event
+              (respo.schema/RespoEvent input)
+                let
+                    value $ :value input
+                  if (nil? value) | $ decode-map-as value 'String
+              (Map fields)
+                match (get fields :value)
+                  (:some value)
+                    if (js-nullish? value) | $ decode-map-as value 'String
+                  (:none) |
+          :examples $ []
+          :schema $ quote $ Fn TextInputEvent (-> String) (:features :js-ffi)
         'join-path $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn join-path (xs ys)
             if
