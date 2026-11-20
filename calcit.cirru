@@ -426,7 +426,7 @@
             :count $ Option Number
             :color $ Option String
           :examples $ []
-          :schema $ quote List
+          :schema $ quote StructDef
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (states store)
             if (nil? store) (comp-offline)
@@ -690,7 +690,7 @@
         'HomeState $ %{} 'CodeEntry (:doc "|首页私有查询与弹窗状态，可从旧 Map 解码。")
           :code $ quote $ defstruct HomeState (:query String) (:pop? Bool)
           :examples $ []
-          :schema $ quote List
+          :schema $ quote StructDef
         'comp-empty $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-empty ()
             span $ {}
@@ -1304,7 +1304,7 @@
         'DetailState $ %{} 'CodeEntry (:doc "|详情页私有筛选状态；可从旧 Map 解码，初始值沿用原页面，不改变服务数据格式。")
           :code $ quote $ defstruct DetailState (:filter String) (:filter? Bool) (:wrap? Bool) (:all-log? Bool) (:hide-thread-info? Bool)
           :examples $ []
-          :schema $ quote List
+          :schema $ quote StructDef
         'comp-process-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-process-detail (states process)
             let
@@ -1708,7 +1708,7 @@
             :focused-id $ Option String
             :pop? Bool
           :examples $ []
-          :schema $ quote List
+          :schema $ quote StructDef
         'comp-workflow-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-container (states workflows)
             let
