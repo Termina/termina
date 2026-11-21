@@ -2923,8 +2923,9 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defn twig-user (user) (dissoc user :password)
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic)
-            -> $ Map Tag Dynamic
+          :schema $ quote $ Fn (Map Tag V)
+            -> $ Map Tag V
+            :generics V
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.twig.user (:require)
     'app.updater $ %{} 'FileEntry
