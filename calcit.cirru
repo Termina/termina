@@ -25,11 +25,15 @@
           :schema $ quote $ Ref Dynamic
         'connect! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn connect! ()
-            ws-connect! (resolve-websocket-url)
-              {}
-                :on-open $ fn (event) (simulate-login!)
-                :on-close $ fn (event) (reset! *store nil) (println "|Lost connection!") &unit
-                :on-data on-server-data
+            let
+                opened $ fn (event) (simulate-login!) &unit
+                closed $ fn (event) (reset! *store nil) (println "|Lost connection!") &unit
+                receive $ fn (data)
+                  on-server-data $ decode-map-as data $ Map Dynamic Dynamic
+                  , &unit
+              ws-edn.client/ws-connect-typed! (resolve-websocket-url)
+                ws-edn.client/ClientConfig :retry-base-ms None :retry-max-ms None :retry-jitter None :heartbeat-timeout-ms None :class-mapper $ {}
+                ws-edn.client/ClientCallbacks :on-open (Some opened) :on-close (Some closed) :on-error None :on-data $ Some receive
             , &unit
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :io :state)
@@ -84,7 +88,7 @@
               _ $ println "|unknown server data kind:" data
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit) (:features :io :state)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (-> Unit) (:features :io :state)
         'on-window-keydown $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-window-keydown (event)
             let
@@ -391,7 +395,7 @@
                       :min-width 320
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component) (:features :state)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component) (:features :io :state)
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
@@ -1843,7 +1847,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Map String $ Map Tag Dynamic
             -> respo.schema/Component
-            :features :state
+            :features :io :state
         'comp-workflow-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-detail (states workflow)
             let
@@ -1971,7 +1975,7 @@
                           , 'String
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :state)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :io :state)
         'comp-workflow-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-editor (states base-workflow on-toggle)
             let
