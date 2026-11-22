@@ -395,7 +395,7 @@
                       :min-width 320
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component) (:features :state)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) String (-> respo.schema/Component) (:features :io :state)
         'style-command-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-command-row
             merge ui/column $ {}
@@ -1847,7 +1847,7 @@
           :schema $ quote $ Fn (Map Tag Dynamic)
             Map String $ Map Tag Dynamic
             -> respo.schema/Component
-            :features :state
+            :features :io :state
         'comp-workflow-detail $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-detail (states workflow)
             let
@@ -1975,7 +1975,7 @@
                           , 'String
                 .render remove-plugin
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :state)
+          :schema $ quote $ Fn (Map Tag Dynamic) (Map Tag Dynamic) (-> respo.schema/Component) (:features :io :state)
         'comp-workflow-editor $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-workflow-editor (states base-workflow on-toggle)
             let
