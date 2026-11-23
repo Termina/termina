@@ -7,6 +7,7 @@ import { comp_command_button, comp_command_editor, comp_command_row } from '../o
 import { comp_process, find_urls } from '../out-page/app.comp.process.mjs';
 import { comp_process_detail, hide_thread_info } from '../out-page/app.comp.process-detail.mjs';
 import { comp_profile } from '../out-page/app.comp.profile.mjs';
+import { comp_login } from '../out-page/app.comp.login.mjs';
 import { comp_home, lower_case } from '../out-page/app.comp.home.mjs';
 import { comp_history, format_date_time } from '../out-page/app.comp.history.mjs';
 import dayjs from 'dayjs';
@@ -84,6 +85,18 @@ function elements(component) {
 }
 const values = nodes => nodes.map(node => c.listToArray(read(node, 'attrs')).map(c.listToArray).find(([key]) => key.value === 'value')[1]);
 const attr = (node, name) => c.listToArray(read(node, 'attrs')).map(c.listToArray).find(([key]) => key.value === name)?.[1];
+
+test('login preserves defaults and existing input values', () => {
+  for (const [source, expected] of [
+    ['{} (:cursor ([]))', ['', '']],
+    ['{} (:cursor ([])) (:data nil)', ['', '']],
+    ['{} (:cursor ([])) (:data false)', ['', '']],
+    ['{} (:cursor ([])) (:data ({} (:username |Ada) (:password |synthetic)))', ['Ada', 'synthetic']],
+  ]) {
+    const inputs = elements(comp_login(parse(source))).filter(node => ['Username', 'Password'].includes(attr(node, 'placeholder')));
+    assert.deepEqual(inputs.map(node => attr(node, 'value')), expected);
+  }
+});
 
 test('workflow button treats absent commands as empty and rejects invalid commands', () => {
   for (const [workflow, valid] of [

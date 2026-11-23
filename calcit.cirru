@@ -948,7 +948,9 @@
                   .unwrap $ get states :cursor
                   List app.schema/StateKey
                 state $ decode-map-as
-                  or (app.schema/field-or states :data nil) initial-state
+                  match (get states :data)
+                    (:some value) (if value value initial-state)
+                    (:none) initial-state
                   Map Tag String
               div
                 {} $ :style $ merge ui/flex ui/center
@@ -993,7 +995,7 @@
                         .unwrap $ get state :password
                         , false
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Tag StateValue) (-> respo.schema/Component) (:generics StateValue)
         'initial-state $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def initial-state
             {} (:username |) (:password |)
